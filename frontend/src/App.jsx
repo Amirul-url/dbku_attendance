@@ -17,7 +17,6 @@ import {
 import { ReportsPage } from './pages/ReportsPage.jsx'
 import { StaffPage } from './pages/StaffPage.jsx'
 import { SuperadminPage } from './pages/SuperadminPage.jsx'
-import { VisitorsPage } from './pages/VisitorsPage.jsx'
 
 function App() {
   return (
@@ -41,7 +40,6 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="staff" element={<StaffPage />} />
-        <Route path="visitors" element={<VisitorsPage />} />
         <Route path="superadmin" element={<SuperadminPage />} />
         <Route path="events" element={<EventsPage />} />
         <Route path="events/:id" element={<EventDetailPage />} />

@@ -11,6 +11,7 @@ class StaffMemberSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, min_length=8)
     is_staff = serializers.BooleanField(required=False)
     is_superuser = serializers.BooleanField(required=False)
+    last_login = serializers.DateTimeField(source="user.last_login", read_only=True)
 
     class Meta:
         model = StaffMember
@@ -27,6 +28,7 @@ class StaffMemberSerializer(serializers.ModelSerializer):
             "role",
             "is_staff",
             "is_superuser",
+            "last_login",
             "password",
             "created_at",
         ]

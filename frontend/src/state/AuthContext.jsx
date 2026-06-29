@@ -34,13 +34,19 @@ export function AuthProvider({ children }) {
     setUser(currentUser)
   }
 
+  async function refreshUser() {
+    const currentUser = await apiRequest('/auth/me/')
+    setUser(currentUser)
+    return currentUser
+  }
+
   function logout() {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     setUser(null)
   }
 
-  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading])
+  const value = useMemo(() => ({ user, loading, login, logout, refreshUser }), [user, loading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

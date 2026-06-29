@@ -7,7 +7,7 @@ from apps.staff.models import StaffMember
 
 
 class Command(BaseCommand):
-    help = "Create the first admin user and linked staff profile."
+    help = "Create the first superadmin user and linked staff profile."
 
     def handle(self, *args, **options):
         username = os.environ.get("SEED_ADMIN_USERNAME", "admin")
@@ -39,9 +39,9 @@ class Command(BaseCommand):
                 "staff_id": staff_id,
                 "email": email,
                 "department": department,
-                "role": StaffMember.ROLE_ADMIN,
+                "role": StaffMember.ROLE_EDITOR,
                 "registration_method": StaffMember.REGISTRATION_MANUAL,
             },
         )
 
-        self.stdout.write(self.style.SUCCESS(f"Admin user ready: {username}"))
+        self.stdout.write(self.style.SUCCESS(f"Superadmin user ready: {username}"))

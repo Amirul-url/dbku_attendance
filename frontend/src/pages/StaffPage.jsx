@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Edit, Plus, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { useAuth } from '../state/AuthContext.jsx'
 
 const emptyStaff = {
   full_name: '',
@@ -9,12 +10,40 @@ const emptyStaff = {
   email: '',
   phone_number: '',
   department: '',
+  other_department: '',
   registration_method: 'manual',
   role: 'viewer',
   password: '',
+  confirm_password: '',
 }
 
 const countryCodeOptions = ['+60']
+const departments = [
+  'Administration (ADM)',
+  'Internal Audit (AUD)',
+  'Building (BLG)',
+  'Community Development & Services (CDS)',
+  'Contract and Procurement (COP)',
+  'Committee Secretariat (CTS)',
+  'Engineering Project (ENG)',
+  'Enforcement and Security (ENS)',
+  'Health and Environment (ENV)',
+  'Finance (FIN)',
+  'Geoinformation and Property Management (GPM)',
+  'Human Resource Management (HRM)',
+  'Information and Communication Technology (ICT)',
+  'Infrastructure Maintenance (IMT)',
+  'Information Resource (IRD)',
+  'Legal Affairs (LAW)',
+  'Licensing (LES)',
+  'Landscape and Planning (LNP)',
+  'Mechanical and Electrical (MNE)',
+  'Public Relations (PRD)',
+  'Special Project & Public Facility (SPF)',
+  'Transformation and Innovation (TRI)',
+  'Valuation and Taxation (VAL)',
+  'Others',
+]
 
 function splitPhoneNumber(value) {
   const digits = String(value || '').replace(/\D/g, '')
@@ -128,7 +157,36 @@ function PhoneNumberSelectInput({ value, onChange }) {
   )
 }
 
+function SelectWithIcon({ value, onChange, children, required = false }) {
+  return (
+    <div className="select-with-icon">
+      <select value={value} onChange={onChange} required={required}>
+        {children}
+      </select>
+      <ChevronDown className="select-chevron" size={18} aria-hidden="true" />
+    </div>
+  )
+}
+
+function staffFormFromRow(row) {
+  const departmentValue = departments.includes(row.department) ? row.department : 'Others'
+  return {
+    ...emptyStaff,
+    ...row,
+    department: departmentValue,
+    other_department: departmentValue === 'Others' ? row.department : '',
+    password: '',
+    confirm_password: '',
+  }
+}
+
+function formatLoginDate(value) {
+  if (!value) return 'Never'
+  return new Date(value).toLocaleString()
+}
+
 export function StaffPage() {
+  const { user, refreshUser } = useAuth()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -136,13 +194,28 @@ export function StaffPage() {
   const [department, setDepartment] = useState('')
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyStaff)
+  const [page, setPage] = useState(1)
 
   const filteredRows = useMemo(() => rows.filter((row) => {
     if (row.is_superuser) return false
-    const matchesName = !search || row.full_name.toLowerCase().includes(search.toLowerCase())
-    const matchesDepartment = !department || row.department.toLowerCase().includes(department.toLowerCase())
-    return matchesName && matchesDepartment
+    const query = search.toLowerCase()
+    const matchesSearch = !query
+      || row.full_name?.toLowerCase().includes(query)
+      || row.staff_id?.toLowerCase().includes(query)
+      || row.email?.toLowerCase().includes(query)
+      || row.phone_number?.includes(query)
+    const matchesDepartment = !department || row.department === department
+    return matchesSearch && matchesDepartment
   }), [rows, search, department])
+  const pageSize = 5
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  const pageRows = filteredRows.slice((page - 1) * pageSize, page * pageSize)
+  const pageStart = filteredRows.length ? (page - 1) * pageSize + 1 : 0
+  const pageEnd = Math.min(page * pageSize, filteredRows.length)
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, department, rows.length])
 
   async function load() {
     setLoading(true)
@@ -166,7 +239,7 @@ export function StaffPage() {
   }
 
   function openEdit(row) {
-    setForm({ ...emptyStaff, ...row, password: '' })
+    setForm(staffFormFromRow(row))
     setModal({ mode: 'edit', id: row.id })
   }
 
@@ -176,16 +249,33 @@ export function StaffPage() {
 
   async function saveStaff(event) {
     event.preventDefault()
-    const payload = { ...form }
+    setError('')
+    if (form.password || form.confirm_password) {
+      if (form.password !== form.confirm_password) {
+        setError('Password and confirm password do not match.')
+        return
+      }
+    }
+    const payload = {
+      ...form,
+      department: form.department === 'Others' ? form.other_department : form.department,
+    }
+    delete payload.confirm_password
+    delete payload.other_department
     if (!payload.password) delete payload.password
     try {
+      let savedStaff
       if (modal.mode === 'create') {
-        await apiRequest('/staff/', { method: 'POST', body: JSON.stringify(payload) })
+        savedStaff = await apiRequest('/staff/', { method: 'POST', body: JSON.stringify(payload) })
+        setRows((current) => [savedStaff, ...current])
       } else {
-        await apiRequest(`/staff/${modal.id}/`, { method: 'PATCH', body: JSON.stringify(payload) })
+        savedStaff = await apiRequest(`/staff/${modal.id}/`, { method: 'PATCH', body: JSON.stringify(payload) })
+        setRows((current) => current.map((row) => (row.id === savedStaff.id ? savedStaff : row)))
+      }
+      if (savedStaff?.id === user?.staff_profile?.id || savedStaff?.username === user?.username) {
+        await refreshUser()
       }
       setModal(null)
-      await load()
     } catch (err) {
       setError(err.message)
     }
@@ -211,8 +301,14 @@ export function StaffPage() {
         <button type="button" className="btn btn-ocean" onClick={openCreate}><Plus size={16} /> Add Staff</button>
       </div>
       <div className="filter-card">
-        <input className="filter-input" placeholder="Search staff name" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <input className="filter-input" placeholder="Search department" value={department} onChange={(event) => setDepartment(event.target.value)} />
+        <input className="filter-input" placeholder="Search name, Staff ID, email, or phone" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <div className="filter-select-wrap">
+          <select className="filter-input filter-select" value={department} onChange={(event) => setDepartment(event.target.value)}>
+            <option value="">All Department</option>
+            {departments.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+          <ChevronDown className="filter-select-chevron" size={18} aria-hidden="true" />
+        </div>
         <button type="button" className="btn btn-ocean">Filter</button>
         <button type="button" className="btn btn-ghost" onClick={() => { setSearch(''); setDepartment('') }}>Reset</button>
       </div>
@@ -226,15 +322,23 @@ export function StaffPage() {
               <div className="table-card-title">Staff List</div>
               <div className="table-card-sub">All staff members registered in the system</div>
             </div>
+            <div className="table-pagination table-pagination-header">
+              <span>{pageStart}-{pageEnd} of {filteredRows.length}</span>
+              <div className="pagination-buttons">
+                <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} aria-label="Previous page">&lt;</button>
+                <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages} aria-label="Next page">&gt;</button>
+              </div>
+            </div>
           </div>
           <DataTable
-            rows={filteredRows}
+            rows={pageRows}
             columns={[
-              { key: 'full_name', label: 'Name' },
+              { key: 'full_name', label: 'Name', render: (row) => <span className="table-two-line table-name-cell" title={row.full_name}>{row.full_name}</span> },
               { key: 'staff_id', label: 'Staff ID' },
               { key: 'email', label: 'Email' },
               { key: 'phone_number', label: 'Phone' },
-              { key: 'department', label: 'Department' },
+              { key: 'department', label: 'Department', render: (row) => <span className="table-two-line table-department-cell" title={row.department}>{row.department}</span> },
+              { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{formatLoginDate(row.last_login)}</span> },
               { key: 'registration_method', label: 'Method', render: (row) => <span className="badge badge-blue">{row.registration_method}</span> },
               { key: 'role', label: 'Role', render: (row) => <span className={`badge badge-${row.role}`}>{row.role}</span> },
               {
@@ -254,24 +358,53 @@ export function StaffPage() {
 
       {modal && (
         <div className="modal-overlay open">
-          <form className="modal-box" onSubmit={saveStaff}>
+          <form className="modal-box modal-staff" onSubmit={saveStaff}>
             <div className="modal-header">
               <div className="modal-title">{modal.mode === 'create' ? 'Add Staff' : 'Edit Staff'}</div>
               <button type="button" className="modal-close" onClick={() => setModal(null)}>x</button>
             </div>
-            <div className="modal-body stack-form">
+            <div className="modal-body stack-form staff-modal-body">
+              <div className="form-section-title">Identity</div>
               <div className="form-grid-2">
                 <label className="compact-field"><span>Full Name</span><input value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></label>
                 <label className="compact-field"><span>Staff ID</span><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} required /></label>
               </div>
               <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></label>
               <label className="compact-field"><span>WhatsApp Number</span><PhoneNumberSelectInput value={form.phone_number || ''} onChange={(value) => update('phone_number', value)} /></label>
-              <label className="compact-field"><span>Department</span><input value={form.department} onChange={(e) => update('department', e.target.value)} required /></label>
+
+              <div className="form-section-title">Department & Access</div>
+              <label className="compact-field">
+                <span>Department</span>
+                <SelectWithIcon value={form.department} onChange={(e) => update('department', e.target.value)} required>
+                  <option value="">-- Select department --</option>
+                  {departments.map((item) => <option key={item} value={item}>{item}</option>)}
+                </SelectWithIcon>
+              </label>
+              {form.department === 'Others' && (
+                <label className="compact-field"><span>Specify Department</span><input value={form.other_department} onChange={(e) => update('other_department', e.target.value)} required /></label>
+              )}
               <div className="form-grid-2">
-                <label className="compact-field"><span>Method</span><select value={form.registration_method} onChange={(e) => update('registration_method', e.target.value)}><option value="manual">Manual</option><option value="mykad">MyKad</option></select></label>
-                <label className="compact-field"><span>Role</span><select value={form.role} onChange={(e) => update('role', e.target.value)}><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select></label>
+                <label className="compact-field">
+                  <span>Method</span>
+                  <SelectWithIcon value={form.registration_method} onChange={(e) => update('registration_method', e.target.value)}>
+                    <option value="manual">Manual</option>
+                    <option value="mykad">MyKad</option>
+                  </SelectWithIcon>
+                </label>
+                <label className="compact-field">
+                  <span>Role</span>
+                  <SelectWithIcon value={form.role} onChange={(e) => update('role', e.target.value)}>
+                    <option value="viewer">Viewer</option>
+                    <option value="editor">Editor</option>
+                  </SelectWithIcon>
+                </label>
               </div>
-              <label className="compact-field"><span>Password {modal.mode === 'edit' ? '(leave blank to keep current)' : ''}</span><input type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
+
+              <div className="form-section-title">Security</div>
+              <div className="form-grid-2">
+                <label className="compact-field"><span>Password {modal.mode === 'edit' ? '(leave blank to keep current)' : ''}</span><input type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
+                <label className="compact-field"><span>Confirm Password</span><input type="password" value={form.confirm_password} onChange={(e) => update('confirm_password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
+              </div>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>

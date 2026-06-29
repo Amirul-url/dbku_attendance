@@ -43,6 +43,11 @@ textarea {
   grid-template-columns: 220px 1fr;
   height: 100vh;
   overflow: hidden;
+  transition: grid-template-columns 0.18s ease;
+}
+
+.app-shell.sidebar-collapsed {
+  grid-template-columns: 76px 1fr;
 }
 
 .sidebar {
@@ -52,6 +57,7 @@ textarea {
   flex-direction: column;
   justify-content: space-between;
   padding: 24px 16px;
+  min-width: 0;
 }
 
 .brand,
@@ -66,6 +72,34 @@ textarea {
   gap: 10px;
   margin-bottom: 32px;
   padding: 0 4px;
+}
+
+.brand-label,
+.nav-label,
+.logout-label {
+  white-space: nowrap;
+}
+
+.sidebar-collapsed .sidebar {
+  padding-inline: 14px;
+}
+
+.sidebar-collapsed .brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-collapsed .brand-label,
+.sidebar-collapsed .nav-section,
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .logout-label {
+  display: none;
+}
+
+.sidebar-collapsed .nav-link,
+.sidebar-collapsed .logout-button {
+  justify-content: center;
+  padding-inline: 0;
 }
 
 .brand-logo {
@@ -152,10 +186,38 @@ textarea {
   flex-shrink: 0;
 }
 
+.topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sidebar-toggle {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #1a2e35;
+  cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+  border-color: #b8cbd0;
+  background: #f7f9fa;
+}
+
 .topbar-title {
   color: #1a2e35;
   font-size: 13.5px;
   font-weight: 700;
+}
+
+.account-menu {
+  position: relative;
 }
 
 .user-pill {
@@ -166,6 +228,40 @@ textarea {
   padding: 6px 12px 6px 6px;
   color: #1a2e35;
   font-size: 13px;
+  cursor: pointer;
+}
+
+.account-dropdown {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 160px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 14px 32px rgba(7, 29, 38, 0.14);
+}
+
+.account-dropdown button {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #c62828;
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.account-dropdown button:hover {
+  background: #ffebee;
 }
 
 .avatar {
@@ -259,6 +355,31 @@ h1 {
   border-radius: 14px;
   padding: 16px 20px;
   margin-bottom: 20px;
+}
+
+.filter-select-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.filter-select-wrap .filter-input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.filter-select {
+  appearance: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.filter-select-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #102a33;
+  pointer-events: none;
 }
 
 .filter-input {
@@ -379,6 +500,10 @@ h1 {
   width: min(760px, 100%);
 }
 
+.modal-staff {
+  width: min(780px, 100%);
+}
+
 .modal-header,
 .modal-footer {
   display: flex;
@@ -478,6 +603,68 @@ h1 {
   letter-spacing: 0;
   text-transform: uppercase;
   border-bottom: 1px solid var(--line);
+}
+
+.table-two-line {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.35;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.table-name-cell {
+  width: 125px;
+  max-width: 125px;
+}
+
+.table-department-cell {
+  width: 135px;
+  max-width: 135px;
+}
+
+.table-date-cell {
+  white-space: nowrap;
+  color: #52677c;
+}
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.table-pagination-header {
+  padding: 0;
+  border-top: 0;
+}
+
+.pagination-buttons {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.pagination-buttons button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #102a33;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pagination-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .empty-cell {
@@ -1070,6 +1257,7 @@ input:focus {
   color: var(--ink);
   padding: 0 14px;
   font-size: 14px;
+  font-weight: 400;
 }
 
 .compact-field textarea {
@@ -1079,6 +1267,23 @@ input:focus {
 
 .compact-field select {
   appearance: none;
+}
+
+.select-with-icon {
+  position: relative;
+}
+
+.select-with-icon select {
+  padding-right: 42px;
+}
+
+.select-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #102a33;
+  pointer-events: none;
 }
 
 .form-section-title {
@@ -1279,7 +1484,7 @@ input:focus {
   color: #071d26;
   padding: 0 38px 0 16px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -1676,6 +1881,10 @@ input:focus {
 
 @media (max-width: 900px) {
   .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.sidebar-collapsed {
     grid-template-columns: 1fr;
   }
 
