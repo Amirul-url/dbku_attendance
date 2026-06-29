@@ -3,11 +3,11 @@ from django.db import models
 
 
 class StaffMember(models.Model):
-    ROLE_EDITOR = "editor"
+    ROLE_ADMIN = "admin"
     ROLE_VIEWER = "viewer"
 
     ROLE_CHOICES = [
-        (ROLE_EDITOR, "Editor"),
+        (ROLE_ADMIN, "Admin"),
         (ROLE_VIEWER, "Viewer"),
     ]
 

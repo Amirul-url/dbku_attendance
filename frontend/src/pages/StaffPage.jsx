@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Edit, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Edit, Plus, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
@@ -298,7 +298,7 @@ export function StaffPage() {
           <h1>Staff Management</h1>
           <div className="page-sub">Manage staff records and access roles.</div>
         </div>
-        <button type="button" className="btn btn-ocean" onClick={openCreate}><Plus size={16} /> Add Staff</button>
+        <button type="button" className="btn btn-green" onClick={openCreate}><Plus size={16} /> Add Staff</button>
       </div>
       <div className="filter-card">
         <input className="filter-input" placeholder="Search name, Staff ID, email, or phone" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -309,7 +309,7 @@ export function StaffPage() {
           </select>
           <ChevronDown className="filter-select-chevron" size={18} aria-hidden="true" />
         </div>
-        <button type="button" className="btn btn-ocean">Filter</button>
+        <button type="button" className="btn btn-ocean"><Search size={16} /> Filter</button>
         <button type="button" className="btn btn-ghost" onClick={() => { setSearch(''); setDepartment('') }}>Reset</button>
       </div>
       {error && <div className="alert-error">{error}</div>}
@@ -395,7 +395,7 @@ export function StaffPage() {
                   <span>Role</span>
                   <SelectWithIcon value={form.role} onChange={(e) => update('role', e.target.value)}>
                     <option value="viewer">Viewer</option>
-                    <option value="editor">Editor</option>
+                    <option value="admin">Admin</option>
                   </SelectWithIcon>
                 </label>
               </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart3, CalendarDays, ChevronDown, LayoutDashboard, LogOut, Menu, ShieldCheck, Users } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronDown, Clock3, LayoutDashboard, LogOut, Menu, RefreshCw, ShieldCheck, Users } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext.jsx'
 
@@ -11,7 +11,7 @@ const navItems = [
 ]
 
 export function AppShell() {
-  const { user, logout } = useAuth()
+  const { user, logout, showSessionWarning, extendSession, extendingSession } = useAuth()
   const profile = user?.staff_profile
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -87,6 +87,33 @@ export function AppShell() {
           <Outlet />
         </section>
       </main>
+      {showSessionWarning && (
+        <div className="session-modal-backdrop">
+          <div className="session-modal" role="alertdialog" aria-modal="true" aria-labelledby="session-warning-title">
+            <div className="session-modal-header">
+              <div className="session-icon">
+                <Clock3 size={28} />
+              </div>
+              <div>
+                <h2 id="session-warning-title">Session expiring soon</h2>
+                <p>Your login session is about to expire. Extend it to continue working without signing in again.</p>
+              </div>
+            </div>
+            <div className="session-modal-note">
+              Choose Extend session to keep using AMS, or Logout to end this session now.
+            </div>
+            <div className="session-modal-actions">
+              <button type="button" className="session-secondary-button" onClick={logout}>
+                Logout
+              </button>
+              <button type="button" className="session-primary-button" onClick={extendSession} disabled={extendingSession}>
+                <RefreshCw size={22} />
+                {extendingSession ? 'Extending...' : 'Extend session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

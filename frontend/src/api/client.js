@@ -37,7 +37,7 @@ export async function apiRequest(path, options = {}) {
   }
 
   const token = getAccessToken()
-  if (token) {
+  if (token && !options.skipAuth) {
     headers.set('Authorization', `Bearer ${token}`)
   }
 

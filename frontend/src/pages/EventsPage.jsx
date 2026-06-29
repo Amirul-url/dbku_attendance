@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Edit, ExternalLink, Plus, Trash2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { apiRequest, listFromResponse } from '../api/client.js'
+import { useRef, useState } from 'react'
+import { CalendarDays, CalendarPlus, Search } from 'lucide-react'
+import { apiRequest } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 
 const emptyEvent = {
@@ -18,30 +17,12 @@ const emptyEvent = {
 }
 
 export function EventsPage() {
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [dateSearch, setDateSearch] = useState('')
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyEvent)
-
-  const filteredRows = useMemo(() => rows.filter((row) => !search || row.name.toLowerCase().includes(search.toLowerCase())), [rows, search])
-
-  async function load() {
-    setLoading(true)
-    setError('')
-    try {
-      setRows(listFromResponse(await apiRequest('/events/')))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
+  const dateInputRef = useRef(null)
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -50,11 +31,6 @@ export function EventsPage() {
   function openCreate() {
     setForm(emptyEvent)
     setModal({ mode: 'create' })
-  }
-
-  function openEdit(row) {
-    setForm({ ...emptyEvent, ...row, start_time: row.start_time || '', end_time: row.end_time || '', latitude: row.latitude || '', longitude: row.longitude || '' })
-    setModal({ mode: 'edit', id: row.id })
   }
 
   async function saveEvent(event) {
@@ -67,70 +43,66 @@ export function EventsPage() {
         await apiRequest(`/events/${modal.id}/`, { method: 'PATCH', body: JSON.stringify(payload) })
       }
       setModal(null)
-      await load()
     } catch (err) {
       setError(err.message)
     }
   }
 
-  async function deleteEvent(row) {
-    if (!window.confirm(`Delete ${row.name}?`)) return
-    try {
-      await apiRequest(`/events/${row.id}/`, { method: 'DELETE' })
-      await load()
-    } catch (err) {
-      setError(err.message)
+  function resetFilters() {
+    setSearch('')
+    setDateSearch('')
+  }
+
+  function openDatePicker() {
+    const input = dateInputRef.current
+    if (!input) return
+    if (typeof input.showPicker === 'function') {
+      input.showPicker()
+      return
     }
+    input.focus()
   }
 
   return (
     <>
       <div className="page-header">
         <div>
-          <h1>Events</h1>
-          <div className="page-sub">Create, monitor, and manage attendance events.</div>
+          <h1>Event Management</h1>
+          <div className="page-sub">Manage event information, geofence settings, and QR attendance access.</div>
         </div>
-        <button type="button" className="btn btn-ocean" onClick={openCreate}><Plus size={16} /> Create Event</button>
+        <button type="button" className="btn btn-green" onClick={openCreate}><CalendarPlus size={16} /> Create Event</button>
       </div>
-      <div className="filter-card">
-        <input className="filter-input" placeholder="Search event name" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <button type="button" className="btn btn-ocean">Filter</button>
-        <button type="button" className="btn btn-ghost" onClick={() => setSearch('')}>Reset</button>
+      <div className="filter-card event-filter-card">
+        <input className="filter-input" placeholder="Search event name or location" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <div className="filter-date-wrap">
+          <input ref={dateInputRef} type="date" className="filter-input" value={dateSearch} onChange={(event) => setDateSearch(event.target.value)} />
+          <button type="button" className="filter-date-button" onClick={openDatePicker} aria-label="Open calendar">
+            <CalendarDays size={16} />
+          </button>
+        </div>
+        <button type="button" className="btn btn-ocean"><Search size={16} /> Filter</button>
+        <button type="button" className="btn btn-ghost" onClick={resetFilters}>Reset</button>
       </div>
       {error && <div className="alert-error">{error}</div>}
-      {loading ? (
-        <div className="panel">Loading</div>
-      ) : (
-        <div className="table-card">
-          <div className="table-card-header">
-            <div>
-              <div className="table-card-title">Event List</div>
-              <div className="table-card-sub">All attendance events in the system</div>
-            </div>
+      <div className="table-card">
+        <div className="table-card-header">
+          <div>
+            <div className="table-card-title">Events List</div>
+            <div className="table-card-sub">All available events in the system</div>
           </div>
-          <DataTable
-            rows={filteredRows}
-            columns={[
-              { key: 'name', label: 'Event' },
-              { key: 'location', label: 'Location' },
-              { key: 'start_date', label: 'Start' },
-              { key: 'end_date', label: 'End' },
-              { key: 'radius_meter', label: 'Radius' },
-              {
-                key: 'actions',
-                label: 'Actions',
-                render: (row) => (
-                  <div className="button-row">
-                    <Link className="btn btn-ocean btn-small" to={`/events/${row.id}`}><ExternalLink size={14} /> View</Link>
-                    <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)}><Edit size={14} /> Edit</button>
-                    <button type="button" className="btn btn-small btn-red" onClick={() => deleteEvent(row)}><Trash2 size={14} /> Delete</button>
-                  </div>
-                ),
-              },
-            ]}
-          />
         </div>
-      )}
+        <DataTable
+          rows={[]}
+          columns={[
+            { key: 'name', label: 'Event Name' },
+            { key: 'location', label: 'Location' },
+            { key: 'period', label: 'Period' },
+            { key: 'description', label: 'Description' },
+            { key: 'geofence', label: 'Geofence' },
+            { key: 'actions', label: 'Actions' },
+          ]}
+        />
+      </div>
 
       {modal && (
         <div className="modal-overlay open">
