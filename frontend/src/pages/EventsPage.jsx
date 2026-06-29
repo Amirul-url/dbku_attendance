@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Box, CalendarDays, CalendarPlus, Crosshair, Map, Search } from 'lucide-react'
+import { Box, CalendarDays, CalendarPlus, Crosshair, Edit, Eye, Map, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 
@@ -148,8 +148,17 @@ function applyMapView(map, mode) {
 
 function formatPeriod(row) {
   if (!row.start_date && !row.end_date) return '-'
-  if (row.start_date === row.end_date || !row.end_date) return row.start_date
-  return `${row.start_date || '-'} to ${row.end_date}`
+  const startDate = formatDateDisplay(row.start_date)
+  const endDate = formatDateDisplay(row.end_date)
+  const dateRange = row.start_date === row.end_date || !row.end_date ? startDate : `${startDate} -> ${endDate}`
+  const timeRange = row.start_time || row.end_time ? `${formatTimeDisplay(row.start_time)} - ${formatTimeDisplay(row.end_time)}` : ''
+
+  return (
+    <span className="event-period-cell">
+      <strong>{dateRange}</strong>
+      {timeRange && <span>{timeRange}</span>}
+    </span>
+  )
 }
 
 function localAddressSuggestions(query) {
@@ -170,6 +179,17 @@ function formatNominatimAddress(item) {
   const postcode = address.postcode || ''
 
   return [buildingName, road, suburb, city, state, postcode, 'Malaysia'].filter(Boolean).join(', ') || item.display_name || ''
+}
+
+function formatDateDisplay(value) {
+  if (!value) return '-'
+  const [year, month, day] = String(value).split('-')
+  return year && month && day ? `${day}/${month}/${year}` : value
+}
+
+function formatTimeDisplay(value) {
+  if (!value) return '-'
+  return String(value).slice(0, 5)
 }
 
 export function EventsPage() {
@@ -478,6 +498,16 @@ export function EventsPage() {
     setModal({ mode: 'edit', id: row.id })
   }
 
+  async function deleteEvent(row) {
+    if (!window.confirm(`Delete ${row.name}?`)) return
+    try {
+      await apiRequest(`/events/${row.id}/`, { method: 'DELETE' })
+      await fetchEvents()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function fetchNominatimResults(query, limit, signal) {
     const params = new URLSearchParams({
       q: query,
@@ -644,7 +674,7 @@ export function EventsPage() {
         <button type="button" className="btn btn-ghost" onClick={resetFilters}>Reset</button>
       </div>
       {error && <div className="alert-error">{error}</div>}
-      <div className="table-card">
+      <div className="table-card event-table-card">
         <div className="table-card-header">
           <div>
             <div className="table-card-title">Events List</div>
@@ -655,17 +685,31 @@ export function EventsPage() {
           rows={filteredEvents}
           columns={[
             { key: 'name', label: 'Event Name' },
-            { key: 'location', label: 'Location' },
+            { key: 'location', label: 'Location', render: (row) => <span className="event-location-cell" title={row.location}>{row.location || '-'}</span> },
             { key: 'period', label: 'Period', render: formatPeriod },
-            { key: 'description', label: 'Description', render: (row) => row.description || '-' },
-            { key: 'geofence', label: 'Geofence', render: (row) => (row.latitude && row.longitude ? `${row.radius_meter} m` : '-') },
+            { key: 'description', label: 'Description', render: (row) => <span className="event-description-cell" title={row.description}>{row.description || '-'}</span> },
+            {
+              key: 'geofence',
+              label: 'Geofence',
+              render: (row) => (
+                row.latitude && row.longitude
+                  ? (
+                    <span className="event-geofence-cell">
+                      <strong>{Number(row.latitude).toFixed(6)}, {Number(row.longitude).toFixed(6)}</strong>
+                      <span>{row.radius_meter} m</span>
+                    </span>
+                  )
+                  : '-'
+              ),
+            },
             {
               key: 'actions',
               label: 'Actions',
               render: (row) => (
-                <div className="button-row">
-                  <Link className="btn btn-small btn-ocean" to={`/events/${row.id}`}>View</Link>
-                  <button type="button" className="btn btn-small btn-ghost" onClick={() => openEdit(row)}>Edit</button>
+                <div className="button-row event-action-row">
+                  <Link className="btn btn-small btn-green" to={`/events/${row.id}`}><Eye size={14} /> View</Link>
+                  <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)}><Edit size={14} /> Edit</button>
+                  <button type="button" className="btn btn-small btn-red" onClick={() => deleteEvent(row)}><Trash2 size={14} /> Delete</button>
                 </div>
               ),
             },
