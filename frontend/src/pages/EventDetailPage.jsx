@@ -9,6 +9,7 @@ import {
   Download,
   Edit,
   Eye,
+  ExternalLink,
   LocateFixed,
   Map as MapIcon,
   QrCode,
@@ -38,6 +39,22 @@ function toNumber(value) {
 function formatCoordinate(value) {
   const number = toNumber(value)
   return number === null ? '-' : number.toFixed(6)
+}
+
+function formatAddress(value) {
+  if (!value) return '-'
+  const seen = new Set()
+  return String(value)
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => {
+      const key = part.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .join(', ')
 }
 
 function formatDisplayDate(value) {
@@ -241,7 +258,7 @@ export function EventDetailPage() {
       zoom: 16,
       pitch: 0,
       bearing: 0,
-      interactive: true,
+      interactive: false,
     })
 
     const marker = new mapboxgl.Marker({ color: '#003B46' })
@@ -252,7 +269,6 @@ export function EventDetailPage() {
       syncRadiusCircle(map, longitude, latitude, event.radius_meter)
     }
 
-    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right')
     map.on('load', drawRadius)
     map.on('style.load', drawRadius)
     map.once('idle', drawRadius)
@@ -393,7 +409,13 @@ export function EventDetailPage() {
       title: typeof item === 'string' ? 'QR Code' : item.title,
       qr: qrUrl,
       filename: typeof item === 'string' ? 'qr-code.png' : item.filename,
+      url: typeof item === 'string' ? '' : item.url,
     })
+  }
+
+  function openQrForm(url) {
+    if (!url) return
+    window.open(`${window.location.origin}${url}`, '_blank', 'noopener,noreferrer')
   }
 
   async function downloadQr(qrUrl, filename) {
@@ -467,11 +489,12 @@ export function EventDetailPage() {
   if (!event) return <div className="panel">Loading event</div>
 
   const publicLinks = [
-    { title: 'Visitor QR (Malaysian)', caption: 'For Malaysian visitors', qr: event.visitor_qr_url, filename: 'visitor-malaysian-qr.png' },
-    { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png' },
-    { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png' },
+    { title: 'Visitor QR (Malaysian)', caption: 'For Malaysian visitors', qr: event.visitor_qr_url, filename: 'visitor-malaysian-qr.png', url: `/visitor-attendance/${id}` },
+    { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png', url: `/staff-attendance/${id}` },
+    { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png', url: `/passport-attendance/${id}` },
   ]
   const totalAttendance = staffAttendance.length + visitorAttendance.length + passportAttendance.length + assignmentAttendance.length
+  const displayLocation = formatAddress(event.location)
 
   return (
     <>
@@ -483,7 +506,6 @@ export function EventDetailPage() {
             <div className="event-view-icon"><CalendarDays size={19} /></div>
             <div>
               <h1>{event.name}</h1>
-              <p>{event.location}</p>
             </div>
           </div>
           <div className="event-radius-pill"><LocateFixed size={15} /> Radius: {event.radius_meter}m</div>
@@ -500,7 +522,7 @@ export function EventDetailPage() {
 
           <section>
             <div className="event-view-section-label">Location</div>
-            <InfoBlock label="Venue" value={event.location || '-'} strong />
+            <InfoBlock label="Venue" value={displayLocation} strong />
             <InfoBlock label="Latitude" value={formatCoordinate(event.latitude)} />
             <InfoBlock label="Longitude" value={formatCoordinate(event.longitude)} />
           </section>
@@ -750,6 +772,7 @@ export function EventDetailPage() {
               </div>
             </div>
             <div className="modal-footer">
+              {qrModal.url && <button type="button" className="btn btn-blue" onClick={() => openQrForm(qrModal.url)}><ExternalLink size={15} /> Open Form</button>}
               <button type="button" className="btn btn-ocean" onClick={() => downloadQr(qrModal.qr, qrModal.filename)}><Download size={15} /> Download</button>
               <button type="button" className="btn btn-ghost" onClick={() => setQrModal(null)}>Close</button>
             </div>

@@ -13,6 +13,12 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = "__all__"
+        read_only_fields = (
+            "visitor_qr_code",
+            "staff_qr_code",
+            "passport_qr_code",
+            "created_at",
+        )
 
     def get_visitor_qr_url(self, obj):
         request = self.context.get("request")

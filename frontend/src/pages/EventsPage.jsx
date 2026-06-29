@@ -43,6 +43,19 @@ const emptyEvent = {
   radius_meter: 100,
 }
 
+const eventPayloadFields = [
+  'name',
+  'location',
+  'start_date',
+  'end_date',
+  'start_time',
+  'end_time',
+  'description',
+  'latitude',
+  'longitude',
+  'radius_meter',
+]
+
 function toNumber(value) {
   const number = Number(value)
   return Number.isFinite(number) ? number : null
@@ -161,6 +174,22 @@ function formatPeriod(row) {
   )
 }
 
+function formatAddress(value) {
+  if (!value) return ''
+  const seen = new Set()
+  return String(value)
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => {
+      const key = part.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .join(', ')
+}
+
 function localAddressSuggestions(query) {
   const normalizedQuery = query.toLowerCase()
   return LOCAL_ADDRESS_SUGGESTIONS.filter((place) => {
@@ -178,7 +207,7 @@ function formatNominatimAddress(item) {
   const state = address.state || ''
   const postcode = address.postcode || ''
 
-  return [buildingName, road, suburb, city, state, postcode, 'Malaysia'].filter(Boolean).join(', ') || item.display_name || ''
+  return formatAddress([buildingName, road, suburb, city, state, postcode, 'Malaysia'].filter(Boolean).join(', ') || item.display_name || '')
 }
 
 function formatDateDisplay(value) {
@@ -552,7 +581,7 @@ export function EventsPage() {
     return (data.features || []).map((feature) => ({
       id: feature.id,
       text: feature.text || feature.place_name?.split(',')[0] || '',
-      place_name: feature.place_name || '',
+      place_name: formatAddress(feature.place_name || ''),
       center: feature.geometry?.coordinates || feature.center,
     }))
   }
@@ -617,10 +646,12 @@ export function EventsPage() {
   async function saveEvent(event) {
     event.preventDefault()
     const payload = Object.fromEntries(
-      Object.entries(form).map(([key, value]) => {
+      eventPayloadFields.map((key) => {
+        const value = form[key]
         if (value === '') return [key, null]
         if (key === 'latitude' || key === 'longitude') return [key, Number(value)]
         if (key === 'radius_meter') return [key, Number(value) || 100]
+        if (key === 'location') return [key, formatAddress(value)]
         return [key, value]
       }),
     )
@@ -685,7 +716,7 @@ export function EventsPage() {
           rows={filteredEvents}
           columns={[
             { key: 'name', label: 'Event Name' },
-            { key: 'location', label: 'Location', render: (row) => <span className="event-location-cell" title={row.location}>{row.location || '-'}</span> },
+            { key: 'location', label: 'Location', render: (row) => <span className="event-location-cell" title={formatAddress(row.location)}>{formatAddress(row.location) || '-'}</span> },
             { key: 'period', label: 'Period', render: formatPeriod },
             { key: 'description', label: 'Description', render: (row) => <span className="event-description-cell" title={row.description}>{row.description || '-'}</span> },
             {
