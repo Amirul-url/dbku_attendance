@@ -840,19 +840,22 @@ h1 {
 }
 
 .event-period-cell,
-.event-geofence-cell {
+.event-geofence-cell,
+.event-timestamp-cell {
   display: grid;
   gap: 6px;
   line-height: 1.35;
 }
 
 .event-period-cell strong,
-.event-geofence-cell strong {
+.event-geofence-cell strong,
+.event-timestamp-cell strong {
   color: #071d26;
   font-size: 12.5px;
 }
 
-.event-period-cell span {
+.event-period-cell span,
+.event-timestamp-cell span {
   color: var(--muted);
   font-size: 12px;
 }
@@ -2390,6 +2393,46 @@ input:focus {
   font-weight: 800;
 }
 
+.public-success-modal {
+  width: min(460px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 34px 30px 28px;
+  text-align: center;
+}
+
+.public-success-icon {
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e6f8ec;
+  color: #1f8a37;
+}
+
+.public-success-modal h2 {
+  margin: 4px 0 0;
+  color: #071d26;
+  font-size: 24px;
+}
+
+.public-success-modal p {
+  margin: 0;
+  color: #52677c;
+  line-height: 1.5;
+}
+
+.public-success-note {
+  font-weight: 800;
+  color: #003B46 !important;
+}
+
+.public-success-modal .btn {
+  margin-top: 6px;
+}
+
 .event-view-card {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -2608,6 +2651,47 @@ input:focus {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.visitor-attendance-modal {
+  width: min(685px, 100%);
+}
+
+.visitor-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 16px;
+}
+
+.visitor-modal-grid .compact-field input[readonly] {
+  background: #f5f8f9;
+  color: #5c8390;
+}
+
+.visitor-modal-grid .compact-field input,
+.visitor-modal-grid .compact-field select {
+  min-height: 46px;
+  border-radius: 10px;
+}
+
+.visitor-phone-input {
+  grid-template-columns: minmax(180px, 0.75fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.visitor-modal-grid .visitor-phone-input input,
+.visitor-modal-grid .visitor-phone-input .public-country-trigger {
+  min-height: 46px;
+  height: 46px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.visitor-modal-grid .visitor-phone-input .public-country-menu input {
+  min-height: 42px;
+  height: 42px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 
 .attendance-records-header {
@@ -3019,5 +3103,13 @@ input:focus {
   .public-entry-form .primary-button {
     width: 100%;
     min-height: 62px;
+  }
+
+  .visitor-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .visitor-phone-input {
+    grid-template-columns: 1fr;
   }
 }

@@ -224,6 +224,10 @@ function useEvent(eventId) {
   return { event, error }
 }
 
+function normalizeCoordinate(value) {
+  return Number(Number(value).toFixed(6))
+}
+
 async function withLocation(callback) {
   if (!navigator.geolocation) {
     throw new Error('Please enable location/GPS and try again.')
@@ -236,12 +240,28 @@ async function withLocation(callback) {
     })
   })
   return callback({
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
+    latitude: normalizeCoordinate(position.coords.latitude),
+    longitude: normalizeCoordinate(position.coords.longitude),
   })
 }
 
-function PublicFormShell({ type, title, subtitle, event, children, message, error }) {
+function SuccessModal({ message, onClose }) {
+  if (!message) return null
+
+  return (
+    <div className="modal-overlay open">
+      <div className="modal-box public-success-modal">
+        <div className="public-success-icon"><CheckCircle2 size={34} /></div>
+        <h2>Attendance Registered</h2>
+        <p>{message}</p>
+        <p className="public-success-note">Thank you. You may now close this tab or browser.</p>
+        <button type="button" className="btn btn-ocean" onClick={onClose}>Close Message</button>
+      </div>
+    </div>
+  )
+}
+
+function PublicFormShell({ type, title, subtitle, event, children, message, onDismissMessage, error }) {
   return (
     <div className="public-attendance-screen">
       <main className="public-attendance-wrap">
@@ -257,10 +277,10 @@ function PublicFormShell({ type, title, subtitle, event, children, message, erro
             {children}
             <div className="gps-note"><MapPin size={17} /> Location access is required to verify you are within the allowed radius. Please allow location access when prompted.</div>
             {error && <div className="alert-error">{error}</div>}
-            {message && <div className="alert-success"><CheckCircle2 size={18} /> {message}</div>}
           </div>
         </section>
       </main>
+      <SuccessModal message={message} onClose={onDismissMessage} />
     </div>
   )
 }
@@ -297,7 +317,7 @@ export function StaffAttendanceFormPage() {
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
   return (
-    <PublicFormShell type="Staff" title="Attendance Registration" subtitle="Fill in your details to register attendance for this event" event={event} error={error} message={message}>
+    <PublicFormShell type="Staff" title="Attendance Registration" subtitle="Fill in your details to register attendance for this event" event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="e.g. John Doe" required /></PublicField>
         <PublicField index="2" label="Employee ID" icon={ClipboardCheck}><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} placeholder="e.g. DBKU0001" required /></PublicField>
@@ -351,7 +371,7 @@ export function VisitorAttendanceFormPage() {
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
   return (
-    <PublicFormShell type="Visitor" title="Attendance Registration" subtitle="Fill in your details to register attendance for this event" event={event} error={error} message={message}>
+    <PublicFormShell type="Visitor" title="Attendance Registration" subtitle="Fill in your details to register attendance for this event" event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="e.g. John Doe" required /></PublicField>
         <PublicField index="2" label="Phone Number" icon={Phone}><PhoneNumberSelectInput value={form.phone_number} onChange={(value) => update('phone_number', value)} required /></PublicField>
@@ -428,7 +448,7 @@ export function PassportAttendanceFormPage() {
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
   return (
-    <PublicFormShell type="Non-Malaysian Visitor" title="Attendance Registration" subtitle="Scan passport details or enter them manually to register attendance" event={event} error={error} message={message}>
+    <PublicFormShell type="Non-Malaysian Visitor" title="Attendance Registration" subtitle="Scan passport details or enter them manually to register attendance" event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Passport Image" icon={ClipboardCheck}><input type="file" accept="image/*" capture="environment" onChange={uploadPassportImage} /></PublicField>
         {ocrNote && <div className="requirement-box">{ocrNote}</div>}
@@ -487,7 +507,7 @@ export function AssignmentAttendanceFormPage() {
   if (!assignment && !error) return <div className="screen-center"><div className="panel">Loading assignment</div></div>
 
   return (
-    <PublicFormShell type="Assignment" title={assignment?.task_title || 'Assignment Attendance'} subtitle={assignment?.staff_name || 'Register assigned task attendance'} event={event} error={error} message={message}>
+    <PublicFormShell type="Assignment" title={assignment?.task_title || 'Assignment Attendance'} subtitle={assignment?.staff_name || 'Register assigned task attendance'} event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>
         <PublicField index="2" label="Staff ID" icon={ClipboardCheck}><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} required /></PublicField>
