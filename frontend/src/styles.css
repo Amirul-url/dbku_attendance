@@ -2655,6 +2655,11 @@ input:focus {
 
 .visitor-attendance-modal {
   width: min(685px, 100%);
+  overflow: visible;
+}
+
+.visitor-attendance-modal .modal-body {
+  overflow: visible;
 }
 
 .visitor-modal-grid {

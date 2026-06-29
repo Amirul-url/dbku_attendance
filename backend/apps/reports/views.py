@@ -28,8 +28,21 @@ def _time(value):
     return value.strftime("%H:%M:%S") if value else ""
 
 
+def _timestamp(date_value, time_value):
+    date_text = _date(date_value)
+    time_text = _time(time_value)
+    return f"{date_text} {time_text}".strip()
+
+
 def _phone(value):
     return f"'{value}" if value else ""
+
+
+def _visitor_phone(value):
+    digits = "".join(character for character in str(value or "") if character.isdigit())
+    if digits.startswith("60"):
+        return f"Malaysia +60 {digits[2:]}"
+    return digits
 
 
 def _additional_fields_text(extra_data):
@@ -259,18 +272,17 @@ class VisitorAttendanceCsvExportView(BaseCsvExportView):
         event = self.get_event(event_id)
         response = _csv_response(f"{event.name}_visitor_attendance_malaysian.csv")
         writer = csv.writer(response)
-        writer.writerow(["Name", "Phone", "Email", "Organization", "IPv4", "IPv6", "Date", "Time", "Latitude", "Longitude"])
+        writer.writerow(["Name", "Phone", "Email", "Organization", "IPv4", "IPv6", "Timestamp", "Latitude", "Longitude"])
         records = VisitorAttendance.objects.filter(event=event).select_related("visitor").order_by("-date", "-time", "-id")
         for item in records:
             writer.writerow([
                 item.visitor.full_name,
-                _phone(item.visitor.phone_number),
+                _visitor_phone(item.visitor.phone_number),
                 item.visitor.email,
                 item.visitor.organization,
                 item.ipv4_address or "",
                 item.ipv6_address or "",
-                _date(item.date),
-                _time(item.time),
+                _timestamp(item.date, item.time),
                 item.latitude or "",
                 item.longitude or "",
             ])
