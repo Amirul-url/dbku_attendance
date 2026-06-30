@@ -8,6 +8,8 @@ from apps.accounts.otp_delivery import normalize_phone_number
 
 class StaffMemberSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
     password = serializers.CharField(write_only=True, required=False, min_length=8)
     is_staff = serializers.BooleanField(required=False)
     is_superuser = serializers.BooleanField(required=False)
@@ -40,8 +42,27 @@ class StaffMemberSerializer(serializers.ModelSerializer):
         data["is_superuser"] = instance.user.is_superuser
         return data
 
+    def validate_email(self, value):
+        email = (value or "").strip().lower()
+        if not email:
+            return None
+        queryset = StaffMember.objects.filter(email__iexact=email)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("staff member with this email already exists.")
+        return email
+
     def validate_phone_number(self, value):
-        return normalize_phone_number(value)
+        phone_number = normalize_phone_number(value)
+        if not phone_number:
+            return None
+        queryset = StaffMember.objects.filter(phone_number=phone_number)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("staff member with this phone number already exists.")
+        return phone_number
 
     def create(self, validated_data):
         password = validated_data.pop("password", None)
@@ -57,7 +78,7 @@ class StaffMemberSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             user = User.objects.create_user(
                 username=validated_data["staff_id"],
-                email=validated_data["email"],
+                email=validated_data.get("email") or "",
                 password=password,
             )
             user.is_staff = is_staff or is_superuser
@@ -78,7 +99,7 @@ class StaffMemberSerializer(serializers.ModelSerializer):
 
         with transaction.atomic():
             instance.save()
-            instance.user.email = instance.email
+            instance.user.email = instance.email or ""
             instance.user.username = instance.staff_id
             if is_superuser is not None:
                 instance.user.is_superuser = is_superuser

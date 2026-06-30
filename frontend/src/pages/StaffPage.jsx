@@ -173,6 +173,8 @@ function staffFormFromRow(row) {
   return {
     ...emptyStaff,
     ...row,
+    email: row.email || '',
+    phone_number: row.phone_number || '',
     department: departmentValue,
     other_department: departmentValue === 'Others' ? row.department : '',
     password: '',
@@ -258,6 +260,8 @@ export function StaffPage() {
     }
     const payload = {
       ...form,
+      email: form.email.trim(),
+      phone_number: form.phone_number || null,
       department: form.department === 'Others' ? form.other_department : form.department,
     }
     delete payload.confirm_password
@@ -369,7 +373,7 @@ export function StaffPage() {
                 <label className="compact-field"><span>Full Name</span><input value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></label>
                 <label className="compact-field"><span>Staff ID</span><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} required /></label>
               </div>
-              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></label>
+              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} /></label>
               <label className="compact-field"><span>WhatsApp Number</span><PhoneNumberSelectInput value={form.phone_number || ''} onChange={(value) => update('phone_number', value)} /></label>
 
               <div className="form-section-title">Department & Access</div>

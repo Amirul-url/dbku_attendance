@@ -7,9 +7,27 @@ import { apiRequest } from '../api/client.js'
 const departmentOptions = [
   'Administration (ADM)',
   'Internal Audit (AUD)',
+  'Building (BLG)',
+  'Community Development & Services (CDS)',
+  'Contract and Procurement (COP)',
+  'Committee Secretariat (CTS)',
+  'Engineering Project (ENG)',
+  'Enforcement and Security (ENS)',
+  'Health and Environment (ENV)',
+  'Finance (FIN)',
+  'Geoinformation and Property Management (GPM)',
   'Human Resource Management (HRM)',
   'Information and Communication Technology (ICT)',
-  'Finance (FIN)',
+  'Infrastructure Maintenance (IMT)',
+  'Information Resource (IRD)',
+  'Legal Affairs (LAW)',
+  'Licensing (LES)',
+  'Landscape and Planning (LNP)',
+  'Mechanical and Electrical (MNE)',
+  'Public Relations (PRD)',
+  'Special Project & Public Facility (SPF)',
+  'Transformation and Innovation (TRI)',
+  'Valuation and Taxation (VAL)',
   'Others',
 ]
 
@@ -306,7 +324,7 @@ export function StaffAttendanceFormPage() {
         method: 'POST',
         body: JSON.stringify({ ...form, department, event: eventId, ...coords }),
       }))
-      setMessage('Attendance submitted successfully.')
+      setMessage('Staff attendance registered successfully.')
       setForm({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', other_department: '' })
     } catch (err) {
       setError(err.message)

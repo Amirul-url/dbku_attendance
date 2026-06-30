@@ -22,7 +22,7 @@ class StaffMember(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="staff_profile")
     full_name = models.CharField(max_length=150)
     staff_id = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     department = models.CharField(max_length=100)
     registration_method = models.CharField(
