@@ -93,7 +93,81 @@ http://localhost:8000/api
 - `/api/reports/events/<event_id>/export/passport/`
 - `/api/reports/events/<event_id>/export/assignment/`
 
-## Coolify Deployment Shape
+## Coolify Deployment
+
+This repository includes `docker-compose.coolify.yml` for a production-style Coolify stack:
+
+- `frontend` from `frontend/Dockerfile`
+- `backend` from `backend/Dockerfile`
+- `postgres` using `postgres:18-alpine`
+
+In Coolify:
+
+1. Create a new Project and Environment.
+2. Add a new resource from the Git repository.
+3. Choose Docker Compose deployment and set the compose file to:
+
+```text
+docker-compose.coolify.yml
+```
+
+4. Assign domains after Coolify loads the services:
+
+```text
+frontend -> container port 80
+backend  -> container port 8000
+postgres -> no public domain / no public port
+```
+
+Example domain shape:
+
+```text
+FRONTEND_URL=https://attendance.petradigital.my
+VITE_API_BASE_URL=https://attendance-api.petradigital.my/api
+```
+
+5. Fill the required environment variables in Coolify.
+
+Required:
+
+```text
+POSTGRES_PASSWORD=<strong-password>
+SECRET_KEY=<strong-django-secret-key>
+ALLOWED_HOSTS=attendance-api.petradigital.my
+CSRF_TRUSTED_ORIGINS=https://attendance.petradigital.my,https://attendance-api.petradigital.my
+CORS_ALLOWED_ORIGINS=https://attendance.petradigital.my
+FRONTEND_URL=https://attendance.petradigital.my
+VITE_API_BASE_URL=https://attendance-api.petradigital.my/api
+VITE_MAPBOX_TOKEN=<mapbox-public-token>
+```
+
+Recommended first deploy admin:
+
+```text
+SEED_ADMIN_USERNAME=admin
+SEED_ADMIN_PASSWORD=<temporary-admin-password>
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_FULL_NAME=System Admin
+SEED_ADMIN_STAFF_ID=ADMIN001
+SEED_ADMIN_DEPARTMENT=Administration (ADM)
+```
+
+Optional notification variables:
+
+```text
+NOTIFICATION_EMAIL_ENABLED=False
+WHATSAPP_ENABLED=False
+BREVO_API_KEY=
+EVOLUTION_API_URL=
+EVOLUTION_API_KEY=
+EVOLUTION_INSTANCE_NAME=
+```
+
+The backend container runs `migrate` and `collectstatic` on startup. If `SEED_ADMIN_PASSWORD` is set, it also runs `seed_admin`.
+
+PostgreSQL 18 note: the Coolify compose mounts the persistent database volume at `/var/lib/postgresql`, which is the PostgreSQL 18 Docker image's required parent data path.
+
+### Legacy Manual Shape
 
 Use three services:
 
