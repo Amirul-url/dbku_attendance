@@ -210,7 +210,6 @@ export function EventDetailPage() {
   const [mapStyleKey, setMapStyleKey] = useState('streets')
   const [assignmentSearch, setAssignmentSearch] = useState('')
   const [assignmentStatus, setAssignmentStatus] = useState('')
-  const [staffSearch, setStaffSearch] = useState('')
   const [passportSearch, setPassportSearch] = useState('')
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
@@ -468,11 +467,6 @@ export function EventDetailPage() {
     })
   }, [assignmentAttendanceByAssignmentId, assignmentSearch, assignmentStatus, assignments, staffById])
 
-  const filteredStaffAttendance = useMemo(() => {
-    const query = staffSearch.trim().toLowerCase()
-    return staffAttendance.filter((row) => !query || row.full_name?.toLowerCase().includes(query) || row.staff_id?.toLowerCase().includes(query))
-  }, [staffAttendance, staffSearch])
-
   const filteredPassportAttendance = useMemo(() => {
     const query = passportSearch.trim().toLowerCase()
     return passportAttendance.filter((row) => {
@@ -617,31 +611,6 @@ export function EventDetailPage() {
                 </div>
               ),
             },
-          ]}
-        />
-      </AttendanceSection>
-
-      <AttendanceSection
-        title="Employee / Staff Attendance"
-        searchValue={staffSearch}
-        onSearch={setStaffSearch}
-        searchPlaceholder="Search staff name"
-        selectOptions={[{ value: '', label: 'All Departments' }]}
-        onExport={() => downloadApiFile(`/reports/events/${id}/export/staff/`)}
-      >
-        <DataTable
-          rows={filteredStaffAttendance}
-          columns={[
-            { key: 'full_name', label: 'Name' },
-            { key: 'staff_id', label: 'Employee ID' },
-            { key: 'email', label: 'Email' },
-            { key: 'phone_number', label: 'Phone' },
-            { key: 'department', label: 'Department' },
-            { key: 'ipv4_address', label: 'IPv4', render: (row) => row.ipv4_address || '-' },
-            { key: 'ipv6_address', label: 'IPv6', render: (row) => row.ipv6_address || '-' },
-            { key: 'timestamp', label: 'Timestamp', render: renderTimestamp },
-            { key: 'latitude', label: 'Latitude', render: (row) => formatCoordinate(row.latitude) },
-            { key: 'longitude', label: 'Longitude', render: (row) => formatCoordinate(row.longitude) },
           ]}
         />
       </AttendanceSection>
