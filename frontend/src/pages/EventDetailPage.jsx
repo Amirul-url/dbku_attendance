@@ -683,7 +683,7 @@ export function EventDetailPage() {
   if (!event) return <div className="panel">Loading event</div>
 
   const publicLinks = [
-    { title: 'Visitor QR (Malaysian)', caption: 'For Malaysian visitors', qr: event.visitor_qr_url, filename: 'visitor-malaysian-qr.png', url: `/visitor-attendance/${id}` },
+    { title: 'Visitor QR (Malaysian)', caption: 'For Malaysian visitors', qr: event.visitor_qr_url, filename: 'visitor-malaysian-qr.png', url: `/visitor-attendance/${id}`, attendancePath: `/events/${id}/visitors` },
     { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png', url: `/staff-attendance/${id}` },
     { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png', url: `/passport-attendance/${id}` },
   ]
@@ -760,6 +760,7 @@ export function EventDetailPage() {
                 <div className="button-row">
                   <button type="button" className="btn btn-small btn-blue" onClick={() => openQr(item)}><Eye size={14} /></button>
                   <button type="button" className="btn btn-small btn-ocean" onClick={() => downloadQr(item.qr, item.filename)}><Download size={14} /></button>
+                  {item.attendancePath && <Link className="btn btn-small btn-green" to={item.attendancePath}><Users size={14} /> List</Link>}
                 </div>
               </div>
             ))}
