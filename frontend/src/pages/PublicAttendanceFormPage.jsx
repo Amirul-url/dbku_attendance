@@ -603,7 +603,6 @@ export function PassportAttendanceFormPage() {
       error={error}
       message={message}
       onDismissMessage={() => setMessage('')}
-      showEvent={false}
       showGpsNote={false}
     >
       <form className="passport-workflow-form" onSubmit={submit}>
