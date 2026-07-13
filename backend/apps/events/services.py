@@ -1,10 +1,4 @@
-from apps.core.qr import generate_assignment_qr_code
-
-
-def ensure_assignment_qr_code(assignment):
-    if not assignment.qr_code:
-        generate_assignment_qr_code(assignment)
-    return assignment
+from apps.core.qr import ensure_assignment_qr_code
 
 
 def serialize_assignment_conflicts(conflicts):

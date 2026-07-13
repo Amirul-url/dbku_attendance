@@ -29,6 +29,20 @@ def generate_event_qr_codes(event):
     event.save(update_fields=update_fields)
 
 
+def file_exists(file_field):
+    try:
+        return bool(file_field and file_field.name and file_field.storage.exists(file_field.name))
+    except Exception:
+        return False
+
+
+def ensure_event_qr_codes(event):
+    fields = ("visitor_qr_code", "staff_qr_code", "passport_qr_code")
+    if any(not file_exists(getattr(event, field_name)) for field_name in fields):
+        generate_event_qr_codes(event)
+    return event
+
+
 def generate_assignment_qr_code(assignment):
     save_qr_image(
         assignment,
@@ -37,3 +51,9 @@ def generate_assignment_qr_code(assignment):
         public_url(f"assignment-attendance/{assignment.id}"),
     )
     assignment.save(update_fields=["qr_code"])
+
+
+def ensure_assignment_qr_code(assignment):
+    if not file_exists(assignment.qr_code):
+        generate_assignment_qr_code(assignment)
+    return assignment

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.qr import generate_event_qr_codes
+from apps.core.qr import ensure_assignment_qr_code, ensure_event_qr_codes, generate_event_qr_codes
 
 from .models import Event, EventAssignment
 
@@ -21,14 +21,17 @@ class EventSerializer(serializers.ModelSerializer):
         )
 
     def get_visitor_qr_url(self, obj):
+        ensure_event_qr_codes(obj)
         request = self.context.get("request")
         return request.build_absolute_uri(obj.visitor_qr_code.url) if request and obj.visitor_qr_code else ""
 
     def get_staff_qr_url(self, obj):
+        ensure_event_qr_codes(obj)
         request = self.context.get("request")
         return request.build_absolute_uri(obj.staff_qr_code.url) if request and obj.staff_qr_code else ""
 
     def get_passport_qr_url(self, obj):
+        ensure_event_qr_codes(obj)
         request = self.context.get("request")
         return request.build_absolute_uri(obj.passport_qr_code.url) if request and obj.passport_qr_code else ""
 
@@ -66,5 +69,6 @@ class EventAssignmentSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_qr_url(self, obj):
+        ensure_assignment_qr_code(obj)
         request = self.context.get("request")
         return request.build_absolute_uri(obj.qr_code.url) if request and obj.qr_code else ""

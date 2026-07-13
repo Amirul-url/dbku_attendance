@@ -1,3 +1,4 @@
+import os
 import shutil
 import tempfile
 
@@ -6,6 +7,7 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.events.models import Event
 from apps.staff.models import StaffMember
 
 
@@ -55,3 +57,30 @@ class EventPermissionTests(APITestCase):
 
         self.assertEqual(admin_response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(admin_response.data["name"], "Permission Event")
+
+    def test_missing_qr_media_is_regenerated_on_event_detail(self):
+        payload = {
+            "name": "Regenerate QR Event",
+            "location": "DBKU",
+            "latitude": "1.000000",
+            "longitude": "110.000000",
+            "radius_meter": 100,
+        }
+
+        self.client.force_authenticate(self.admin_user)
+        with override_settings(MEDIA_ROOT=self.media_root):
+            response = self.client.post("/api/events/", payload, format="json")
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            event = Event.objects.get(id=response.data["id"])
+            qr_path = event.visitor_qr_code.path
+            self.assertTrue(os.path.exists(qr_path))
+            os.remove(qr_path)
+            self.assertFalse(os.path.exists(qr_path))
+
+            detail_response = self.client.get(f"/api/events/{event.id}/")
+            self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+
+            event.refresh_from_db()
+            self.assertTrue(os.path.exists(event.visitor_qr_code.path))
+            self.assertTrue(detail_response.data["visitor_qr_url"])
