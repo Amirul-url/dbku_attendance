@@ -18,7 +18,9 @@ class VisitorSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         email = validated_data["email"].strip().lower()
-        visitor, _ = Visitor.objects.get_or_create(email=email, defaults={**validated_data, "email": email})
+        visitor = Visitor.objects.filter(email=email).order_by("id").first()
+        if visitor is None:
+            visitor = Visitor(email=email)
         for field, value in {**validated_data, "email": email}.items():
             setattr(visitor, field, value)
         visitor.save()
@@ -75,6 +77,7 @@ class VisitorAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = VisitorAttendance
         fields = "__all__"
+        validators = []
 
     def get_distance_meter(self, obj):
         return getattr(obj, "distance_meter", None)
@@ -82,6 +85,9 @@ class VisitorAttendanceSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         event = attrs.get("event", getattr(self.instance, "event", None))
         if event:
+            visitor = attrs.get("visitor", getattr(self.instance, "visitor", None))
+            if visitor and VisitorAttendance.objects.filter(visitor=visitor, event=event).exclude(pk=getattr(self.instance, "pk", None)).exists():
+                raise serializers.ValidationError("Attendance already registered for this visitor and event.")
             attrs["distance_meter"] = validate_event_geofence(event, attrs.get("latitude"), attrs.get("longitude"))
         return attrs
 

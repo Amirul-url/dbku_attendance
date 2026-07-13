@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 
 from apps.events.models import Event
 from apps.staff.models import StaffMember
+from apps.attendance.models import Visitor
 
 
 class EventPermissionTests(APITestCase):
@@ -84,3 +85,32 @@ class EventPermissionTests(APITestCase):
             event.refresh_from_db()
             self.assertTrue(os.path.exists(event.visitor_qr_code.path))
             self.assertTrue(detail_response.data["visitor_qr_url"])
+
+    def test_duplicate_visitor_attendance_returns_validation_error(self):
+        with override_settings(MEDIA_ROOT=self.media_root):
+            event = Event.objects.create(
+                name="Duplicate Visitor Event",
+                location="DBKU",
+                latitude="1.000000",
+                longitude="110.000000",
+                radius_meter=100,
+            )
+        visitor = Visitor.objects.create(
+            full_name="Visitor One",
+            phone_number="60123456789",
+            email="visitor@example.com",
+            organization="Visitor / Guest",
+        )
+        payload = {
+            "visitor": visitor.id,
+            "event": event.id,
+            "latitude": "1.000000",
+            "longitude": "110.000000",
+        }
+
+        first_response = self.client.post("/api/visitor-attendance/", payload, format="json")
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+
+        duplicate_response = self.client.post("/api/visitor-attendance/", payload, format="json")
+        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Attendance already registered", str(duplicate_response.data))

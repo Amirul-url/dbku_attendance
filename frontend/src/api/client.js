@@ -6,7 +6,13 @@ export function getAccessToken() {
 
 export function formatApiError(data, fallback = 'Something went wrong. Please try again.') {
   if (!data) return fallback
-  if (typeof data === 'string') return data
+  if (typeof data === 'string') {
+    if (/<\/?[a-z][\s\S]*>/i.test(data)) {
+      const title = data.match(/<title>(.*?)<\/title>/i)?.[1] || data.match(/<h1>(.*?)<\/h1>/i)?.[1]
+      return title ? `${title}. Please try again or contact the administrator.` : fallback
+    }
+    return data
+  }
   if (data.detail) return data.detail
   if (data.non_field_errors?.length) return data.non_field_errors[0]
 
