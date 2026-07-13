@@ -11,7 +11,7 @@ def staff_member_list(search=None, department=None):
 
 
 def staff_member_count():
-    return StaffMember.objects.count()
+    return StaffMember.objects.exclude(role=StaffMember.ROLE_SUPERADMIN).count()
 
 
 def staff_member_by_staff_id(staff_id):

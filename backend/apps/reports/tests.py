@@ -8,6 +8,23 @@ from apps.staff.models import StaffMember
 
 
 class ReportExportTests(APITestCase):
+    def test_dashboard_total_staff_excludes_superadmins(self):
+        superadmin_user = User.objects.create_user(
+            username="SUPER001",
+            email="superadmin@example.com",
+            is_staff=True,
+            is_superuser=True,
+        )
+        staff_profile = superadmin_user.staff_profile
+        staff_profile.role = StaffMember.ROLE_SUPERADMIN
+        staff_profile.save(update_fields=["role"])
+
+        self.client.force_authenticate(superadmin_user)
+        response = self.client.get("/api/reports/dashboard/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["total_staff"], 0)
+
     def test_authenticated_user_can_export_staff_attendance_csv(self):
         report_user = User.objects.create_user(username="REPORT001", email="report@example.com")
         staff_user = User.objects.create_user(username="EMP020", email="export-staff@example.com")
