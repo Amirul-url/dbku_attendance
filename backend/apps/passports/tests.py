@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 
 from apps.events.models import Event
@@ -67,3 +70,13 @@ class PassportAttendanceSubmitApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(PassportAttendance.objects.count(), 1)
+
+    @patch("apps.passports.views.process_passport_upload")
+    def test_ocr_preview_returns_json_error_when_processing_fails(self, mocked_process):
+        mocked_process.side_effect = ValueError("OpenCV is not installed.")
+        image = SimpleUploadedFile("passport.jpg", b"fake-image", content_type="image/jpeg")
+
+        response = self.client.post("/api/passport-visitors/ocr-preview/", {"image": image}, format="multipart")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "OpenCV is not installed.")

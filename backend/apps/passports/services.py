@@ -12,6 +12,11 @@ from apps.events.models import Event
 
 from .models import PassportAttendance, PassportVisitor
 
+TESSERACT_CANDIDATE_PATHS = (
+    Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+    Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+)
+
 COUNTRY_CODE_MAP = {
     "MYS": "Malaysia",
     "IDN": "Indonesia",
@@ -27,6 +32,13 @@ COUNTRY_CODE_MAP = {
     "GBR": "United Kingdom",
     "AUS": "Australia",
 }
+
+
+def _configure_tesseract(pytesseract_module):
+    for candidate in TESSERACT_CANDIDATE_PATHS:
+        if candidate.exists():
+            pytesseract_module.pytesseract.tesseract_cmd = str(candidate)
+            return
 
 
 def _clean_text(value):
@@ -245,7 +257,8 @@ def preprocess_image(input_path, output_path):
     try:
         import cv2
     except ImportError:
-        raise ValueError("OpenCV is not installed in this environment. Install backend requirements to enable OCR.")
+        output_path.write_bytes(input_path.read_bytes())
+        return "OCR image preprocessing unavailable because OpenCV is not installed."
 
     image = cv2.imread(str(input_path))
     if image is None:
@@ -283,6 +296,7 @@ def process_passport_upload(uploaded_file):
     try:
         import pytesseract
 
+        _configure_tesseract(pytesseract)
         raw_text = pytesseract.image_to_string(str(processed_path))
     except Exception as exc:
         raw_text = ""

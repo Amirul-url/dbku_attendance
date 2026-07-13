@@ -28,7 +28,10 @@ class PassportVisitorViewSet(ModelViewSet):
         image = request.FILES.get("image")
         if not image:
             return Response({"error": "Please choose a passport image first."}, status=400)
-        return Response(process_passport_upload(image))
+        try:
+            return Response(process_passport_upload(image))
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=400)
 
 
 class PassportAttendanceViewSet(ModelViewSet):
