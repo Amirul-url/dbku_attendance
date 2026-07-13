@@ -745,7 +745,7 @@ export function PassportAttendanceFormPage() {
           </div>
           <div className="passport-form-grid">
             <label className="compact-field"><span>First Name</span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" /></label>
-            <label className="compact-field"><span>Last Name</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name / BIN / BINTI section" /></label>
+            <label className="compact-field"><span>Last Name</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name" /></label>
             <label className="compact-field"><span>Date of Birth</span><input type="date" value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} /></label>
             <label className="compact-field"><span>Sex</span><select value={form.sex} onChange={(e) => update('sex', e.target.value)}><option value="">-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
             <label className="compact-field"><span>Date of Issue</span><input type="date" value={form.date_of_issue} onChange={(e) => update('date_of_issue', e.target.value)} /></label>
