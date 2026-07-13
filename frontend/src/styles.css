@@ -3625,11 +3625,21 @@ input:focus {
 
 .visitor-attendance-modal {
   width: min(900px, calc(100vw - 48px));
-  overflow: visible;
+  display: flex;
+  max-height: calc(100vh - 56px);
+  overflow: hidden;
+  flex-direction: column;
 }
 
 .visitor-attendance-modal .modal-body {
-  overflow: visible;
+  max-height: none;
+  overflow: auto;
+  padding-bottom: 22px;
+}
+
+.visitor-attendance-modal .modal-footer {
+  flex-shrink: 0;
+  padding: 16px 24px 18px;
 }
 
 .visitor-modal-grid {
