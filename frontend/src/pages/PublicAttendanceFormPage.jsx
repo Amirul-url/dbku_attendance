@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Building2, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, LocateFixed, Mail, MapPin, Phone, ShieldCheck, User } from 'lucide-react'
+import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, User } from 'lucide-react'
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
@@ -302,7 +302,7 @@ function SuccessModal({ message, onClose }) {
   )
 }
 
-function PublicFormShell({ type, title, subtitle, event, children, message, onDismissMessage, error }) {
+function PublicFormShell({ type, title, subtitle, event, children, message, onDismissMessage, error, showEvent = true, showGpsNote = true }) {
   return (
     <div className="public-attendance-screen">
       <main className="public-attendance-wrap">
@@ -314,9 +314,9 @@ function PublicFormShell({ type, title, subtitle, event, children, message, onDi
             <p>{subtitle}</p>
           </div>
           <div className="public-attendance-body">
-            <EventInfo event={event} />
+            {showEvent && <EventInfo event={event} />}
             {children}
-            <div className="gps-note"><MapPin size={17} /> Location access is required to verify you are within the allowed radius. Please allow location access when prompted.</div>
+            {showGpsNote && <div className="gps-note"><MapPin size={17} /> Location access is required to verify you are within the allowed radius. Please allow location access when prompted.</div>}
             {error && <div className="alert-error">{error}</div>}
           </div>
         </section>
@@ -433,10 +433,31 @@ export function VisitorAttendanceFormPage() {
 export function PassportAttendanceFormPage() {
   const { eventId } = useParams()
   const { event, error: loadError } = useEvent(eventId)
-  const [form, setForm] = useState({ full_name: '', passport_number: '', country: '', date_of_birth: '', expiry_date: '', gender: '' })
+  const [form, setForm] = useState({
+    passport_type: '',
+    country_code: '',
+    passport_number: '',
+    nationality: '',
+    first_name: '',
+    last_name: '',
+    date_of_birth: '',
+    sex: '',
+    date_of_issue: '',
+    date_of_expiry: '',
+    ocr_raw_text: '',
+  })
+  const [passportFile, setPassportFile] = useState(null)
+  const [passportPreview, setPassportPreview] = useState('')
+  const [ocrStatus, setOcrStatus] = useState('pending verification')
+  const [ocrSource, setOcrSource] = useState('-')
+  const [extraFields, setExtraFields] = useState([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [ocrNote, setOcrNote] = useState('')
+
+  useEffect(() => () => {
+    if (passportPreview) URL.revokeObjectURL(passportPreview)
+  }, [passportPreview])
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -446,9 +467,36 @@ export function PassportAttendanceFormPage() {
     submitEvent.preventDefault()
     setError('')
     setMessage('')
+    const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim()
+    const extraData = Object.fromEntries(
+      extraFields
+        .filter((item) => item.label.trim())
+        .map((item) => [item.label.trim(), item.value.trim()]),
+    )
     try {
       await withLocation(async (coords) => {
-        const visitor = await apiRequest('/passport-visitors/', { method: 'POST', body: JSON.stringify(form) })
+        const visitor = await apiRequest('/passport-visitors/', {
+          method: 'POST',
+          body: JSON.stringify({
+            full_name: fullName || form.passport_number,
+            passport_number: form.passport_number,
+            country: form.nationality || form.country_code,
+            date_of_birth: form.date_of_birth,
+            expiry_date: form.date_of_expiry,
+            gender: form.sex,
+            ocr_raw_text: form.ocr_raw_text,
+            status: ocrStatus,
+            extra_data: {
+              passport_type: form.passport_type,
+              country_code: form.country_code,
+              nationality: form.nationality,
+              first_name: form.first_name,
+              last_name: form.last_name,
+              date_of_issue: form.date_of_issue,
+              ...extraData,
+            },
+          }),
+        })
         return apiRequest('/passport-attendance/', {
           method: 'POST',
           body: JSON.stringify({ passport_visitor: visitor.id, event: eventId, ...coords }),
@@ -460,24 +508,45 @@ export function PassportAttendanceFormPage() {
     }
   }
 
-  async function uploadPassportImage(event) {
+  function choosePassportImage(event) {
     const file = event.target.files?.[0]
     if (!file) return
+    setPassportFile(file)
+    setPassportPreview((current) => {
+      if (current) URL.revokeObjectURL(current)
+      return URL.createObjectURL(file)
+    })
     setError('')
+    setOcrNote('')
+    setOcrSource(file.name)
+    setOcrStatus('pending verification')
+  }
+
+  async function scanPassportImage() {
+    if (!passportFile) {
+      setError('Please upload or capture a passport image first.')
+      return
+    }
     setOcrNote('Scanning passport image...')
     try {
       const body = new FormData()
-      body.append('image', file)
+      body.append('image', passportFile)
       const data = await apiRequest('/passport-visitors/ocr-preview/', { method: 'POST', body })
       setForm((current) => ({
         ...current,
-        full_name: data.full_name || [data.first_name, data.last_name].filter(Boolean).join(' ') || current.full_name,
+        passport_type: data.type || current.passport_type,
+        country_code: data.country_code || current.country_code,
         passport_number: data.passport_number || current.passport_number,
-        country: data.nationality || data.country_code || current.country,
+        nationality: data.nationality || current.nationality,
+        first_name: data.first_name || current.first_name,
+        last_name: data.last_name || current.last_name,
         date_of_birth: data.date_of_birth || current.date_of_birth,
-        expiry_date: data.date_of_expiry || current.expiry_date,
-        gender: data.sex || current.gender,
+        sex: data.sex || current.sex,
+        date_of_issue: data.date_of_issue || current.date_of_issue,
+        date_of_expiry: data.date_of_expiry || current.date_of_expiry,
+        ocr_raw_text: data.raw_text || current.ocr_raw_text,
       }))
+      setOcrStatus(data.status || 'auto-extracted')
       setOcrNote(data.image_quality_note || 'Passport scanned. Please verify the extracted fields before submitting.')
     } catch (err) {
       setOcrNote('')
@@ -485,25 +554,138 @@ export function PassportAttendanceFormPage() {
     }
   }
 
+  function resetPassportImage() {
+    setPassportFile(null)
+    setPassportPreview((current) => {
+      if (current) URL.revokeObjectURL(current)
+      return ''
+    })
+    setOcrSource('-')
+    setOcrStatus('pending verification')
+    setOcrNote('')
+  }
+
+  function resetForm() {
+    resetPassportImage()
+    setExtraFields([])
+    setForm({
+      passport_type: '',
+      country_code: '',
+      passport_number: '',
+      nationality: '',
+      first_name: '',
+      last_name: '',
+      date_of_birth: '',
+      sex: '',
+      date_of_issue: '',
+      date_of_expiry: '',
+      ocr_raw_text: '',
+    })
+  }
+
+  function addExtraField() {
+    setExtraFields((current) => [...current, { id: Date.now(), label: '', value: '' }])
+  }
+
+  function updateExtraField(id, field, value) {
+    setExtraFields((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
+  }
+
   if (loadError) return <div className="screen-center"><div className="alert-error">{loadError}</div></div>
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
   return (
-    <PublicFormShell type="Non-Malaysian Visitor" title="Attendance Registration" subtitle="Scan passport details or enter them manually to register attendance" event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
-      <form className="stack-form public-entry-form" onSubmit={submit}>
-        <PublicField index="1" label="Passport Image" icon={ClipboardCheck}><input type="file" accept="image/*" capture="environment" onChange={uploadPassportImage} /></PublicField>
-        {ocrNote && <div className="requirement-box">{ocrNote}</div>}
-        <PublicField index="2" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>
-        <PublicField index="3" label="Passport Number" icon={ClipboardCheck}><input value={form.passport_number} onChange={(e) => update('passport_number', e.target.value)} required /></PublicField>
-        <div className="form-grid-2">
-          <PublicField index="4" label="Country"><input value={form.country} onChange={(e) => update('country', e.target.value)} /></PublicField>
-          <PublicField index="5" label="Gender"><input value={form.gender} onChange={(e) => update('gender', e.target.value)} /></PublicField>
-        </div>
-        <div className="form-grid-2">
-          <PublicField index="6" label="Date of Birth"><input value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} /></PublicField>
-          <PublicField index="7" label="Expiry Date"><input value={form.expiry_date} onChange={(e) => update('expiry_date', e.target.value)} /></PublicField>
-        </div>
-        <button type="submit" className="primary-button portal-login-button"><CheckCircle2 size={20} /> Submit</button>
+    <PublicFormShell
+      type="Non-Malaysian Attendance"
+      title="Passport Registration Form"
+      subtitle="Upload or capture your passport, review the extracted details, and submit your attendance."
+      event={event}
+      error={error}
+      message={message}
+      onDismissMessage={() => setMessage('')}
+      showEvent={false}
+      showGpsNote={false}
+    >
+      <form className="passport-workflow-form" onSubmit={submit}>
+        <section className="passport-step-card">
+          <div className="passport-step-title"><b>1</b><span>Upload Passport Image</span></div>
+          <div className="passport-upload-box">
+            <div className="passport-upload-actions">
+              <label className="passport-file-button passport-camera-button">
+                <Camera size={20} /> Open Camera
+                <input type="file" accept="image/*" capture="environment" onChange={choosePassportImage} />
+              </label>
+              <label className="passport-file-button">
+                <FileText size={20} /> Choose File
+                <input type="file" accept="image/*" onChange={choosePassportImage} />
+              </label>
+            </div>
+            <div className="passport-file-name"><FileText size={18} /> {passportFile?.name || 'No file selected'}</div>
+            <p>On mobile, "Open Camera" opens the rear camera. Ensure good lighting and align the full passport page.</p>
+            <div className="passport-preview-box">
+              {passportPreview ? <img src={passportPreview} alt="Passport preview" /> : <><ImageIcon size={42} /><span>No image uploaded yet</span></>}
+            </div>
+            <div className="passport-status-row">
+              <span className="passport-chip passport-source-chip">Source: {ocrSource}</span>
+              <span className={`passport-chip ${ocrStatus === 'auto-extracted' ? 'passport-ok-chip' : 'passport-pending-chip'}`}>Status: {ocrStatus}</span>
+            </div>
+            {ocrNote && <div className="requirement-box passport-ocr-note">{ocrNote}</div>}
+            <div className="passport-step-actions">
+              <button type="button" className="btn btn-green" onClick={scanPassportImage}><ScanLine size={18} /> Scan Passport</button>
+              <button type="button" className="btn btn-ghost" onClick={resetPassportImage}>Reset Image</button>
+            </div>
+          </div>
+        </section>
+
+        <section className="passport-step-card">
+          <div className="passport-step-title"><b>2</b><span>Review Extracted Details</span></div>
+          <div className="passport-review-status">Pending Verification</div>
+          <div className="passport-form-grid">
+            <label className="compact-field"><span>Passport Type</span><input value={form.passport_type} onChange={(e) => update('passport_type', e.target.value)} placeholder="e.g. P" /></label>
+            <label className="compact-field"><span>Country Code</span><input value={form.country_code} onChange={(e) => update('country_code', e.target.value)} placeholder="E.G. JPN" /></label>
+          </div>
+          <label className="compact-field"><span>Passport Number *</span><input value={form.passport_number} onChange={(e) => update('passport_number', e.target.value)} placeholder="e.g. AB1234567" required /></label>
+          <label className="compact-field"><span>Nationality</span><input value={form.nationality} onChange={(e) => update('nationality', e.target.value)} placeholder="e.g. Japanese" /></label>
+          <div className="passport-form-grid">
+            <label className="compact-field"><span>First Name</span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" /></label>
+            <label className="compact-field"><span>Last Name</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name / BIN / BINTI section" /></label>
+            <label className="compact-field"><span>Date of Birth</span><input type="date" value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} /></label>
+            <label className="compact-field"><span>Sex</span><select value={form.sex} onChange={(e) => update('sex', e.target.value)}><option value="">-- Select --</option><option value="M">Male</option><option value="F">Female</option><option value="X">Other</option></select></label>
+            <label className="compact-field"><span>Date of Issue</span><input type="date" value={form.date_of_issue} onChange={(e) => update('date_of_issue', e.target.value)} /></label>
+            <label className="compact-field"><span>Date of Expiry</span><input type="date" value={form.date_of_expiry} onChange={(e) => update('date_of_expiry', e.target.value)} /></label>
+          </div>
+          <label className="compact-field"><span>OCR Raw Text</span><textarea rows={5} value={form.ocr_raw_text} onChange={(e) => update('ocr_raw_text', e.target.value)} placeholder="OCR output will appear here." /></label>
+          <p className="passport-helper-text">Keep this text if OCR extraction is incomplete. It helps manual verification and later correction.</p>
+        </section>
+
+        <section className="passport-step-card">
+          <div className="passport-step-title passport-step-title-row">
+            <span><b>3</b> Additional Passport Fields <em>Optional</em><i>{extraFields.length}</i></span>
+            <button type="button" className="btn btn-ghost passport-add-field" onClick={addExtraField}><Plus size={16} /> Add Field</button>
+          </div>
+          {extraFields.length === 0 ? (
+            <div className="passport-empty-extra"><FileText size={20} /> <span>No additional fields added yet.</span><small>Tap "Add Field" to include supplementary passport data.</small></div>
+          ) : (
+            <div className="passport-extra-list">
+              {extraFields.map((item) => (
+                <div className="passport-extra-row" key={item.id}>
+                  <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" />
+                  <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder="Value" />
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="passport-extra-help">Capture supplementary data from the passport such as <code>Height</code>, <code>Place of Birth</code> or <code>Hair Colour</code>. Each entry is stored as a labelled key-value pair.</p>
+        </section>
+
+        <section className="passport-step-card">
+          <div className="passport-step-title"><b>4</b><span>Submit Attendance</span></div>
+          <p className="passport-helper-text">GPS/location access is required before attendance submission.</p>
+          <div className="passport-step-actions">
+            <button type="submit" className="btn btn-green"><Check size={18} /> Submit Attendance</button>
+            <button type="button" className="btn btn-ghost" onClick={resetForm}><RotateCcw size={17} /> Clear Form</button>
+          </div>
+        </section>
       </form>
     </PublicFormShell>
   )

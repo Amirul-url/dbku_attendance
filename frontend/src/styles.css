@@ -3034,6 +3034,297 @@ input:focus {
   font-weight: 800;
 }
 
+.passport-workflow-form {
+  display: grid;
+  gap: 24px;
+}
+
+.passport-step-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(7, 29, 38, 0.08);
+}
+
+.passport-step-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #00584f;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.passport-step-title b {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #108674;
+  color: #fff;
+  font-size: 12px;
+}
+
+.passport-step-title-row {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.passport-step-title-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.passport-step-title-row em,
+.passport-step-title-row i {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: #8a94a4;
+  background: #f7f8fa;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.passport-step-title-row i {
+  border-color: #8ee2d7;
+  color: #007866;
+  background: #dff5f2;
+}
+
+.passport-upload-box {
+  display: grid;
+  gap: 18px;
+  border: 1px dashed #28d0c1;
+  border-radius: 14px;
+  background: #dff5f2;
+  padding: 20px;
+}
+
+.passport-upload-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.passport-file-button {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid #8ee2d7;
+  border-radius: 12px;
+  background: #fff;
+  color: #00584f;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.passport-file-button input {
+  display: none;
+}
+
+.passport-camera-button {
+  border-color: #108674;
+  background: #108674;
+  color: #fff;
+}
+
+.passport-file-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #52677c;
+  font-size: 14px;
+}
+
+.passport-upload-box p,
+.passport-helper-text,
+.passport-extra-help {
+  margin: 0;
+  color: #5f6b7a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.passport-preview-box {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f3f6fa;
+  color: #8a94a4;
+  text-align: center;
+}
+
+.passport-preview-box img {
+  width: 100%;
+  height: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.passport-preview-box span {
+  margin-top: 10px;
+  display: block;
+  color: #52677c;
+}
+
+.passport-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.passport-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.passport-source-chip {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.passport-pending-chip {
+  background: #fef1c7;
+  color: #b45309;
+}
+
+.passport-ok-chip {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.passport-ocr-note {
+  margin: 0;
+}
+
+.passport-step-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.passport-step-actions .btn {
+  min-height: 50px;
+  padding-inline: 18px;
+  font-size: 14px;
+}
+
+.passport-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.passport-step-card .compact-field {
+  gap: 8px;
+}
+
+.passport-step-card .compact-field span {
+  color: #202938;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.passport-step-card .compact-field input,
+.passport-step-card .compact-field select,
+.passport-step-card .compact-field textarea,
+.passport-extra-row input {
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 15px;
+  padding-inline: 16px;
+}
+
+.passport-step-card .compact-field textarea {
+  padding-block: 14px;
+}
+
+.passport-review-status {
+  width: max-content;
+  border: 1px solid #fca5a5;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.passport-add-field {
+  border: 1px solid #8ee2d7;
+  background: #fff;
+  color: #00584f;
+}
+
+.passport-empty-extra {
+  min-height: 138px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: #9aa4b2;
+  text-align: center;
+}
+
+.passport-empty-extra span {
+  color: #8a94a4;
+  font-size: 13px;
+}
+
+.passport-empty-extra small {
+  color: #8a94a4;
+}
+
+.passport-extra-list {
+  display: grid;
+  gap: 10px;
+}
+
+.passport-extra-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.passport-extra-help {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.passport-extra-help code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  color: #003B46;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
 .public-success-modal {
   width: min(460px, 100%);
   display: grid;
@@ -3787,6 +4078,26 @@ input:focus {
     grid-template-columns: 1fr;
     gap: 6px;
     padding: 20px;
+  }
+
+  .passport-step-card,
+  .passport-upload-box {
+    padding: 18px;
+  }
+
+  .passport-upload-actions,
+  .passport-form-grid,
+  .passport-extra-row {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-step-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .passport-preview-box {
+    min-height: 220px;
   }
 
   .public-field input,
