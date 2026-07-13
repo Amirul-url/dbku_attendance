@@ -6,6 +6,7 @@ from rest_framework.test import APITestCase
 from apps.events.models import Event
 
 from .models import PassportAttendance, PassportVisitor
+from .services import extract_passport_fields
 
 
 class PassportAttendanceSubmitApiTests(APITestCase):
@@ -80,3 +81,30 @@ class PassportAttendanceSubmitApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"], "OpenCV is not installed.")
+
+    def test_noisy_japanese_passport_ocr_is_repaired(self):
+        raw_text = """
+        PASSPORT P JPN TC4866047
+        /Surname
+        NAKAMOTO
+        B/Giver ame
+        SATOSHI
+        JAPAN O05 APR 1975
+        M TOKYO
+        18 AUG 2008
+        18 AUG 2018
+        P<JPNNAKAMOTO<K<SATOSHI<<<<<<<<<<<<<<<<KKKKKKKK
+        TC486604725PN7504057M18081881<<<<<<<<<<ccs78
+        """
+
+        fields = extract_passport_fields(raw_text)
+
+        self.assertEqual(fields["passport_number"], "TC4866047")
+        self.assertEqual(fields["country_code"], "JPN")
+        self.assertEqual(fields["nationality"], "Japan")
+        self.assertEqual(fields["first_name"], "Satoshi")
+        self.assertEqual(fields["last_name"], "Nakamoto")
+        self.assertEqual(fields["date_of_birth"], "1975-04-05")
+        self.assertEqual(fields["sex"], "Male")
+        self.assertEqual(fields["date_of_issue"], "2008-08-18")
+        self.assertEqual(fields["date_of_expiry"], "2018-08-18")

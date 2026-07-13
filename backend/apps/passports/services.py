@@ -218,8 +218,91 @@ def _parse_mrz_date(value):
     return f"{century + yy:04d}-{value[2:4]}-{value[4:6]}"
 
 
+def _parse_visible_date(value):
+    months = {
+        "JAN": "01",
+        "FEB": "02",
+        "MAR": "03",
+        "APR": "04",
+        "MAY": "05",
+        "JUN": "06",
+        "JUL": "07",
+        "AUG": "08",
+        "SEP": "09",
+        "OCT": "10",
+        "NOV": "11",
+        "DEC": "12",
+    }
+    match = re.search(r"\b(\d{1,2})\s+([A-Z]{3})\s+(\d{4})\b", (value or "").upper())
+    if not match:
+        return ""
+    day, month, year = match.groups()
+    if month not in months:
+        return ""
+    return f"{year}-{months[month]}-{int(day):02d}"
+
+
+def _repair_country_code(value):
+    code = re.sub(r"[^A-Z0-9]", "", (value or "").upper())[:3]
+    if len(code) != 3:
+        return code
+    if code.endswith("PN") and code[0] != "J":
+        return "JPN"
+    common_repairs = {
+        "2JP": "JPN",
+        "5PN": "JPN",
+        "7PN": "JPN",
+        "SPN": "JPN",
+        "0PN": "JPN",
+    }
+    return common_repairs.get(code, code)
+
+
 def _title_name(value):
-    return re.sub(r"\s+", " ", value.replace("<", " ")).strip().title()
+    cleaned_parts = [
+        part
+        for part in re.split(r"<+|\s+", (value or "").upper())
+        if part and not re.fullmatch(r"K+", part)
+    ]
+    return " ".join(cleaned_parts).title()
+
+
+def _split_mrz_names(names):
+    names = (names or "").upper()
+    names = names.replace("<K<", "<<").replace("<K<<", "<<")
+    parts = [part for part in re.split(r"<+", names) if part and not re.fullmatch(r"K+", part)]
+    if not parts:
+        return "", ""
+    return parts[0], " ".join(parts[1:])
+
+
+def extract_visible_passport_fields(text):
+    upper_text = (text or "").upper()
+    fields = {}
+
+    passport_match = re.search(r"\b([A-Z]{1,2}\d{6,8})\b", upper_text)
+    if passport_match:
+        fields["passport_number"] = passport_match.group(1)
+
+    dates = []
+    for match in re.finditer(r"\b\d{1,2}\s+[A-Z]{3}\s+\d{4}\b", upper_text):
+        date_value = _parse_visible_date(match.group(0))
+        if date_value and date_value not in dates:
+            dates.append(date_value)
+    fields["_visible_dates"] = dates
+
+    if len(dates) >= 1:
+        fields["date_of_birth"] = dates[0]
+    if len(dates) >= 2:
+        fields["date_of_issue"] = dates[1]
+    if len(dates) >= 3:
+        fields["date_of_expiry"] = dates[2]
+
+    if re.search(r"\bJAPAN\b", upper_text):
+        fields["nationality"] = "Japan"
+        fields["country_code"] = "JPN"
+
+    return fields
 
 
 def parse_mrz(text):
@@ -231,17 +314,18 @@ def parse_mrz(text):
         if not line1.startswith("P<"):
             continue
         names = line1[5:]
-        surname, given = (names.split("<<", 1) + [""])[:2] if "<<" in names else (names, "")
+        surname, given = _split_mrz_names(names)
         first_name = _title_name(given)
         last_name = _title_name(surname)
         passport_number = line2[:9].replace("<", "")
-        nationality_code = line2[10:13].replace("<", "")
+        nationality_code = _repair_country_code(line2[10:13].replace("<", ""))
         gender = {"M": "Male", "F": "Female"}.get(line2[20], line2[20].replace("<", ""))
+        country_code = _repair_country_code(line1[2:5].replace("<", ""))
         return {
             "type": "P",
-            "country_code": line1[2:5].replace("<", ""),
+            "country_code": country_code,
             "passport_number": passport_number,
-            "nationality": COUNTRY_CODE_MAP.get(nationality_code, nationality_code),
+            "nationality": COUNTRY_CODE_MAP.get(nationality_code) or COUNTRY_CODE_MAP.get(country_code, nationality_code),
             "first_name": first_name,
             "last_name": last_name,
             "full_name": " ".join(part for part in [first_name, last_name] if part),
@@ -251,6 +335,23 @@ def parse_mrz(text):
             "status": "auto-extracted" if passport_number else "pending verification",
         }
     return {}
+
+
+def extract_passport_fields(text):
+    parsed = parse_mrz(text)
+    visible = extract_visible_passport_fields(text)
+    visible_dates = visible.pop("_visible_dates", [])
+    result = {**visible, **{key: value for key, value in parsed.items() if value}}
+    if result.get("country_code") and not result.get("nationality"):
+        result["nationality"] = COUNTRY_CODE_MAP.get(result["country_code"], result["country_code"])
+    issue_candidates = [
+        date_value
+        for date_value in visible_dates
+        if date_value not in {result.get("date_of_birth"), result.get("date_of_expiry")}
+    ]
+    if issue_candidates:
+        result["date_of_issue"] = issue_candidates[0]
+    return result
 
 
 def preprocess_image(input_path, output_path):
@@ -302,7 +403,7 @@ def process_passport_upload(uploaded_file):
         raw_text = ""
         quality_note = quality_note or f"OCR engine unavailable: {exc}"
 
-    parsed = parse_mrz(raw_text)
+    parsed = extract_passport_fields(raw_text)
     full_name = parsed.get("full_name", "")
     if not parsed.get("passport_number"):
         match = re.search(r"\b[A-Z]{1,2}\d{6,8}\b", raw_text.upper())
@@ -326,5 +427,6 @@ def process_passport_upload(uploaded_file):
         "last_name": parsed.get("last_name", ""),
         "date_of_birth": parsed.get("date_of_birth", ""),
         "sex": parsed.get("sex", ""),
+        "date_of_issue": parsed.get("date_of_issue", ""),
         "date_of_expiry": parsed.get("date_of_expiry", ""),
     }
