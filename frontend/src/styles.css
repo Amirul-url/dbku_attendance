@@ -3616,7 +3616,7 @@ input:focus {
 }
 
 .visitor-attendance-modal {
-  width: min(685px, 100%);
+  width: min(900px, calc(100vw - 48px));
   overflow: visible;
 }
 
@@ -3628,6 +3628,10 @@ input:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 16px;
+}
+
+.visitor-modal-grid .modal-field-wide {
+  grid-column: 1 / -1;
 }
 
 .visitor-modal-grid .compact-field input[readonly] {
