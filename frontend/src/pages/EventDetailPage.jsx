@@ -65,24 +65,9 @@ function formatDisplayDate(value) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function formatShortDate(value) {
-  if (!value) return '-'
-  const [year, month, day] = String(value).split('-')
-  return year && month && day ? `${day}/${month}/${year}` : value
-}
-
 function formatDisplayTime(value) {
   if (!value) return '-'
   return String(value).slice(0, 5)
-}
-
-function renderTimestamp(row) {
-  return (
-    <span className="event-timestamp-cell">
-      <strong>{formatShortDate(row.date)}</strong>
-      <span>{formatDisplayTime(row.time)}</span>
-    </span>
-  )
 }
 
 function formatStatus(value) {
@@ -210,7 +195,6 @@ export function EventDetailPage() {
   const [mapStyleKey, setMapStyleKey] = useState('streets')
   const [assignmentSearch, setAssignmentSearch] = useState('')
   const [assignmentStatus, setAssignmentStatus] = useState('')
-  const [passportSearch, setPassportSearch] = useState('')
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
@@ -375,20 +359,6 @@ export function EventDetailPage() {
     }
   }
 
-  async function deleteAttendance(path, row, reload) {
-    if (!window.confirm('Delete this attendance record?')) return
-    try {
-      await apiRequest(`${path}${row.id}/`, { method: 'DELETE' })
-      await reload()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  async function reloadPassportAttendance() {
-    setPassportAttendance(listFromResponse(await apiRequest(`/passport-attendance/?event=${id}`)))
-  }
-
   function focusMap() {
     const map = mapRef.current
     if (!map || !event) return
@@ -467,21 +437,13 @@ export function EventDetailPage() {
     })
   }, [assignmentAttendanceByAssignmentId, assignmentSearch, assignmentStatus, assignments, staffById])
 
-  const filteredPassportAttendance = useMemo(() => {
-    const query = passportSearch.trim().toLowerCase()
-    return passportAttendance.filter((row) => {
-      const visitor = row.visitor_detail || {}
-      return !query || visitor.full_name?.toLowerCase().includes(query) || visitor.passport_number?.toLowerCase().includes(query)
-    })
-  }, [passportAttendance, passportSearch])
-
   if (error) return <div className="alert-error">{error}</div>
   if (!event) return <div className="panel">Loading event</div>
 
   const publicLinks = [
     { title: 'Visitor QR (Malaysian)', caption: 'For Malaysian visitors', qr: event.visitor_qr_url, filename: 'visitor-malaysian-qr.png', url: `/visitor-attendance/${id}`, attendancePath: `/events/${id}/visitors` },
     { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png', url: `/staff-attendance/${id}`, attendancePath: `/events/${id}/staff-attendance` },
-    { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png', url: `/passport-attendance/${id}` },
+    { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png', url: `/passport-attendance/${id}`, attendancePath: `/events/${id}/non-malaysian-visitors` },
   ]
   const totalAttendance = staffAttendance.length + visitorAttendance.length + passportAttendance.length + assignmentAttendance.length
   const displayLocation = formatAddress(event.location)
@@ -608,40 +570,6 @@ export function EventDetailPage() {
                   <button type="button" className="btn btn-small btn-blue" onClick={() => openQr({ title: `${row.staff_name || 'Staff'} QR`, qr: row.qr_url, filename: `${row.task_title || 'assignment'}-qr.png` })}><Eye size={14} /></button>
                   <button type="button" className="btn btn-small btn-blue" onClick={() => openAssignmentEdit(row)}><Edit size={14} /></button>
                   <button type="button" className="btn btn-small btn-red" onClick={() => deleteAssignment(row)}><Trash2 size={14} /></button>
-                </div>
-              ),
-            },
-          ]}
-        />
-      </AttendanceSection>
-
-      <AttendanceSection
-        title="Visitor Attendance (Non-Malaysian)"
-        searchValue={passportSearch}
-        onSearch={setPassportSearch}
-        searchPlaceholder="Search visitor name"
-        selectOptions={[{ value: '', label: 'All Countries' }]}
-        onExport={() => downloadApiFile(`/reports/events/${id}/export/passport/`)}
-      >
-        <DataTable
-          rows={filteredPassportAttendance}
-          columns={[
-            { key: 'name', label: 'Name', render: (row) => row.visitor_detail?.full_name || '-' },
-            { key: 'passport_number', label: 'Passport No', render: (row) => row.visitor_detail?.passport_number || '-' },
-            { key: 'country', label: 'Country', render: (row) => row.visitor_detail?.country || '-' },
-            { key: 'ipv4_address', label: 'IPv4', render: (row) => row.ipv4_address || '-' },
-            { key: 'ipv6_address', label: 'IPv6', render: (row) => row.ipv6_address || '-' },
-            { key: 'timestamp', label: 'Timestamp', render: renderTimestamp },
-            { key: 'latitude', label: 'Latitude', render: (row) => formatCoordinate(row.latitude) },
-            { key: 'longitude', label: 'Longitude', render: (row) => formatCoordinate(row.longitude) },
-            {
-              key: 'actions',
-              label: 'Action',
-              render: (row) => (
-                <div className="button-row event-action-row">
-                  <button type="button" className="btn btn-small btn-green"><Eye size={14} /></button>
-                  <button type="button" className="btn btn-small btn-blue"><Edit size={14} /></button>
-                  <button type="button" className="btn btn-small btn-red" onClick={() => deleteAttendance('/passport-attendance/', row, reloadPassportAttendance)}><Trash2 size={14} /></button>
                 </div>
               ),
             },
