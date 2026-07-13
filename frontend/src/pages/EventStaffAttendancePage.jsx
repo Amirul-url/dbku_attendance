@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, Search, Users } from 'lucide-react'
+import { ArrowLeft, Download, Eye, Search, Trash2, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { formatTime12Hour } from '../utils/dateTime.js'
 
 function toNumber(value) {
   const number = Number(value)
@@ -20,16 +21,11 @@ function formatShortDate(value) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
-function formatDisplayTime(value) {
-  if (!value) return '-'
-  return String(value).slice(0, 5)
-}
-
 function renderTimestamp(row) {
   return (
     <span className="event-timestamp-cell">
       <strong>{formatShortDate(row.date)}</strong>
-      <span>{formatDisplayTime(row.time)}</span>
+      <span>{formatTime12Hour(row.time)}</span>
     </span>
   )
 }
@@ -40,6 +36,7 @@ export function EventStaffAttendancePage() {
   const [search, setSearch] = useState('')
   const [department, setDepartment] = useState('')
   const [error, setError] = useState('')
+  const [selectedRow, setSelectedRow] = useState(null)
 
   useEffect(() => {
     let mounted = true
@@ -59,6 +56,19 @@ export function EventStaffAttendancePage() {
       mounted = false
     }
   }, [id])
+
+  async function deleteAttendance(row) {
+    const staffName = row.full_name || 'this attendance record'
+    if (!window.confirm(`Delete attendance for ${staffName}?`)) return
+    setError('')
+    try {
+      await apiRequest(`/staff-attendance/${row.id}/`, { method: 'DELETE' })
+      setRows((current) => current.filter((item) => item.id !== row.id))
+      if (selectedRow?.id === row.id) setSelectedRow(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   const departmentOptions = useMemo(() => {
     const values = new Set()
@@ -125,11 +135,48 @@ export function EventStaffAttendancePage() {
               { key: 'timestamp', label: 'Timestamp', render: renderTimestamp },
               { key: 'latitude', label: 'Latitude', render: (row) => formatCoordinate(row.latitude) },
               { key: 'longitude', label: 'Longitude', render: (row) => formatCoordinate(row.longitude) },
+              {
+                key: 'actions',
+                label: 'Action',
+                render: (row) => (
+                  <div className="button-row event-action-row">
+                    <button type="button" className="btn btn-small btn-green" onClick={() => setSelectedRow(row)}><Eye size={14} /> View</button>
+                    <button type="button" className="btn btn-small btn-red" onClick={() => deleteAttendance(row)}><Trash2 size={14} /> Delete</button>
+                  </div>
+                ),
+              },
             ]}
           />
         </div>
         <div className="event-section-pagination">Page 1 of 1</div>
       </section>
+
+      {selectedRow && (
+        <div className="modal-backdrop">
+          <div className="modal-box visitor-attendance-modal">
+            <div className="modal-header">
+              <div className="modal-title">View Staff Attendance</div>
+              <button type="button" className="icon-button" onClick={() => setSelectedRow(null)}>x</button>
+            </div>
+            <div className="modal-body visitor-modal-grid">
+              <label className="compact-field"><span>Full Name</span><input readOnly value={selectedRow.full_name || ''} /></label>
+              <label className="compact-field"><span>Employee ID</span><input readOnly value={selectedRow.staff_id || ''} /></label>
+              <label className="compact-field"><span>Email</span><input readOnly value={selectedRow.email || ''} /></label>
+              <label className="compact-field"><span>Phone Number</span><input readOnly value={selectedRow.phone_number || ''} /></label>
+              <label className="compact-field"><span>Department</span><input readOnly value={selectedRow.department || ''} /></label>
+              <label className="compact-field"><span>IPv4 Address</span><input readOnly value={selectedRow.ipv4_address || ''} /></label>
+              <label className="compact-field"><span>IPv6 Address</span><input readOnly value={selectedRow.ipv6_address || ''} /></label>
+              <label className="compact-field"><span>Attendance Date</span><input readOnly value={formatShortDate(selectedRow.date)} /></label>
+              <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatTime12Hour(selectedRow.time)} /></label>
+              <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(selectedRow.latitude)} /></label>
+              <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(selectedRow.longitude)} /></label>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={() => setSelectedRow(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

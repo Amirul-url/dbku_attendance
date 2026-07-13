@@ -1,8 +1,39 @@
+import { useEffect, useState } from 'react'
+import { Trash2 } from 'lucide-react'
+import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
-import { useApiResource } from '../hooks/useApiResource.js'
 
 export function PassportsPage() {
-  const { rows, loading, error } = useApiResource('/passport-visitors/')
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  async function load() {
+    setLoading(true)
+    setError('')
+    try {
+      setRows(listFromResponse(await apiRequest('/passport-visitors/')))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function deletePassport(row) {
+    if (!window.confirm(`Delete passport record for ${row.full_name || row.passport_number}?`)) return
+    setError('')
+    try {
+      await apiRequest(`/passport-visitors/${row.id}/`, { method: 'DELETE' })
+      setRows((current) => current.filter((item) => item.id !== row.id))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   return (
     <>
@@ -21,6 +52,13 @@ export function PassportsPage() {
             { key: 'country', label: 'Country' },
             { key: 'expiry_date', label: 'Expiry' },
             { key: 'status', label: 'Status' },
+            {
+              key: 'actions',
+              label: 'Actions',
+              render: (row) => (
+                <button type="button" className="btn btn-small btn-red" onClick={() => deletePassport(row)}><Trash2 size={14} /> Delete</button>
+              ),
+            },
           ]}
         />
       )}

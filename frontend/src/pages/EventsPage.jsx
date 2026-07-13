@@ -5,6 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { Box, CalendarDays, CalendarPlus, Crosshair, Edit, Eye, Map, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { formatTime12Hour } from '../utils/dateTime.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 const DEFAULT_EVENT_LONGITUDE = 110.334028
@@ -197,7 +198,7 @@ function formatPeriod(row) {
   const startDate = formatDateDisplay(row.start_date)
   const endDate = formatDateDisplay(row.end_date)
   const dateRange = row.start_date === row.end_date || !row.end_date ? startDate : `${startDate} -> ${endDate}`
-  const timeRange = row.start_time || row.end_time ? `${formatTimeDisplay(row.start_time)} - ${formatTimeDisplay(row.end_time)}` : ''
+  const timeRange = row.start_time || row.end_time ? `${formatTime12Hour(row.start_time)} - ${formatTime12Hour(row.end_time)}` : ''
 
   return (
     <span className="event-period-cell">
@@ -247,11 +248,6 @@ function formatDateDisplay(value) {
   if (!value) return '-'
   const [year, month, day] = String(value).split('-')
   return year && month && day ? `${day}/${month}/${year}` : value
-}
-
-function formatTimeDisplay(value) {
-  if (!value) return '-'
-  return String(value).slice(0, 5)
 }
 
 export function EventsPage() {

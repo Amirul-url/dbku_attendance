@@ -3,6 +3,7 @@ import { ChevronDown, Edit, Plus, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
+import { formatDateTime12Hour } from '../utils/dateTime.js'
 
 const emptyStaff = {
   full_name: '',
@@ -184,7 +185,7 @@ function staffFormFromRow(row) {
 
 function formatLoginDate(value) {
   if (!value) return 'Never'
-  return new Date(value).toLocaleString()
+  return formatDateTime12Hour(value)
 }
 
 export function StaffPage() {

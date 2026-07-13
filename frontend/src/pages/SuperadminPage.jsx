@@ -3,6 +3,7 @@ import { ChevronDown, Edit, Plus, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
+import { formatDateTime12Hour } from '../utils/dateTime.js'
 
 const emptySuperadmin = {
   full_name: '',
@@ -289,7 +290,7 @@ export function SuperadminPage() {
               { key: 'email', label: 'Email' },
               { key: 'phone_number', label: 'Phone' },
               { key: 'department', label: 'Department', render: (row) => <span className="table-two-line table-department-cell" title={row.department}>{row.department}</span> },
-              { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{row.last_login ? new Date(row.last_login).toLocaleString() : 'Never'}</span> },
+              { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{row.last_login ? formatDateTime12Hour(row.last_login) : 'Never'}</span> },
               { key: 'role', label: 'Role', render: () => <span className="badge badge-superadmin">superadmin</span> },
               {
                 key: 'actions',

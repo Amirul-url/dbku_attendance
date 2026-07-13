@@ -21,6 +21,7 @@ import {
 import { Link, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, downloadApiFile, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { formatTime12Hour } from '../utils/dateTime.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 const DEFAULT_EVENT_LONGITUDE = 110.334028
@@ -63,11 +64,6 @@ function formatDisplayDate(value) {
   if (!year || !month || !day) return value
   const date = new Date(Number(year), Number(month) - 1, Number(day))
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function formatDisplayTime(value) {
-  if (!value) return '-'
-  return String(value).slice(0, 5)
 }
 
 function formatStatus(value) {
@@ -468,8 +464,8 @@ export function EventDetailPage() {
             <div className="event-view-section-label">Schedule</div>
             <InfoBlock label="Start Date" value={formatDisplayDate(event.start_date)} />
             <InfoBlock label="End Date" value={formatDisplayDate(event.end_date)} />
-            <InfoBlock label="Start Time" value={formatDisplayTime(event.start_time)} />
-            <InfoBlock label="End Time" value={formatDisplayTime(event.end_time)} />
+            <InfoBlock label="Start Time" value={formatTime12Hour(event.start_time)} />
+            <InfoBlock label="End Time" value={formatTime12Hour(event.end_time)} />
           </section>
 
           <section>

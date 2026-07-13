@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, Eye, Search, Users } from 'lucide-react'
+import { ArrowLeft, Download, Eye, Search, Trash2, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { formatTime12Hour } from '../utils/dateTime.js'
 
 function toNumber(value) {
   const number = Number(value)
@@ -20,11 +21,6 @@ function formatShortDate(value) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
-function formatDisplayTime(value) {
-  if (!value) return '-'
-  return String(value).slice(0, 5)
-}
-
 function formatPhoneNumber(value) {
   if (!value) return '-'
   const digits = String(value).replace(/\D/g, '')
@@ -36,7 +32,7 @@ function renderTimestamp(row) {
   return (
     <span className="event-timestamp-cell">
       <strong>{formatShortDate(row.date)}</strong>
-      <span>{formatDisplayTime(row.time)}</span>
+      <span>{formatTime12Hour(row.time)}</span>
     </span>
   )
 }
@@ -68,6 +64,19 @@ export function EventVisitorAttendancePage() {
       mounted = false
     }
   }, [id])
+
+  async function deleteAttendance(row) {
+    const visitorName = row.visitor_detail?.full_name || 'this attendance record'
+    if (!window.confirm(`Delete attendance for ${visitorName}?`)) return
+    setError('')
+    try {
+      await apiRequest(`/visitor-attendance/${row.id}/`, { method: 'DELETE' })
+      setRows((current) => current.filter((item) => item.id !== row.id))
+      if (selectedRow?.id === row.id) setSelectedRow(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   const organizationOptions = useMemo(() => {
     const values = new Set()
@@ -137,7 +146,10 @@ export function EventVisitorAttendancePage() {
                 key: 'actions',
                 label: 'Action',
                 render: (row) => (
-                  <button type="button" className="btn btn-small btn-green" onClick={() => setSelectedRow(row)}><Eye size={14} /> View</button>
+                  <div className="button-row event-action-row">
+                    <button type="button" className="btn btn-small btn-green" onClick={() => setSelectedRow(row)}><Eye size={14} /> View</button>
+                    <button type="button" className="btn btn-small btn-red" onClick={() => deleteAttendance(row)}><Trash2 size={14} /> Delete</button>
+                  </div>
                 ),
               },
             ]}
@@ -161,7 +173,7 @@ export function EventVisitorAttendancePage() {
               <label className="compact-field"><span>IPv4 Address</span><input readOnly value={selectedRow.ipv4_address || ''} /></label>
               <label className="compact-field"><span>IPv6 Address</span><input readOnly value={selectedRow.ipv6_address || ''} /></label>
               <label className="compact-field"><span>Attendance Date</span><input readOnly value={formatShortDate(selectedRow.date)} /></label>
-              <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatDisplayTime(selectedRow.time)} /></label>
+              <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatTime12Hour(selectedRow.time)} /></label>
               <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(selectedRow.latitude)} /></label>
               <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(selectedRow.longitude)} /></label>
             </div>

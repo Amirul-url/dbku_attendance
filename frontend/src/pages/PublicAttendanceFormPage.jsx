@@ -3,6 +3,7 @@ import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, Clip
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
+import { formatTime12Hour } from '../utils/dateTime.js'
 
 const departmentOptions = [
   'Administration (ADM)',
@@ -157,11 +158,6 @@ function formatDate(value) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
-function formatTime(value) {
-  if (!value) return '-'
-  return String(value).slice(0, 5)
-}
-
 function formatAddress(value) {
   if (!value) return '-'
   const seen = new Set()
@@ -221,8 +217,8 @@ function EventInfo({ event }) {
           <div className="public-event-section-label">Schedule</div>
           <EventInfoItem label="Start Date" value={formatDate(event.start_date)} />
           <EventInfoItem label="End Date" value={formatDate(event.end_date)} />
-          <EventInfoItem label="Start Time" value={formatTime(event.start_time)} />
-          <EventInfoItem label="End Time" value={formatTime(event.end_time)} />
+          <EventInfoItem label="Start Time" value={formatTime12Hour(event.start_time)} />
+          <EventInfoItem label="End Time" value={formatTime12Hour(event.end_time)} />
         </section>
         <section>
           <div className="public-event-section-label">Location</div>
