@@ -102,34 +102,67 @@ function makeCircleFeature(longitude, latitude, radiusMeter) {
   }
 }
 
-function syncRadiusCircle(map, longitude, latitude, radiusMeter) {
-  if (!map.isStyleLoaded()) return
+function ensureRadiusCircle(map, longitude, latitude, radiusMeter) {
+  if (!map.isStyleLoaded()) return false
+
   const data = makeCircleFeature(longitude, latitude, Number(radiusMeter) || 100)
   const source = map.getSource('event-radius')
 
   if (source) {
     source.setData(data)
-    return
+  } else {
+    map.addSource('event-radius', { type: 'geojson', data })
   }
 
-  map.addSource('event-radius', { type: 'geojson', data })
-  map.addLayer({
-    id: 'event-radius-fill',
-    type: 'fill',
-    source: 'event-radius',
-    paint: {
-      'fill-color': '#0e7c6b',
-      'fill-opacity': 0.16,
-    },
+  if (!map.getLayer('event-radius-fill')) {
+    map.addLayer({
+      id: 'event-radius-fill',
+      type: 'fill',
+      source: 'event-radius',
+      paint: {
+        'fill-color': '#0e7c6b',
+        'fill-opacity': 0.2,
+      },
+    })
+  }
+
+  if (!map.getLayer('event-radius-line-halo')) {
+    map.addLayer({
+      id: 'event-radius-line-halo',
+      type: 'line',
+      source: 'event-radius',
+      paint: {
+        'line-color': '#ffffff',
+        'line-opacity': 0.9,
+        'line-width': 6,
+      },
+    })
+  }
+
+  if (!map.getLayer('event-radius-line')) {
+    map.addLayer({
+      id: 'event-radius-line',
+      type: 'line',
+      source: 'event-radius',
+      paint: {
+        'line-color': '#003B46',
+        'line-opacity': 0.95,
+        'line-width': 3,
+      },
+    })
+  }
+
+  return true
+}
+
+function syncRadiusCircle(map, longitude, latitude, radiusMeter) {
+  if (ensureRadiusCircle(map, longitude, latitude, radiusMeter)) return
+
+  map.once('styledata', () => {
+    ensureRadiusCircle(map, longitude, latitude, radiusMeter)
   })
-  map.addLayer({
-    id: 'event-radius-line',
-    type: 'line',
-    source: 'event-radius',
-    paint: {
-      'line-color': '#003B46',
-      'line-width': 2,
-    },
+  map.once('idle', () => {
+    ensureRadiusCircle(map, longitude, latitude, radiusMeter)
   })
 }
 
