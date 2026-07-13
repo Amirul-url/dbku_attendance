@@ -4097,15 +4097,57 @@ input:focus {
   }
 
   .public-event-card-header {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 20px;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+    padding: 18px 16px;
+  }
+
+  .public-event-title-row {
+    gap: 10px;
+  }
+
+  .public-event-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+  }
+
+  .public-event-title-row h2 {
+    font-size: 13px;
+  }
+
+  .public-event-radius-pill {
+    gap: 5px;
+    border-radius: 9px;
+    padding: 8px 10px;
+    font-size: 11px;
   }
 
   .public-event-summary-grid {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 20px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px 16px 20px;
+  }
+
+  .public-event-section-label {
+    margin-bottom: 12px;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+  }
+
+  .public-event-info-item {
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+
+  .public-event-info-item span {
+    font-size: 10px;
+  }
+
+  .public-event-info-item strong {
+    font-size: 11px;
+    line-height: 1.4;
   }
 
   .passport-step-card,
@@ -4135,7 +4177,8 @@ input:focus {
   }
 
   .public-phone-input {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(120px, 0.55fr) minmax(0, 1fr);
+    gap: 10px;
   }
 
   .public-entry-form .primary-button {
