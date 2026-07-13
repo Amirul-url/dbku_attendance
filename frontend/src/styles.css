@@ -2710,7 +2710,7 @@ input:focus {
   overflow: hidden;
   background: #108674;
   color: #fff;
-  padding: 36px 36px 58px;
+  padding: 36px 36px 38px;
 }
 
 .public-attendance-hero::before,
@@ -2783,7 +2783,6 @@ input:focus {
 }
 
 .public-event-card {
-  margin-top: -72px;
   border: 1px solid #9fd8cf;
   border-radius: 12px;
   background: #fff;
@@ -3770,16 +3769,12 @@ input:focus {
   }
 
   .public-attendance-hero {
-    padding: 28px 22px 58px;
+    padding: 28px 22px 34px;
   }
 
   .public-attendance-body {
     gap: 22px;
     padding: 24px 18px 26px;
-  }
-
-  .public-event-card {
-    margin-top: -62px;
   }
 
   .public-event-card-header {
