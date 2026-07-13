@@ -58,6 +58,32 @@ const countryCodeOptions = getCountries()
     return a.country.localeCompare(b.country)
   })
 
+const passportCountryOptions = [
+  { code: 'AUS', nationality: 'Australia' },
+  { code: 'BRN', nationality: 'Brunei' },
+  { code: 'CAN', nationality: 'Canada' },
+  { code: 'CHN', nationality: 'China' },
+  { code: 'GBR', nationality: 'United Kingdom' },
+  { code: 'IDN', nationality: 'Indonesia' },
+  { code: 'IND', nationality: 'India' },
+  { code: 'JPN', nationality: 'Japan' },
+  { code: 'KOR', nationality: 'South Korea' },
+  { code: 'PHL', nationality: 'Philippines' },
+  { code: 'SGP', nationality: 'Singapore' },
+  { code: 'THA', nationality: 'Thailand' },
+  { code: 'USA', nationality: 'United States' },
+].sort((a, b) => a.nationality.localeCompare(b.nationality))
+
+function findPassportCountryByCode(value) {
+  const code = String(value || '').trim().toUpperCase()
+  return passportCountryOptions.find((option) => option.code === code)
+}
+
+function findPassportCountryByNationality(value) {
+  const nationality = String(value || '').trim().toLowerCase()
+  return passportCountryOptions.find((option) => option.nationality.toLowerCase() === nationality)
+}
+
 function splitPhoneNumber(value) {
   const digits = String(value || '').replace(/\D/g, '')
   const matchedCountry = [...countryCodeOptions]
@@ -486,6 +512,24 @@ export function PassportAttendanceFormPage() {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  function updateCountryCode(value) {
+    const option = findPassportCountryByCode(value)
+    setForm((current) => ({
+      ...current,
+      country_code: value,
+      nationality: option?.nationality || current.nationality,
+    }))
+  }
+
+  function updateNationality(value) {
+    const option = findPassportCountryByNationality(value)
+    setForm((current) => ({
+      ...current,
+      nationality: value,
+      country_code: option?.code || current.country_code,
+    }))
+  }
+
   async function submit(submitEvent) {
     submitEvent.preventDefault()
     if (submittingRef.current) return
@@ -560,20 +604,23 @@ export function PassportAttendanceFormPage() {
       const body = new FormData()
       body.append('image', passportFile)
       const data = await apiRequest('/passport-visitors/ocr-preview/', { method: 'POST', body })
-      setForm((current) => ({
-        ...current,
-        passport_type: data.type || current.passport_type,
-        country_code: data.country_code || current.country_code,
-        passport_number: data.passport_number || current.passport_number,
-        nationality: data.nationality || current.nationality,
-        first_name: data.first_name || current.first_name,
-        last_name: data.last_name || current.last_name,
-        date_of_birth: data.date_of_birth || current.date_of_birth,
-        sex: data.sex || current.sex,
-        date_of_issue: data.date_of_issue || current.date_of_issue,
-        date_of_expiry: data.date_of_expiry || current.date_of_expiry,
-        ocr_raw_text: data.raw_text || current.ocr_raw_text,
-      }))
+      setForm((current) => {
+        const passportCountry = findPassportCountryByCode(data.country_code) || findPassportCountryByNationality(data.nationality)
+        return {
+          ...current,
+          passport_type: data.type || current.passport_type,
+          country_code: data.country_code || passportCountry?.code || current.country_code,
+          passport_number: data.passport_number || current.passport_number,
+          nationality: data.nationality || passportCountry?.nationality || current.nationality,
+          first_name: data.first_name || current.first_name,
+          last_name: data.last_name || current.last_name,
+          date_of_birth: data.date_of_birth || current.date_of_birth,
+          sex: data.sex || current.sex,
+          date_of_issue: data.date_of_issue || current.date_of_issue,
+          date_of_expiry: data.date_of_expiry || current.date_of_expiry,
+          ocr_raw_text: data.raw_text || current.ocr_raw_text,
+        }
+      })
       setOcrStatus(data.status || 'auto-extracted')
       setPassportImageMeta({
         original: data.original_image_name || '',
@@ -625,6 +672,9 @@ export function PassportAttendanceFormPage() {
     setExtraFields((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
   }
 
+  const hasCustomCountryCode = form.country_code && !findPassportCountryByCode(form.country_code)
+  const hasCustomNationality = form.nationality && !findPassportCountryByNationality(form.nationality)
+
   if (loadError) return <div className="screen-center"><div className="alert-error">{loadError}</div></div>
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
@@ -675,10 +725,24 @@ export function PassportAttendanceFormPage() {
           <div className={`passport-review-status ${ocrStatus === 'auto-extracted' ? 'is-ok' : ''}`}>{ocrStatus === 'auto-extracted' ? 'Auto Extracted' : 'Pending Verification'}</div>
           <div className="passport-form-grid">
             <label className="compact-field"><span>Passport Type</span><input value={form.passport_type} onChange={(e) => update('passport_type', e.target.value)} placeholder="e.g. P" /></label>
-            <label className="compact-field"><span>Country Code</span><input value={form.country_code} onChange={(e) => update('country_code', e.target.value)} placeholder="E.G. JPN" /></label>
+            <label className="compact-field">
+              <span>Country Code</span>
+              <select value={form.country_code} onChange={(e) => updateCountryCode(e.target.value)}>
+                <option value="">-- Select country code --</option>
+                {hasCustomCountryCode && <option value={form.country_code}>{form.country_code}</option>}
+                {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code} - {option.nationality}</option>)}
+              </select>
+            </label>
           </div>
           <label className="compact-field"><span>Passport Number *</span><input value={form.passport_number} onChange={(e) => update('passport_number', e.target.value)} placeholder="e.g. AB1234567" required /></label>
-          <label className="compact-field"><span>Nationality</span><input value={form.nationality} onChange={(e) => update('nationality', e.target.value)} placeholder="e.g. Japanese" /></label>
+          <label className="compact-field">
+            <span>Nationality</span>
+            <select value={form.nationality} onChange={(e) => updateNationality(e.target.value)}>
+              <option value="">-- Select nationality --</option>
+              {hasCustomNationality && <option value={form.nationality}>{form.nationality}</option>}
+              {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
+            </select>
+          </label>
           <div className="passport-form-grid">
             <label className="compact-field"><span>First Name</span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" /></label>
             <label className="compact-field"><span>Last Name</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name / BIN / BINTI section" /></label>
