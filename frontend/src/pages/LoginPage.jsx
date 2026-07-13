@@ -97,7 +97,6 @@ export function LoginPage() {
         <form className="login-card portal-login-card" onSubmit={handleSubmit}>
           <div className="login-form-header login-main-header">
             <h2>Welcome Back</h2>
-            <p>Sign in using your Staff ID.</p>
           </div>
 
           <div className="login-form-body">
