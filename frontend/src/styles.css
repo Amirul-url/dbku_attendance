@@ -4303,6 +4303,10 @@ input:focus {
     padding: 18px 16px;
   }
 
+  .public-event-card {
+    overflow-x: auto;
+  }
+
   .public-event-title-row {
     gap: 10px;
   }
@@ -4325,9 +4329,14 @@ input:focus {
   }
 
   .public-event-summary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    padding: 18px 16px 20px;
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+    gap: 28px;
+    padding: 20px 24px 22px;
+  }
+
+  .public-event-card-header,
+  .public-event-summary-grid {
+    min-width: 620px;
   }
 
   .public-event-section-label {
