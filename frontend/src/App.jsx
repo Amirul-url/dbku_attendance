@@ -5,6 +5,7 @@ import { AttendancePage } from './pages/AttendancePage.jsx'
 import { ForgotPasswordPage, RegisterPage, ResetPasswordPage } from './pages/AuthPages.jsx'
 import { DashboardPage } from './pages/DashboardPage.jsx'
 import { EventDetailPage } from './pages/EventDetailPage.jsx'
+import { EventStaffAttendancePage } from './pages/EventStaffAttendancePage.jsx'
 import { EventVisitorAttendancePage } from './pages/EventVisitorAttendancePage.jsx'
 import { EventsPage } from './pages/EventsPage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
@@ -44,6 +45,7 @@ function App() {
         <Route path="superadmin" element={<SuperadminPage />} />
         <Route path="events" element={<EventsPage />} />
         <Route path="events/:id" element={<EventDetailPage />} />
+        <Route path="events/:id/staff-attendance" element={<EventStaffAttendancePage />} />
         <Route path="events/:id/visitors" element={<EventVisitorAttendancePage />} />
         <Route path="analytics" element={<ReportsPage />} />
         <Route path="attendance" element={<AttendancePage />} />

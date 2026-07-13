@@ -486,7 +486,7 @@ export function EventDetailPage() {
 
   const publicLinks = [
     { title: 'Visitor QR (Malaysian)', caption: 'For Malaysian visitors', qr: event.visitor_qr_url, filename: 'visitor-malaysian-qr.png', url: `/visitor-attendance/${id}`, attendancePath: `/events/${id}/visitors` },
-    { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png', url: `/staff-attendance/${id}` },
+    { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png', url: `/staff-attendance/${id}`, attendancePath: `/events/${id}/staff-attendance` },
     { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png', url: `/passport-attendance/${id}` },
   ]
   const totalAttendance = staffAttendance.length + visitorAttendance.length + passportAttendance.length + assignmentAttendance.length
