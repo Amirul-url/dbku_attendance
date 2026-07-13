@@ -16,11 +16,19 @@ def _actor_is_superuser(user):
     return bool(getattr(user, "is_superuser", False))
 
 
+def _normalize_optional_contact_fields(data):
+    if "email" in data and not data.get("email"):
+        data["email"] = None
+    if "phone_number" in data and not data.get("phone_number"):
+        data["phone_number"] = None
+
+
 def create_staff_member(validated_data, request_user=None):
     password = validated_data.pop("password", None)
     is_staff = validated_data.pop("is_staff", False)
     is_superuser = validated_data.pop("is_superuser", False)
     role = validated_data.get("role", StaffMember.ROLE_VIEWER)
+    _normalize_optional_contact_fields(validated_data)
 
     if not _actor_is_superuser(request_user):
         is_staff = False
@@ -57,6 +65,7 @@ def update_staff_member(instance, validated_data, request_user=None):
     is_staff = validated_data.pop("is_staff", None)
     is_superuser = validated_data.pop("is_superuser", None)
     role = validated_data.get("role", instance.role)
+    _normalize_optional_contact_fields(validated_data)
 
     if not _actor_is_superuser(request_user):
         is_staff = None

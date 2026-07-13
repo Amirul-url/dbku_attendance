@@ -270,7 +270,7 @@ export function StaffPage() {
     }
     const payload = {
       ...form,
-      email: form.email.trim(),
+      email: form.email.trim() || null,
       phone_number: form.phone_number || null,
       department: form.department === 'Others' ? form.other_department : form.department,
     }
