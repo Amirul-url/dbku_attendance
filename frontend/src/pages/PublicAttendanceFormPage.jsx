@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Building2, CheckCircle2, ChevronDown, ClipboardCheck, Mail, MapPin, Phone, ShieldCheck, User } from 'lucide-react'
+import { Building2, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, LocateFixed, Mail, MapPin, Phone, ShieldCheck, User } from 'lucide-react'
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
@@ -178,6 +178,12 @@ function formatAddress(value) {
     .join(', ')
 }
 
+function formatCoordinate(value) {
+  if (value === null || value === undefined || value === '') return '-'
+  const number = Number(value)
+  return Number.isFinite(number) ? number.toFixed(6) : value
+}
+
 function PublicBrand() {
   return (
     <div className="public-brand">
@@ -202,16 +208,33 @@ function EventInfoItem({ label, value }) {
 function EventInfo({ event }) {
   return (
     <div className="public-event-card">
-      <EventInfoItem label="Event Name" value={event.name} />
-      <div className="public-event-grid">
-        <EventInfoItem label="Start Date" value={formatDate(event.start_date)} />
-        <EventInfoItem label="End Date" value={formatDate(event.end_date)} />
-        <EventInfoItem label="Start Time" value={formatTime(event.start_time)} />
-        <EventInfoItem label="End Time" value={formatTime(event.end_time)} />
-        <EventInfoItem label="Radius" value={`${event.radius_meter || '-'} m`} />
-        <EventInfoItem label="Location" value={formatAddress(event.location)} />
+      <div className="public-event-card-header">
+        <div className="public-event-title-row">
+          <div className="public-event-icon"><CalendarDays size={18} /></div>
+          <h2>{event.name}</h2>
+        </div>
+        <div className="public-event-radius-pill"><LocateFixed size={15} /> Radius: {event.radius_meter || '-'}m</div>
       </div>
-      <EventInfoItem label="Description" value={event.description || '-'} />
+
+      <div className="public-event-summary-grid">
+        <section>
+          <div className="public-event-section-label">Schedule</div>
+          <EventInfoItem label="Start Date" value={formatDate(event.start_date)} />
+          <EventInfoItem label="End Date" value={formatDate(event.end_date)} />
+          <EventInfoItem label="Start Time" value={formatTime(event.start_time)} />
+          <EventInfoItem label="End Time" value={formatTime(event.end_time)} />
+        </section>
+        <section>
+          <div className="public-event-section-label">Location</div>
+          <EventInfoItem label="Venue" value={formatAddress(event.location)} />
+          <EventInfoItem label="Latitude" value={formatCoordinate(event.latitude)} />
+          <EventInfoItem label="Longitude" value={formatCoordinate(event.longitude)} />
+        </section>
+        <section>
+          <div className="public-event-section-label">Details</div>
+          <EventInfoItem label="Description" value={event.description || '-'} />
+        </section>
+      </div>
     </div>
   )
 }
