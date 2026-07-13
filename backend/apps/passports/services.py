@@ -242,6 +242,134 @@ def _parse_visible_date(value):
     return f"{year}-{months[month]}-{int(day):02d}"
 
 
+def _format_iso_date_for_passport_text(value):
+    match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", value or "")
+    if not match:
+        return ""
+    months = {
+        "01": "JAN",
+        "02": "FEB",
+        "03": "MAR",
+        "04": "APR",
+        "05": "MAY",
+        "06": "JUN",
+        "07": "JUL",
+        "08": "AUG",
+        "09": "SEP",
+        "10": "OCT",
+        "11": "NOV",
+        "12": "DEC",
+    }
+    year, month, day = match.groups()
+    return f"{int(day):02d} {months.get(month, month)} {year}"
+
+
+def _format_iso_date_for_mrz(value):
+    match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", value or "")
+    if not match:
+        return "000000"
+    year, month, day = match.groups()
+    return f"{year[-2:]}{month}{day}"
+
+
+def _sex_to_mrz_char(value):
+    value = (value or "").strip().upper()
+    if value.startswith("M"):
+        return "M"
+    if value.startswith("F"):
+        return "F"
+    return "<"
+
+
+def _mrz_char_value(value):
+    if value.isdigit():
+        return int(value)
+    if "A" <= value <= "Z":
+        return ord(value) - 55
+    return 0
+
+
+def _mrz_check_digit(value):
+    weights = (7, 3, 1)
+    total = sum(_mrz_char_value(char) * weights[index % 3] for index, char in enumerate(value or ""))
+    return str(total % 10)
+
+
+def _mrz_safe(value):
+    value = re.sub(r"\s+", "<", (value or "").upper().strip())
+    return re.sub(r"[^A-Z0-9<]", "", value)
+
+
+def _build_clean_mrz(fields):
+    passport_type = _mrz_safe(fields.get("type") or "P")[:1] or "P"
+    country_code = _repair_country_code(fields.get("country_code") or "") or "UTO"
+    nationality_code = country_code
+    passport_number = _mrz_safe(fields.get("passport_number") or "")
+    first_name = _mrz_safe(fields.get("first_name") or "")
+    last_name = _mrz_safe(fields.get("last_name") or "")
+
+    line1 = f"{passport_type}<{country_code}{last_name}<<{first_name}".replace("<<<", "<<")
+    line1 = line1[:44].ljust(44, "<")
+
+    passport_field = passport_number[:9].ljust(9, "<")
+    birth = _format_iso_date_for_mrz(fields.get("date_of_birth"))
+    expiry = _format_iso_date_for_mrz(fields.get("date_of_expiry"))
+    sex = _sex_to_mrz_char(fields.get("sex"))
+    optional_data = "<" * 14
+    line2_body = (
+        f"{passport_field}{_mrz_check_digit(passport_field)}"
+        f"{nationality_code}{birth}{_mrz_check_digit(birth)}"
+        f"{sex}{expiry}{_mrz_check_digit(expiry)}"
+        f"{optional_data}<"
+    )
+    line2 = f"{line2_body}{_mrz_check_digit(line2_body)}"[:44].ljust(44, "<")
+    return line1, line2
+
+
+def normalise_passport_raw_text(raw_text, fields):
+    fields = fields or {}
+    if not fields.get("passport_number") and not fields.get("first_name") and not fields.get("last_name"):
+        return raw_text
+
+    passport_type = fields.get("type") or "P"
+    country_code = fields.get("country_code") or ""
+    passport_number = fields.get("passport_number") or ""
+    nationality = fields.get("nationality") or COUNTRY_CODE_MAP.get(country_code, country_code)
+    sex = fields.get("sex") or ""
+    first_name = fields.get("first_name") or ""
+    last_name = fields.get("last_name") or ""
+    line1, line2 = _build_clean_mrz(fields)
+
+    lines = [
+        "PASSPORT " + " ".join(part for part in [passport_type, country_code, passport_number] if part),
+        "Surname",
+        last_name.upper(),
+        "Given Name",
+        first_name.upper(),
+        "Nationality / Date of Birth",
+        " ".join(
+            part
+            for part in [
+                (nationality or "").upper(),
+                _format_iso_date_for_passport_text(fields.get("date_of_birth")),
+            ]
+            if part
+        ),
+        "Sex",
+        _sex_to_mrz_char(sex) if sex else "",
+        "Date of Issue",
+        _format_iso_date_for_passport_text(fields.get("date_of_issue")),
+        "Date of Expiry",
+        _format_iso_date_for_passport_text(fields.get("date_of_expiry")),
+        "Authority",
+        "MINISTRY OF FOREIGN AFFAIRS",
+        "",
+        line1,
+        line2,
+    ]
+    return "\n".join(line for line in lines if line != "").strip()
+
+
 def _repair_country_code(value):
     code = re.sub(r"[^A-Z0-9]", "", (value or "").upper())[:3]
     if len(code) != 3:
@@ -404,14 +532,16 @@ def process_passport_upload(uploaded_file):
         quality_note = quality_note or f"OCR engine unavailable: {exc}"
 
     parsed = extract_passport_fields(raw_text)
+    display_raw_text = normalise_passport_raw_text(raw_text, parsed)
     full_name = parsed.get("full_name", "")
     if not parsed.get("passport_number"):
         match = re.search(r"\b[A-Z]{1,2}\d{6,8}\b", raw_text.upper())
         if match:
             parsed["passport_number"] = match.group(0)
+            display_raw_text = normalise_passport_raw_text(raw_text, parsed)
     return {
         "message": "Passport scanned successfully",
-        "raw_text": raw_text,
+        "raw_text": display_raw_text,
         "image_quality_note": quality_note,
         "original_image_name": original_name,
         "processed_image_name": processed_name,

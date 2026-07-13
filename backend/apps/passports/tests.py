@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 from apps.events.models import Event
 
 from .models import PassportAttendance, PassportVisitor
-from .services import extract_passport_fields
+from .services import extract_passport_fields, normalise_passport_raw_text
 
 
 class PassportAttendanceSubmitApiTests(APITestCase):
@@ -108,3 +108,15 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertEqual(fields["sex"], "Male")
         self.assertEqual(fields["date_of_issue"], "2008-08-18")
         self.assertEqual(fields["date_of_expiry"], "2018-08-18")
+
+        clean_raw_text = normalise_passport_raw_text(raw_text, fields)
+
+        self.assertIn("PASSPORT P JPN TC4866047", clean_raw_text)
+        self.assertIn("Surname\nNAKAMOTO", clean_raw_text)
+        self.assertIn("Given Name\nSATOSHI", clean_raw_text)
+        self.assertIn("Date of Issue\n18 AUG 2008", clean_raw_text)
+        self.assertIn("P<JPNNAKAMOTO<<SATOSHI", clean_raw_text)
+        self.assertIn("TC48660472JPN7504057M1808188", clean_raw_text)
+        self.assertNotIn("<K<", clean_raw_text)
+        self.assertNotIn("5PN", clean_raw_text)
+        self.assertNotIn("ccs", clean_raw_text)
