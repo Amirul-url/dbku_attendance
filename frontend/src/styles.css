@@ -3282,6 +3282,10 @@ input:focus {
   font-weight: 800;
 }
 
+.passport-step-card .compact-field .required-star {
+  color: #d92d20;
+}
+
 .passport-step-card .compact-field input,
 .passport-step-card .compact-field select,
 .passport-step-card .compact-field textarea,
