@@ -150,11 +150,11 @@ export function EventPassportAttendancePage() {
       </section>
 
       {selectedRow && (
-        <div className="modal-backdrop">
+        <div className="modal-overlay open">
           <div className="modal-box visitor-attendance-modal">
             <div className="modal-header">
               <div className="modal-title">View Non-Malaysian Visitor Attendance</div>
-              <button type="button" className="icon-button" onClick={() => setSelectedRow(null)}>x</button>
+              <button type="button" className="modal-close" onClick={() => setSelectedRow(null)}>x</button>
             </div>
             <div className="modal-body visitor-modal-grid">
               <label className="compact-field"><span>Full Name</span><input readOnly value={selectedRow.visitor_detail?.full_name || ''} /></label>
