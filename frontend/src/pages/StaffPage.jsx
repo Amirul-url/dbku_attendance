@@ -421,8 +421,11 @@ export function StaffPage() {
               </div>
 
               <div className="form-section-title">Security</div>
+              {modal.mode === 'edit' && (
+                <div className="form-helper-note">Leave password fields empty during edit to keep the current password.</div>
+              )}
               <div className="form-grid-2">
-                <label className="compact-field"><span>Password {modal.mode === 'edit' ? '(leave blank to keep current)' : ''}</span><input type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
+                <label className="compact-field"><span>Password</span><input type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
                 <label className="compact-field"><span>Confirm Password</span><input type="password" value={form.confirm_password} onChange={(e) => update('confirm_password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
               </div>
             </div>
