@@ -888,12 +888,12 @@ h1 {
 
 .event-table-card .data-table th:nth-child(3),
 .event-table-card .data-table td:nth-child(3) {
-  width: 14%;
+  width: 16%;
 }
 
 .event-table-card .data-table th:nth-child(4),
 .event-table-card .data-table td:nth-child(4) {
-  width: 18%;
+  width: 16%;
 }
 
 .event-table-card .data-table th:nth-child(5),
@@ -929,6 +929,10 @@ h1 {
 .event-timestamp-cell strong {
   color: #071d26;
   font-size: 12.5px;
+}
+
+.event-period-cell strong {
+  white-space: nowrap;
 }
 
 .event-period-cell span,
