@@ -1408,6 +1408,34 @@ input:focus {
   box-shadow: 0 2px 8px rgba(14, 124, 107, 0.25);
 }
 
+.primary-button:disabled,
+.btn:disabled,
+.is-loading {
+  cursor: wait;
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.button-spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 999px;
+  animation: button-spin 0.75s linear infinite;
+}
+
+.is-loading .button-spinner {
+  display: inline-block;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .login-divider {
   height: 1px;
   background: #e2e6ee;

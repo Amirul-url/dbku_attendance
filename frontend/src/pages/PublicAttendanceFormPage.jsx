@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, User } from 'lucide-react'
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
@@ -272,7 +272,6 @@ async function withLocation(callback) {
   const position = await new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
-      timeout: 8000,
       maximumAge: 60000,
     })
   })
@@ -280,6 +279,15 @@ async function withLocation(callback) {
     latitude: normalizeCoordinate(position.coords.latitude),
     longitude: normalizeCoordinate(position.coords.longitude),
   })
+}
+
+function SubmitButton({ isSubmitting, children, className = 'primary-button portal-login-button' }) {
+  return (
+    <button type="submit" className={`${className} ${isSubmitting ? 'is-loading' : ''}`} disabled={isSubmitting}>
+      <span className="button-spinner" aria-hidden="true" />
+      {isSubmitting ? 'Submitting...' : children}
+    </button>
+  )
 }
 
 function SuccessModal({ message, onClose }) {
@@ -328,6 +336,8 @@ export function StaffAttendanceFormPage() {
   const [form, setForm] = useState({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', other_department: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const department = form.department === 'Others' ? form.other_department : form.department
 
   function update(field, value) {
@@ -336,8 +346,11 @@ export function StaffAttendanceFormPage() {
 
   async function submit(submitEvent) {
     submitEvent.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
     setError('')
     setMessage('')
+    setIsSubmitting(true)
     try {
       await withLocation((coords) => apiRequest('/staff-attendance/', {
         method: 'POST',
@@ -347,6 +360,9 @@ export function StaffAttendanceFormPage() {
       setForm({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', other_department: '' })
     } catch (err) {
       setError(err.message)
+    } finally {
+      submittingRef.current = false
+      setIsSubmitting(false)
     }
   }
 
@@ -367,7 +383,7 @@ export function StaffAttendanceFormPage() {
           </select>
         </PublicField>
         {form.department === 'Others' && <PublicField index="6" label="Please Specify Department"><input value={form.other_department} onChange={(e) => update('other_department', e.target.value)} required /></PublicField>}
-        <button type="submit" className="primary-button portal-login-button"><CheckCircle2 size={20} /> Submit</button>
+        <SubmitButton isSubmitting={isSubmitting}><CheckCircle2 size={20} /> Submit</SubmitButton>
       </form>
     </PublicFormShell>
   )
@@ -379,6 +395,8 @@ export function VisitorAttendanceFormPage() {
   const [form, setForm] = useState({ full_name: '', phone_number: '', email: '', organization: '', other_organization: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const organization = form.organization === 'Others' ? form.other_organization : form.organization
 
   function update(field, value) {
@@ -387,8 +405,11 @@ export function VisitorAttendanceFormPage() {
 
   async function submit(submitEvent) {
     submitEvent.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
     setError('')
     setMessage('')
+    setIsSubmitting(true)
     try {
       await withLocation(async (coords) => {
         const visitor = await apiRequest('/visitors/', { method: 'POST', body: JSON.stringify({ ...form, organization }) })
@@ -401,6 +422,9 @@ export function VisitorAttendanceFormPage() {
       setForm({ full_name: '', phone_number: '', email: '', organization: '', other_organization: '' })
     } catch (err) {
       setError(err.message)
+    } finally {
+      submittingRef.current = false
+      setIsSubmitting(false)
     }
   }
 
@@ -420,7 +444,7 @@ export function VisitorAttendanceFormPage() {
           </select>
         </PublicField>
         {form.organization === 'Others' && <PublicField index="5" label="Please Specify Organization"><input value={form.other_organization} onChange={(e) => update('other_organization', e.target.value)} required /></PublicField>}
-        <button type="submit" className="primary-button portal-login-button"><CheckCircle2 size={20} /> Submit</button>
+        <SubmitButton isSubmitting={isSubmitting}><CheckCircle2 size={20} /> Submit</SubmitButton>
       </form>
     </PublicFormShell>
   )
@@ -450,6 +474,8 @@ export function PassportAttendanceFormPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [ocrNote, setOcrNote] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
   useEffect(() => () => {
     if (passportPreview) URL.revokeObjectURL(passportPreview)
@@ -461,8 +487,11 @@ export function PassportAttendanceFormPage() {
 
   async function submit(submitEvent) {
     submitEvent.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
     setError('')
     setMessage('')
+    setIsSubmitting(true)
     const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim()
     const extraData = Object.fromEntries(
       extraFields
@@ -501,6 +530,9 @@ export function PassportAttendanceFormPage() {
       setMessage('Passport attendance submitted successfully.')
     } catch (err) {
       setError(err.message)
+    } finally {
+      submittingRef.current = false
+      setIsSubmitting(false)
     }
   }
 
@@ -677,7 +709,7 @@ export function PassportAttendanceFormPage() {
           <div className="passport-step-title"><b>4</b><span>Submit Attendance</span></div>
           <p className="passport-helper-text">GPS/location access is required before attendance submission.</p>
           <div className="passport-step-actions">
-            <button type="submit" className="btn btn-green"><Check size={18} /> Submit Attendance</button>
+            <SubmitButton isSubmitting={isSubmitting} className="btn btn-green"><Check size={18} /> Submit Attendance</SubmitButton>
             <button type="button" className="btn btn-ghost" onClick={resetForm}><RotateCcw size={17} /> Clear Form</button>
           </div>
         </section>
@@ -692,6 +724,8 @@ export function AssignmentAttendanceFormPage() {
   const [form, setForm] = useState({ full_name: '', staff_id: '', phone_number: '', email: '', notes: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
   useEffect(() => {
     apiRequest(`/event-assignments/${assignmentId}/`).then(setAssignment).catch((err) => setError(err.message))
@@ -709,8 +743,11 @@ export function AssignmentAttendanceFormPage() {
 
   async function submit(submitEvent) {
     submitEvent.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
     setError('')
     setMessage('')
+    setIsSubmitting(true)
     try {
       await withLocation((coords) => apiRequest('/assignment-attendance/', {
         method: 'POST',
@@ -719,6 +756,9 @@ export function AssignmentAttendanceFormPage() {
       setMessage('Assignment attendance submitted successfully.')
     } catch (err) {
       setError(err.message)
+    } finally {
+      submittingRef.current = false
+      setIsSubmitting(false)
     }
   }
 
@@ -732,7 +772,7 @@ export function AssignmentAttendanceFormPage() {
         <PublicField index="3" label="Phone Number" icon={Phone}><PhoneNumberSelectInput value={form.phone_number} onChange={(value) => update('phone_number', value)} required /></PublicField>
         <PublicField index="4" label="Email Address" icon={Mail}><input type="email" autoComplete="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></PublicField>
         <PublicField index="5" label="Notes"><textarea value={form.notes} onChange={(e) => update('notes', e.target.value)} rows={4} /></PublicField>
-        <button type="submit" className="primary-button portal-login-button"><CheckCircle2 size={20} /> Submit</button>
+        <SubmitButton isSubmitting={isSubmitting}><CheckCircle2 size={20} /> Submit</SubmitButton>
       </form>
     </PublicFormShell>
   )
