@@ -17,9 +17,9 @@ def _actor_is_superuser(user):
 
 
 def _normalize_optional_contact_fields(data):
-    if "email" in data and not data.get("email"):
+    if "email" in data and (not data.get("email") or data.get("email") == "-"):
         data["email"] = None
-    if "phone_number" in data and not data.get("phone_number"):
+    if "phone_number" in data and (not data.get("phone_number") or data.get("phone_number") == "-"):
         data["phone_number"] = None
 
 

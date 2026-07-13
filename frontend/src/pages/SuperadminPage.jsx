@@ -93,7 +93,7 @@ function PhoneNumberSelectInput({ value, onChange }) {
         inputMode="tel"
         value={localNumber}
         onChange={(event) => updatePhone(countryCode, event.target.value)}
-        placeholder="e.g. 123456789"
+        placeholder="-"
         aria-label="Phone number"
       />
     </div>
@@ -126,6 +126,15 @@ function superadminFormFromRow(row) {
   }
 }
 
+function displayOptional(value) {
+  return value || '-'
+}
+
+function optionalContactPayload(value) {
+  const trimmed = String(value || '').trim()
+  return trimmed && trimmed !== '-' ? trimmed : null
+}
+
 export function SuperadminPage() {
   const { user, refreshUser } = useAuth()
   const [rows, setRows] = useState([])
@@ -134,6 +143,7 @@ export function SuperadminPage() {
   const [search, setSearch] = useState('')
   const [department, setDepartment] = useState('')
   const [modal, setModal] = useState(null)
+  const [modalError, setModalError] = useState('')
   const [form, setForm] = useState(emptySuperadmin)
   const [page, setPage] = useState(1)
 
@@ -182,27 +192,30 @@ export function SuperadminPage() {
 
   function openCreate() {
     setForm(emptySuperadmin)
+    setModalError('')
     setModal({ mode: 'create' })
   }
 
   function openEdit(row) {
     setForm(superadminFormFromRow(row))
+    setModalError('')
     setModal({ mode: 'edit', id: row.id })
   }
 
   async function saveSuperadmin(event) {
     event.preventDefault()
     setError('')
+    setModalError('')
     if (form.password || form.confirm_password) {
       if (form.password !== form.confirm_password) {
-        setError('Password and confirm password do not match.')
+        setModalError('Password and confirm password do not match.')
         return
       }
     }
     const payload = {
       ...form,
-      email: form.email.trim() || null,
-      phone_number: form.phone_number || null,
+      email: optionalContactPayload(form.email),
+      phone_number: optionalContactPayload(form.phone_number),
       department: form.department === 'Others' ? form.other_department : form.department,
       role: 'superadmin',
       is_staff: true,
@@ -227,7 +240,7 @@ export function SuperadminPage() {
       }
       setModal(null)
     } catch (err) {
-      setError(err.message)
+      setModalError(err.message)
     }
   }
 
@@ -289,8 +302,8 @@ export function SuperadminPage() {
             columns={[
               { key: 'full_name', label: 'Name', render: (row) => <span className="table-two-line table-name-cell" title={row.full_name}>{row.full_name}</span> },
               { key: 'staff_id', label: 'Staff ID' },
-              { key: 'email', label: 'Email' },
-              { key: 'phone_number', label: 'Phone' },
+              { key: 'email', label: 'Email', render: (row) => displayOptional(row.email) },
+              { key: 'phone_number', label: 'Phone', render: (row) => displayOptional(row.phone_number) },
               { key: 'department', label: 'Department', render: (row) => <span className="table-two-line table-department-cell" title={row.department}>{row.department}</span> },
               { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{row.last_login ? formatDateTime12Hour(row.last_login) : 'Never'}</span> },
               { key: 'role', label: 'Role', render: () => <span className="badge badge-superadmin">superadmin</span> },
@@ -322,7 +335,7 @@ export function SuperadminPage() {
                 <label className="compact-field"><span>Full Name</span><input value={form.full_name} onChange={(event) => update('full_name', event.target.value)} required /></label>
                 <label className="compact-field"><span>Staff ID</span><input value={form.staff_id} onChange={(event) => update('staff_id', event.target.value)} required /></label>
               </div>
-              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} /></label>
+              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="-" /></label>
               <label className="compact-field"><span>WhatsApp Number</span><PhoneNumberSelectInput value={form.phone_number || ''} onChange={(value) => update('phone_number', value)} /></label>
 
               <div className="form-section-title">Department & Access</div>
@@ -356,6 +369,7 @@ export function SuperadminPage() {
               {modal.mode === 'edit' && (
                 <div className="form-helper-note">Leave password fields empty during edit to keep the current password.</div>
               )}
+              {modalError && <div className="alert-error">{modalError}</div>}
               <div className="form-grid-2">
                 <label className="compact-field"><span>Password</span><input type="password" value={form.password} onChange={(event) => update('password', event.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
                 <label className="compact-field"><span>Confirm Password</span><input type="password" value={form.confirm_password} onChange={(event) => update('confirm_password', event.target.value)} required={modal.mode === 'create'} minLength={8} /></label>

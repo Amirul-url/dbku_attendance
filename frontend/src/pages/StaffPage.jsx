@@ -113,7 +113,7 @@ function PhoneNumberInput({ value, onChange }) {
         inputMode="tel"
         value={localNumber}
         onChange={(event) => updatePhone(countryCode, event.target.value)}
-        placeholder="e.g. 123456789"
+        placeholder="-"
         aria-label="Phone number"
       />
     </div>
@@ -151,7 +151,7 @@ function PhoneNumberSelectInput({ value, onChange }) {
         inputMode="tel"
         value={localNumber}
         onChange={(event) => updatePhone(countryCode, event.target.value)}
-        placeholder="e.g. 123456789"
+        placeholder="-"
         aria-label="Phone number"
       />
     </div>
@@ -188,6 +188,15 @@ function formatLoginDate(value) {
   return formatDateTime12Hour(value)
 }
 
+function displayOptional(value) {
+  return value || '-'
+}
+
+function optionalContactPayload(value) {
+  const trimmed = String(value || '').trim()
+  return trimmed && trimmed !== '-' ? trimmed : null
+}
+
 export function StaffPage() {
   const { user, refreshUser } = useAuth()
   const [rows, setRows] = useState([])
@@ -196,6 +205,7 @@ export function StaffPage() {
   const [search, setSearch] = useState('')
   const [department, setDepartment] = useState('')
   const [modal, setModal] = useState(null)
+  const [modalError, setModalError] = useState('')
   const [form, setForm] = useState(emptyStaff)
   const [page, setPage] = useState(1)
   const isSuperadmin = Boolean(user?.is_superuser || user?.staff_profile?.role === 'superadmin')
@@ -246,12 +256,14 @@ export function StaffPage() {
   function openCreate() {
     if (!canManageStaff) return
     setForm(emptyStaff)
+    setModalError('')
     setModal({ mode: 'create' })
   }
 
   function openEdit(row) {
     if (!canManageStaff) return
     setForm(staffFormFromRow(row))
+    setModalError('')
     setModal({ mode: 'edit', id: row.id })
   }
 
@@ -262,16 +274,17 @@ export function StaffPage() {
   async function saveStaff(event) {
     event.preventDefault()
     setError('')
+    setModalError('')
     if (form.password || form.confirm_password) {
       if (form.password !== form.confirm_password) {
-        setError('Password and confirm password do not match.')
+        setModalError('Password and confirm password do not match.')
         return
       }
     }
     const payload = {
       ...form,
-      email: form.email.trim() || null,
-      phone_number: form.phone_number || null,
+      email: optionalContactPayload(form.email),
+      phone_number: optionalContactPayload(form.phone_number),
       department: form.department === 'Others' ? form.other_department : form.department,
     }
     delete payload.confirm_password
@@ -291,7 +304,7 @@ export function StaffPage() {
       }
       setModal(null)
     } catch (err) {
-      setError(err.message)
+      setModalError(err.message)
     }
   }
 
@@ -356,8 +369,8 @@ export function StaffPage() {
             columns={[
               { key: 'full_name', label: 'Name', render: (row) => <span className="table-two-line table-name-cell" title={row.full_name}>{row.full_name}</span> },
               { key: 'staff_id', label: 'Staff ID' },
-              { key: 'email', label: 'Email' },
-              { key: 'phone_number', label: 'Phone' },
+              { key: 'email', label: 'Email', render: (row) => displayOptional(row.email) },
+              { key: 'phone_number', label: 'Phone', render: (row) => displayOptional(row.phone_number) },
               { key: 'department', label: 'Department', render: (row) => <span className="table-two-line table-department-cell" title={row.department}>{row.department}</span> },
               { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{formatLoginDate(row.last_login)}</span> },
               { key: 'registration_method', label: 'Method', render: (row) => <span className="badge badge-blue">{row.registration_method}</span> },
@@ -390,7 +403,7 @@ export function StaffPage() {
                 <label className="compact-field"><span>Full Name</span><input value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></label>
                 <label className="compact-field"><span>Staff ID</span><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} required /></label>
               </div>
-              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} /></label>
+              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="-" /></label>
               <label className="compact-field"><span>WhatsApp Number</span><PhoneNumberSelectInput value={form.phone_number || ''} onChange={(value) => update('phone_number', value)} /></label>
 
               <div className="form-section-title">Department & Access</div>
@@ -425,6 +438,7 @@ export function StaffPage() {
               {modal.mode === 'edit' && (
                 <div className="form-helper-note">Leave password fields empty during edit to keep the current password.</div>
               )}
+              {modalError && <div className="alert-error">{modalError}</div>}
               <div className="form-grid-2">
                 <label className="compact-field"><span>Password</span><input type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>
                 <label className="compact-field"><span>Confirm Password</span><input type="password" value={form.confirm_password} onChange={(e) => update('confirm_password', e.target.value)} required={modal.mode === 'create'} minLength={8} /></label>

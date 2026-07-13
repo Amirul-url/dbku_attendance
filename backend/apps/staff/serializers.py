@@ -7,7 +7,7 @@ from .services import create_staff_member, update_staff_member
 
 class StaffMemberSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
-    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    email = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
     password = serializers.CharField(write_only=True, required=False, min_length=8)
     is_staff = serializers.BooleanField(required=False)
@@ -43,8 +43,11 @@ class StaffMemberSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         email = (value or "").strip().lower()
+        if email == "-":
+            return None
         if not email:
             return None
+        email = serializers.EmailField().run_validation(email)
         queryset = StaffMember.objects.filter(email__iexact=email)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
@@ -53,6 +56,8 @@ class StaffMemberSerializer(serializers.ModelSerializer):
         return email
 
     def validate_phone_number(self, value):
+        if (value or "").strip() == "-":
+            return None
         phone_number = normalize_phone_number(value)
         if not phone_number:
             return None
