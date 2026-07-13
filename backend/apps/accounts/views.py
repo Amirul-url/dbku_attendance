@@ -14,16 +14,16 @@ from .otp_delivery import (
 )
 from .serializers import (
     CurrentUserSerializer,
-    EmailOrUsernameTokenObtainPairSerializer,
     ForgotPasswordSendSerializer,
     ForgotPasswordVerifySerializer,
     ManualRegistrationSerializer,
     ResetPasswordSerializer,
+    StaffIdTokenObtainPairSerializer,
 )
 
 
-class EmailOrUsernameTokenObtainPairView(TokenObtainPairView):
-    serializer_class = EmailOrUsernameTokenObtainPairSerializer
+class StaffIdTokenObtainPairView(TokenObtainPairView):
+    serializer_class = StaffIdTokenObtainPairSerializer
 
 
 class CurrentUserView(APIView):

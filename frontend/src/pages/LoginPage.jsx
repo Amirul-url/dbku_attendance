@@ -6,7 +6,7 @@ import { useAuth } from '../state/AuthContext.jsx'
 function friendlyLoginError(error) {
   const message = String(error?.message || '').toLowerCase()
   if (message.includes('no active account') || message.includes('token') || message.includes('credentials')) {
-    return 'The Staff ID/email or password you entered is incorrect.'
+    return 'The Staff ID or password you entered is incorrect.'
   }
   if (message.includes('failed to fetch') || message.includes('network')) {
     return 'Cannot connect to the server right now. Please check that the backend is running.'
@@ -28,13 +28,13 @@ export function LoginPage() {
     const cleanUsername = username.trim()
     const nextErrors = {}
     if (!cleanUsername && !password) {
-      nextErrors.username = 'Staff ID or email is required.'
+      nextErrors.username = 'Staff ID is required.'
       nextErrors.password = 'Password is required.'
       setFieldErrors(nextErrors)
       return
     }
     if (!cleanUsername) {
-      nextErrors.username = 'Staff ID or email is required.'
+      nextErrors.username = 'Staff ID is required.'
       setFieldErrors(nextErrors)
       return
     }
@@ -98,18 +98,18 @@ export function LoginPage() {
           <div className="login-form-header">
             <div className="login-badge">Staff Access</div>
             <h2>Welcome Back</h2>
-            <p>Sign in using your Staff ID or registered email.</p>
+            <p>Sign in using your Staff ID.</p>
           </div>
 
           <div className="login-form-body">
             <label className={`portal-field ${fieldErrors.username || fieldErrors.credentials ? 'has-error' : ''}`}>
               <span className="field-label">
                 <span className="field-icon"><User size={16} /></span>
-                Staff ID or Email
+                Staff ID
               </span>
               <input
                 value={username}
-                placeholder="DBKU0001 or example@dbku.gov.my"
+                placeholder="DBKU0001"
                 aria-invalid={fieldErrors.username || fieldErrors.credentials ? 'true' : 'false'}
                 onChange={(event) => {
                   setUsername(event.target.value)

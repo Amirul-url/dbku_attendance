@@ -28,7 +28,7 @@ class AuthApiTests(APITestCase):
         self.assertFalse(user.is_superuser)
         self.assertFalse(user.is_staff)
 
-    def test_token_login_accepts_email_identifier(self):
+    def test_token_login_uses_staff_id_only(self):
         user = User.objects.create_user(
             username="EMP002",
             email="token@example.com",
@@ -46,9 +46,33 @@ class AuthApiTests(APITestCase):
 
         response = self.client.post(
             "/api/auth/token/",
-            {"username": "token@example.com", "password": "strongpass123"},
+            {"username": "EMP002", "password": "strongpass123"},
             format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
+
+    def test_token_login_rejects_email_identifier(self):
+        user = User.objects.create_user(
+            username="EMP003",
+            email="email-login@example.com",
+            password="strongpass123",
+        )
+        StaffMember.objects.create(
+            user=user,
+            full_name="Email Login User",
+            staff_id="EMP003",
+            email="email-login@example.com",
+            phone_number="0123456791",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+
+        response = self.client.post(
+            "/api/auth/token/",
+            {"username": "email-login@example.com", "password": "strongpass123"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

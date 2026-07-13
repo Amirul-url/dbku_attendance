@@ -14,14 +14,8 @@ from apps.staff.services import create_viewer_staff_member
 from .otp_delivery import normalize_phone_number, password_reset_cache_key
 
 
-class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        identifier = attrs.get(self.username_field, "").strip()
-        if "@" in identifier:
-            user = User.objects.filter(email__iexact=identifier).first()
-            if user:
-                attrs[self.username_field] = user.get_username()
-        return super().validate(attrs)
+class StaffIdTokenObtainPairSerializer(TokenObtainPairSerializer):
+    pass
 
 
 def resolve_password_reset_identity(attrs):
