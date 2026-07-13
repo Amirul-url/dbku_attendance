@@ -646,7 +646,7 @@ h1 {
 }
 
 .event-modal {
-  width: min(1080px, 100%);
+  width: min(860px, calc(100vw - 48px));
 }
 
 .modal-staff {
@@ -704,7 +704,72 @@ h1 {
 }
 
 .event-modal-body {
-  max-height: min(78vh, 760px);
+  max-height: min(70vh, 640px);
+}
+
+.event-modal .modal-header,
+.event-modal .modal-footer {
+  padding: 12px 18px;
+}
+
+.event-modal .modal-body {
+  padding: 16px 18px;
+}
+
+.event-modal .stack-form {
+  gap: 12px;
+}
+
+.event-modal .compact-field {
+  gap: 5px;
+}
+
+.event-modal .compact-field input,
+.event-modal .compact-field select,
+.event-modal .compact-field textarea {
+  min-height: 44px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.event-modal .compact-field textarea {
+  min-height: 70px;
+}
+
+.event-modal .form-grid-2 {
+  gap: 10px;
+}
+
+.event-modal .form-grid-3 {
+  gap: 10px;
+}
+
+.event-modal .geofence-section {
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.event-modal .geofence-heading h2 {
+  font-size: 14px;
+}
+
+.event-modal .geofence-heading p {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.event-modal .geofence-toolbar {
+  gap: 7px;
+}
+
+.event-modal .geofence-toolbar .btn {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.event-modal .map-canvas {
+  height: 300px;
 }
 
 .table-card {
