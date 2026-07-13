@@ -1221,6 +1221,10 @@ h1 {
   margin-bottom: 22px;
 }
 
+.login-main-header {
+  text-align: center;
+}
+
 .login-form-header .login-badge {
   background: #e7f4f1;
   color: #08796b;

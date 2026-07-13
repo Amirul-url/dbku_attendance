@@ -95,8 +95,7 @@ export function LoginPage() {
         </div>
 
         <form className="login-card portal-login-card" onSubmit={handleSubmit}>
-          <div className="login-form-header">
-            <div className="login-badge">Staff Access</div>
+          <div className="login-form-header login-main-header">
             <h2>Welcome Back</h2>
             <p>Sign in using your Staff ID.</p>
           </div>
@@ -109,7 +108,7 @@ export function LoginPage() {
               </span>
               <input
                 value={username}
-                placeholder="DBKU0001"
+                placeholder="e.g. DBKU0001"
                 aria-invalid={fieldErrors.username || fieldErrors.credentials ? 'true' : 'false'}
                 onChange={(event) => {
                   setUsername(event.target.value)
