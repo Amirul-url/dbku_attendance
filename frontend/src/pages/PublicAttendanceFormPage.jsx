@@ -731,7 +731,7 @@ export function PassportAttendanceFormPage() {
               <select value={form.country_code} onChange={(e) => updateCountryCode(e.target.value)}>
                 <option value="">-- Select country code --</option>
                 {hasCustomCountryCode && <option value={form.country_code}>{form.country_code}</option>}
-                {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code} - {option.nationality}</option>)}
+                {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
               </select>
             </label>
             <label className="compact-field">
