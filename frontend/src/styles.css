@@ -3076,7 +3076,7 @@ input:focus {
   color: #003B46;
   padding: 10px 14px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -3110,12 +3110,14 @@ input:focus {
 .event-info-block strong {
   color: #071d26;
   font-size: 14px;
+  font-weight: 600;
   line-height: 1.45;
   white-space: pre-line;
 }
 
 .event-info-block .event-info-strong {
   font-size: 15px;
+  font-weight: 600;
 }
 
 .event-view-divider {
