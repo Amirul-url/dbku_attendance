@@ -201,6 +201,8 @@ export function SuperadminPage() {
     }
     const payload = {
       ...form,
+      email: form.email.trim(),
+      phone_number: form.phone_number || null,
       department: form.department === 'Others' ? form.other_department : form.department,
       role: 'superadmin',
       is_staff: true,
@@ -320,7 +322,7 @@ export function SuperadminPage() {
                 <label className="compact-field"><span>Full Name</span><input value={form.full_name} onChange={(event) => update('full_name', event.target.value)} required /></label>
                 <label className="compact-field"><span>Staff ID</span><input value={form.staff_id} onChange={(event) => update('staff_id', event.target.value)} required /></label>
               </div>
-              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} required /></label>
+              <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} /></label>
               <label className="compact-field"><span>WhatsApp Number</span><PhoneNumberSelectInput value={form.phone_number || ''} onChange={(value) => update('phone_number', value)} /></label>
 
               <div className="form-section-title">Department & Access</div>
