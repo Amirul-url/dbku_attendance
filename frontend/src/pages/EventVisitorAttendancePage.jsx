@@ -43,11 +43,9 @@ function renderTimestamp(row) {
 
 export function EventVisitorAttendancePage() {
   const { id } = useParams()
-  const [event, setEvent] = useState(null)
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [organization, setOrganization] = useState('')
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedRow, setSelectedRow] = useState(null)
 
@@ -55,20 +53,13 @@ export function EventVisitorAttendancePage() {
     let mounted = true
 
     async function load() {
-      setLoading(true)
       setError('')
       try {
-        const [eventData, attendanceData] = await Promise.all([
-          apiRequest(`/events/${id}/`),
-          apiRequest(`/visitor-attendance/?event=${id}`),
-        ])
+        const attendanceData = await apiRequest(`/visitor-attendance/?event=${id}`)
         if (!mounted) return
-        setEvent(eventData)
         setRows(listFromResponse(attendanceData))
       } catch (err) {
         if (mounted) setError(err.message)
-      } finally {
-        if (mounted) setLoading(false)
       }
     }
 
@@ -110,7 +101,6 @@ export function EventVisitorAttendancePage() {
       <div className="attendance-records-header">
         <div>
           <h2>Visitor Attendance (Malaysian)</h2>
-          <p>{event?.name || 'Event visitor attendance list'}</p>
         </div>
         <div className="attendance-total-pill"><Users size={16} /> Total: {filteredRows.length}</div>
       </div>
@@ -118,7 +108,6 @@ export function EventVisitorAttendancePage() {
       {error && <div className="alert alert-error">{error}</div>}
 
       <section className="event-attendance-section">
-        <div className="event-view-section-label">{loading ? 'Loading Visitor Attendance' : 'Visitor Attendance (Malaysian)'}</div>
         <div className="event-attendance-filter">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search visitor name" />
           <select value={organization} onChange={(event) => setOrganization(event.target.value)}>
