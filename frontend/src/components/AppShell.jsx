@@ -3,9 +3,8 @@ import { BarChart3, CalendarDays, ChevronDown, Clock3, LayoutDashboard, LogOut, 
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext.jsx'
 
-const navItems = [
+const baseNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/staff', label: 'Staff', icon: Users },
   { to: '/events', label: 'Events', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
 ]
@@ -16,9 +15,14 @@ export function AppShell() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const accountName = profile?.full_name || user?.first_name || user?.username || 'User'
-  const visibleNavItems = user?.is_superuser
-    ? [...navItems, { to: '/superadmin', label: 'Superadmin', icon: ShieldCheck }]
-    : navItems
+  const isSuperadmin = user?.is_superuser || profile?.role === 'superadmin'
+  const canViewStaff = isSuperadmin || profile?.role === 'admin'
+  const visibleNavItems = [
+    baseNavItems[0],
+    ...(canViewStaff ? [{ to: '/staff', label: 'Staff', icon: Users }] : []),
+    ...baseNavItems.slice(1),
+    ...(isSuperadmin ? [{ to: '/superadmin', label: 'Superadmin', icon: ShieldCheck }] : []),
+  ]
 
   return (
     <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>

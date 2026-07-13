@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 "staff_id": staff_id,
                 "email": email,
                 "department": department,
-                "role": StaffMember.ROLE_ADMIN,
+                "role": StaffMember.ROLE_SUPERADMIN,
                 "registration_method": StaffMember.REGISTRATION_MANUAL,
             },
         )

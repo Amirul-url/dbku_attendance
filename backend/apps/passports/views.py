@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.core.permissions import CanManageEvents
-from apps.core.utils import split_client_ips
+from apps.core.request_meta import save_serializer_with_client_ips
 
-from .models import PassportAttendance, PassportVisitor
+from .models import PassportVisitor
+from .selectors import passport_attendance_list
 from .serializers import PassportAttendanceSerializer, PassportVisitorSerializer
 from .services import process_passport_upload
 
@@ -34,11 +35,7 @@ class PassportAttendanceViewSet(ModelViewSet):
     permission_classes = [CanManageEvents]
 
     def get_queryset(self):
-        queryset = PassportAttendance.objects.select_related("event", "passport_visitor")
-        event_id = self.request.query_params.get("event")
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        return queryset
+        return passport_attendance_list(event_id=self.request.query_params.get("event"))
 
     def get_permissions(self):
         if self.action == "create":
@@ -46,5 +43,4 @@ class PassportAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        ipv4, ipv6 = split_client_ips(self.request)
-        serializer.save(ipv4_address=ipv4, ipv6_address=ipv6)
+        save_serializer_with_client_ips(serializer, self.request)

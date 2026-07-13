@@ -197,9 +197,12 @@ export function StaffPage() {
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyStaff)
   const [page, setPage] = useState(1)
+  const isSuperadmin = Boolean(user?.is_superuser || user?.staff_profile?.role === 'superadmin')
+  const canViewStaff = Boolean(isSuperadmin || user?.staff_profile?.role === 'admin')
+  const canManageStaff = isSuperadmin
 
   const filteredRows = useMemo(() => rows.filter((row) => {
-    if (row.is_superuser) return false
+    if (row.is_superuser || row.role === 'superadmin') return false
     const query = search.toLowerCase()
     const matchesSearch = !query
       || row.full_name?.toLowerCase().includes(query)
@@ -232,15 +235,21 @@ export function StaffPage() {
   }
 
   useEffect(() => {
-    load()
-  }, [])
+    if (canViewStaff) {
+      load()
+    } else {
+      setLoading(false)
+    }
+  }, [canViewStaff])
 
   function openCreate() {
+    if (!canManageStaff) return
     setForm(emptyStaff)
     setModal({ mode: 'create' })
   }
 
   function openEdit(row) {
+    if (!canManageStaff) return
     setForm(staffFormFromRow(row))
     setModal({ mode: 'edit', id: row.id })
   }
@@ -286,6 +295,7 @@ export function StaffPage() {
   }
 
   async function deleteStaff(row) {
+    if (!canManageStaff) return
     if (!window.confirm(`Delete ${row.full_name}?`)) return
     try {
       await apiRequest(`/staff/${row.id}/`, { method: 'DELETE' })
@@ -295,6 +305,10 @@ export function StaffPage() {
     }
   }
 
+  if (!canViewStaff) {
+    return <div className="alert-error">Only an admin or superadmin can access staff management.</div>
+  }
+
   return (
     <>
       <div className="page-header">
@@ -302,7 +316,9 @@ export function StaffPage() {
           <h1>Staff Management</h1>
           <div className="page-sub">Manage staff records and access roles.</div>
         </div>
-        <button type="button" className="btn btn-green" onClick={openCreate}><Plus size={16} /> Add Staff</button>
+        {canManageStaff && (
+          <button type="button" className="btn btn-green" onClick={openCreate}><Plus size={16} /> Add Staff</button>
+        )}
       </div>
       <div className="filter-card">
         <input className="filter-input" placeholder="Search name, Staff ID, email, or phone" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -345,7 +361,7 @@ export function StaffPage() {
               { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{formatLoginDate(row.last_login)}</span> },
               { key: 'registration_method', label: 'Method', render: (row) => <span className="badge badge-blue">{row.registration_method}</span> },
               { key: 'role', label: 'Role', render: (row) => <span className={`badge badge-${row.role}`}>{row.role}</span> },
-              {
+              ...(canManageStaff ? [{
                 key: 'actions',
                 label: 'Actions',
                 render: (row) => (
@@ -354,7 +370,7 @@ export function StaffPage() {
                     <button type="button" className="btn btn-small btn-red" onClick={() => deleteStaff(row)}><Trash2 size={14} /> Delete</button>
                   </div>
                 ),
-              },
+              }] : []),
             ]}
           />
         </div>

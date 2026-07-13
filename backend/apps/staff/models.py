@@ -3,10 +3,12 @@ from django.db import models
 
 
 class StaffMember(models.Model):
+    ROLE_SUPERADMIN = "superadmin"
     ROLE_ADMIN = "admin"
     ROLE_VIEWER = "viewer"
 
     ROLE_CHOICES = [
+        (ROLE_SUPERADMIN, "Superadmin"),
         (ROLE_ADMIN, "Admin"),
         (ROLE_VIEWER, "Viewer"),
     ]

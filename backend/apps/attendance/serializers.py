@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from apps.core.services import validate_event_geofence
-from apps.staff.models import StaffMember
+from apps.core.geo import validate_event_geofence
+from apps.staff.selectors import staff_member_by_staff_id
 
 from .models import AssignmentAttendance, StaffAttendance, Visitor, VisitorAttendance
 
@@ -46,7 +46,7 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("All fields are required.")
         if not phone.isdigit() or len(phone) < 9:
             raise serializers.ValidationError({"phone_number": "Invalid phone number."})
-        staff = StaffMember.objects.filter(staff_id__iexact=staff_id).first()
+        staff = staff_member_by_staff_id(staff_id)
         if not staff:
             raise serializers.ValidationError({"staff_id": "Employee ID not found. Please register first."})
         if staff.email.lower() != email:

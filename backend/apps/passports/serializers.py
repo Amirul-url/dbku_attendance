@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.services import validate_event_geofence
+from apps.core.geo import validate_event_geofence
 
 from .models import PassportAttendance, PassportVisitor
 

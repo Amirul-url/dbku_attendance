@@ -2,15 +2,16 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny
 
 from apps.core.permissions import CanManageEvents
-from apps.core.utils import split_client_ips
 
-from .models import AssignmentAttendance, StaffAttendance, Visitor, VisitorAttendance
+from .models import Visitor
+from .selectors import assignment_attendance_list, staff_attendance_list, visitor_attendance_list
 from .serializers import (
     AssignmentAttendanceSerializer,
     StaffAttendanceSerializer,
     VisitorAttendanceSerializer,
     VisitorSerializer,
 )
+from .services import save_attendance_with_client_ips
 
 
 class VisitorViewSet(ModelViewSet):
@@ -29,11 +30,7 @@ class StaffAttendanceViewSet(ModelViewSet):
     permission_classes = [CanManageEvents]
 
     def get_queryset(self):
-        queryset = StaffAttendance.objects.select_related("event", "staff_member")
-        event_id = self.request.query_params.get("event")
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        return queryset
+        return staff_attendance_list(event_id=self.request.query_params.get("event"))
 
     def get_permissions(self):
         if self.action == "create":
@@ -41,8 +38,7 @@ class StaffAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        ipv4, ipv6 = split_client_ips(self.request)
-        serializer.save(ipv4_address=ipv4, ipv6_address=ipv6)
+        save_attendance_with_client_ips(serializer, self.request)
 
 
 class VisitorAttendanceViewSet(ModelViewSet):
@@ -50,11 +46,7 @@ class VisitorAttendanceViewSet(ModelViewSet):
     permission_classes = [CanManageEvents]
 
     def get_queryset(self):
-        queryset = VisitorAttendance.objects.select_related("event", "visitor")
-        event_id = self.request.query_params.get("event")
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        return queryset
+        return visitor_attendance_list(event_id=self.request.query_params.get("event"))
 
     def get_permissions(self):
         if self.action == "create":
@@ -62,8 +54,7 @@ class VisitorAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        ipv4, ipv6 = split_client_ips(self.request)
-        serializer.save(ipv4_address=ipv4, ipv6_address=ipv6)
+        save_attendance_with_client_ips(serializer, self.request)
 
 
 class AssignmentAttendanceViewSet(ModelViewSet):
@@ -71,11 +62,7 @@ class AssignmentAttendanceViewSet(ModelViewSet):
     permission_classes = [CanManageEvents]
 
     def get_queryset(self):
-        queryset = AssignmentAttendance.objects.select_related("assignment", "assignment__event")
-        assignment_id = self.request.query_params.get("assignment")
-        if assignment_id:
-            queryset = queryset.filter(assignment_id=assignment_id)
-        return queryset
+        return assignment_attendance_list(assignment_id=self.request.query_params.get("assignment"))
 
     def get_permissions(self):
         if self.action == "create":
@@ -83,5 +70,4 @@ class AssignmentAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        ipv4, ipv6 = split_client_ips(self.request)
-        serializer.save(ipv4_address=ipv4, ipv6_address=ipv6)
+        save_attendance_with_client_ips(serializer, self.request)

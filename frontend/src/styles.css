@@ -599,6 +599,11 @@ h1 {
   color: #c62828;
 }
 
+.badge-superadmin {
+  background: #fff3df;
+  color: #a64f00;
+}
+
 .badge-viewer {
   background: #eeeeee;
   color: #607d8b;

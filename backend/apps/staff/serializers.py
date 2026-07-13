@@ -1,9 +1,8 @@
-from django.contrib.auth.models import User
-from django.db import transaction
 from rest_framework import serializers
 
-from .models import StaffMember
 from apps.accounts.otp_delivery import normalize_phone_number
+from .models import StaffMember
+from .services import create_staff_member, update_staff_member
 
 
 class StaffMemberSerializer(serializers.ModelSerializer):
@@ -65,50 +64,9 @@ class StaffMemberSerializer(serializers.ModelSerializer):
         return phone_number
 
     def create(self, validated_data):
-        password = validated_data.pop("password", None)
-        is_staff = validated_data.pop("is_staff", False)
-        is_superuser = validated_data.pop("is_superuser", False)
         request_user = self.context.get("request").user if self.context.get("request") else None
-        if not getattr(request_user, "is_superuser", False):
-            is_staff = False
-            is_superuser = False
-        if not password:
-            raise serializers.ValidationError({"password": "Password is required."})
-
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=validated_data["staff_id"],
-                email=validated_data.get("email") or "",
-                password=password,
-            )
-            user.is_staff = is_staff or is_superuser
-            user.is_superuser = is_superuser
-            user.save(update_fields=["is_staff", "is_superuser"])
-            return StaffMember.objects.create(user=user, **validated_data)
+        return create_staff_member(validated_data, request_user=request_user)
 
     def update(self, instance, validated_data):
-        password = validated_data.pop("password", None)
-        is_staff = validated_data.pop("is_staff", None)
-        is_superuser = validated_data.pop("is_superuser", None)
         request_user = self.context.get("request").user if self.context.get("request") else None
-        if not getattr(request_user, "is_superuser", False):
-            is_staff = None
-            is_superuser = None
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-
-        with transaction.atomic():
-            instance.save()
-            instance.user.email = instance.email or ""
-            instance.user.username = instance.staff_id
-            if is_superuser is not None:
-                instance.user.is_superuser = is_superuser
-                if is_superuser:
-                    instance.user.is_staff = True
-            if is_staff is not None:
-                instance.user.is_staff = is_staff or instance.user.is_superuser
-            if password:
-                instance.user.set_password(password)
-            instance.user.save()
-
-        return instance
+        return update_staff_member(instance, validated_data, request_user=request_user)

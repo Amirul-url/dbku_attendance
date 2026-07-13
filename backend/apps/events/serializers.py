@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.services import generate_event_qr_codes
+from apps.core.qr import generate_event_qr_codes
 
 from .models import Event, EventAssignment
 

@@ -4,7 +4,13 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from apps.staff.models import StaffMember
+from apps.staff.selectors import (
+    staff_member_by_phone_number,
+    staff_member_exists_by_email,
+    staff_member_exists_by_phone_number,
+    staff_member_exists_by_staff_id,
+)
+from apps.staff.services import create_viewer_staff_member
 from .otp_delivery import normalize_phone_number, password_reset_cache_key
 
 
@@ -38,10 +44,9 @@ def resolve_password_reset_identity(attrs):
     phone_number = normalize_phone_number(attrs.get("phone_number"))
     if not phone_number:
         raise serializers.ValidationError({"phone_number": "WhatsApp number is required."})
-    try:
-        staff = StaffMember.objects.select_related("user").get(phone_number=phone_number)
-    except StaffMember.DoesNotExist as exc:
-        raise serializers.ValidationError({"phone_number": "No account found for this WhatsApp number."}) from exc
+    staff = staff_member_by_phone_number(phone_number)
+    if not staff:
+        raise serializers.ValidationError({"phone_number": "No account found for this WhatsApp number."})
     return {
         "method": method,
         "phone_number": phone_number,
@@ -87,16 +92,16 @@ class ManualRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError({"staff_id": "Staff ID is required."})
         if attrs["password"] != attrs["confirm_password"]:
             raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
-        if User.objects.filter(username__iexact=staff_id).exists() or StaffMember.objects.filter(staff_id__iexact=staff_id).exists():
+        if User.objects.filter(username__iexact=staff_id).exists() or staff_member_exists_by_staff_id(staff_id):
             raise serializers.ValidationError({
                 "staff_id": "This Staff ID already has an account. Please login to the existing account or use Forgot Password.",
             })
-        if User.objects.filter(email__iexact=attrs["email"]).exists() or StaffMember.objects.filter(email__iexact=attrs["email"]).exists():
+        if User.objects.filter(email__iexact=attrs["email"]).exists() or staff_member_exists_by_email(attrs["email"]):
             raise serializers.ValidationError({
                 "email": "This email address already has an account. Please login to the existing account or use Forgot Password.",
             })
         phone_number = normalize_phone_number(attrs.get("phone_number"))
-        if phone_number and StaffMember.objects.filter(phone_number=phone_number).exists():
+        if phone_number and staff_member_exists_by_phone_number(phone_number):
             raise serializers.ValidationError({
                 "phone_number": "This WhatsApp number already has an account. Please login to the existing account or use Forgot Password.",
             })
@@ -116,9 +121,8 @@ class ManualRegistrationSerializer(serializers.Serializer):
                 password=password,
                 first_name=validated_data["full_name"],
             )
-            return StaffMember.objects.create(
+            return create_viewer_staff_member(
                 user=user,
-                role=StaffMember.ROLE_VIEWER,
                 **validated_data,
             )
 

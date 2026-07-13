@@ -11,7 +11,7 @@ const emptySuperadmin = {
   phone_number: '',
   department: 'Administration (ADM)',
   other_department: '',
-  role: 'admin',
+  role: 'superadmin',
   registration_method: 'manual',
   is_staff: true,
   is_superuser: true,
@@ -117,7 +117,7 @@ function superadminFormFromRow(row) {
     ...row,
     department: departmentValue,
     other_department: departmentValue === 'Others' ? row.department : '',
-    role: 'admin',
+    role: 'superadmin',
     is_staff: true,
     is_superuser: true,
     password: '',
@@ -136,10 +136,10 @@ export function SuperadminPage() {
   const [form, setForm] = useState(emptySuperadmin)
   const [page, setPage] = useState(1)
 
-  const canManageSuperadmins = Boolean(user?.is_superuser)
+  const canManageSuperadmins = Boolean(user?.is_superuser || user?.staff_profile?.role === 'superadmin')
 
   const filteredRows = useMemo(() => rows.filter((row) => {
-    if (!row.is_superuser) return false
+    if (!row.is_superuser && row.role !== 'superadmin') return false
     const query = search.toLowerCase()
     const matchesSearch = !query
       || row.full_name?.toLowerCase().includes(query)
@@ -201,7 +201,7 @@ export function SuperadminPage() {
     const payload = {
       ...form,
       department: form.department === 'Others' ? form.other_department : form.department,
-      role: 'admin',
+      role: 'superadmin',
       is_staff: true,
       is_superuser: true,
       registration_method: 'manual',
@@ -290,7 +290,7 @@ export function SuperadminPage() {
               { key: 'phone_number', label: 'Phone' },
               { key: 'department', label: 'Department', render: (row) => <span className="table-two-line table-department-cell" title={row.department}>{row.department}</span> },
               { key: 'last_login', label: 'Login Date', render: (row) => <span className="table-date-cell">{row.last_login ? new Date(row.last_login).toLocaleString() : 'Never'}</span> },
-              { key: 'role', label: 'Role', render: () => <span className="badge badge-admin">superadmin</span> },
+              { key: 'role', label: 'Role', render: () => <span className="badge badge-superadmin">superadmin</span> },
               {
                 key: 'actions',
                 label: 'Actions',
