@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, User } from 'lucide-react'
+import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, Trash2, User } from 'lucide-react'
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
@@ -672,6 +672,10 @@ export function PassportAttendanceFormPage() {
     setExtraFields((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
   }
 
+  function removeExtraField(id) {
+    setExtraFields((current) => current.filter((item) => item.id !== id))
+  }
+
   const hasCustomCountryCode = form.country_code && !findPassportCountryByCode(form.country_code)
   const hasCustomNationality = form.nationality && !findPassportCountryByNationality(form.nationality)
 
@@ -768,6 +772,7 @@ export function PassportAttendanceFormPage() {
                 <div className="passport-extra-row" key={item.id}>
                   <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" />
                   <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder="Value" />
+                  <button type="button" className="passport-extra-delete" onClick={() => removeExtraField(item.id)} aria-label="Delete additional field"><Trash2 size={18} /></button>
                 </div>
               ))}
             </div>

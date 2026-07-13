@@ -3351,8 +3351,26 @@ input:focus {
 
 .passport-extra-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px;
+  align-items: center;
   gap: 12px;
+}
+
+.passport-extra-delete {
+  align-items: center;
+  align-self: stretch;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #b42318;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 52px;
+}
+
+.passport-extra-delete:hover {
+  background: #fecaca;
 }
 
 .passport-extra-help {
@@ -4341,6 +4359,11 @@ input:focus {
   .passport-form-grid,
   .passport-extra-row {
     grid-template-columns: 1fr;
+  }
+
+  .passport-extra-delete {
+    justify-self: end;
+    width: 52px;
   }
 
   .passport-step-title-row {
