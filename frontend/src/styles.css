@@ -3731,7 +3731,7 @@ input:focus {
 
 .attendance-table-card .data-table {
   table-layout: fixed;
-  min-width: 1120px;
+  min-width: 1280px;
 }
 
 .attendance-table-card .data-table th,
@@ -3739,6 +3739,11 @@ input:focus {
   overflow: hidden;
   padding-inline: 10px;
   text-overflow: ellipsis;
+}
+
+.attendance-table-card .data-table th:last-child,
+.attendance-table-card .data-table td:last-child {
+  overflow: visible;
 }
 
 .table-ellipsis {
@@ -3751,53 +3756,56 @@ input:focus {
 
 .attendance-table-card .event-action-row {
   gap: 6px;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
 }
 
 .attendance-table-card .event-action-row .btn {
   padding-inline: 8px;
+  flex: 0 0 auto;
 }
 
 .visitor-attendance-table .data-table th:nth-child(1),
 .visitor-attendance-table .data-table td:nth-child(1),
 .passport-attendance-table .data-table th:nth-child(1),
 .passport-attendance-table .data-table td:nth-child(1) {
-  width: 8%;
+  width: 7%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(2),
 .visitor-attendance-table .data-table td:nth-child(2) {
-  width: 15%;
+  width: 13%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(3),
 .visitor-attendance-table .data-table td:nth-child(3) {
-  width: 17%;
+  width: 15%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(4),
 .visitor-attendance-table .data-table td:nth-child(4) {
-  width: 14%;
+  width: 13%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(5),
 .visitor-attendance-table .data-table td:nth-child(5),
 .passport-attendance-table .data-table th:nth-child(4),
 .passport-attendance-table .data-table td:nth-child(4) {
-  width: 10%;
+  width: 9%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(6),
 .visitor-attendance-table .data-table td:nth-child(6),
 .passport-attendance-table .data-table th:nth-child(5),
 .passport-attendance-table .data-table td:nth-child(5) {
-  width: 5%;
+  width: 4%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(7),
 .visitor-attendance-table .data-table td:nth-child(7),
 .passport-attendance-table .data-table th:nth-child(6),
 .passport-attendance-table .data-table td:nth-child(6) {
-  width: 9%;
+  width: 8%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(8),
@@ -3808,41 +3816,45 @@ input:focus {
 .passport-attendance-table .data-table td:nth-child(7),
 .passport-attendance-table .data-table th:nth-child(8),
 .passport-attendance-table .data-table td:nth-child(8) {
-  width: 8%;
+  width: 7%;
 }
 
 .visitor-attendance-table .data-table th:nth-child(10),
 .visitor-attendance-table .data-table td:nth-child(10),
 .passport-attendance-table .data-table th:nth-child(9),
 .passport-attendance-table .data-table td:nth-child(9) {
-  width: 13%;
+  width: 15%;
+}
+
+.staff-attendance-table .data-table {
+  min-width: 1360px;
 }
 
 .staff-attendance-table .data-table th:nth-child(1),
 .staff-attendance-table .data-table td:nth-child(1) {
-  width: 8%;
+  width: 7%;
 }
 
 .staff-attendance-table .data-table th:nth-child(2),
 .staff-attendance-table .data-table td:nth-child(2) {
-  width: 9%;
+  width: 8%;
 }
 
 .staff-attendance-table .data-table th:nth-child(3),
 .staff-attendance-table .data-table td:nth-child(3) {
-  width: 15%;
+  width: 13%;
 }
 
 .staff-attendance-table .data-table th:nth-child(4),
 .staff-attendance-table .data-table td:nth-child(4),
 .staff-attendance-table .data-table th:nth-child(6),
 .staff-attendance-table .data-table td:nth-child(6) {
-  width: 10%;
+  width: 9%;
 }
 
 .staff-attendance-table .data-table th:nth-child(5),
 .staff-attendance-table .data-table td:nth-child(5) {
-  width: 18%;
+  width: 14%;
 }
 
 .staff-attendance-table .data-table th:nth-child(7),
@@ -3851,17 +3863,20 @@ input:focus {
 }
 
 .staff-attendance-table .data-table th:nth-child(8),
-.staff-attendance-table .data-table td:nth-child(8),
+.staff-attendance-table .data-table td:nth-child(8) {
+  width: 8%;
+}
+
 .staff-attendance-table .data-table th:nth-child(9),
 .staff-attendance-table .data-table td:nth-child(9),
 .staff-attendance-table .data-table th:nth-child(10),
 .staff-attendance-table .data-table td:nth-child(10) {
-  width: 8%;
+  width: 6%;
 }
 
 .staff-attendance-table .data-table th:nth-child(11),
 .staff-attendance-table .data-table td:nth-child(11) {
-  width: 13%;
+  width: 15%;
 }
 
 .event-section-pagination {
