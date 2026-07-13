@@ -121,6 +121,40 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertNotIn("5PN", clean_raw_text)
         self.assertNotIn("ccs", clean_raw_text)
 
+    def test_japanese_passport_with_noisy_country_segment_keeps_required_fields(self):
+        raw_text = """
+        PASSPORT P scone JPN MJ4564878
+        GAIMU
+        JAPAN oe 18 JUN 1974
+        er OCT 1999
+        27 OCT 2004. AK
+        Authority
+        MINISTRY OF
+        FOR tion AFFAIRS
+
+        P<JPNGAIMU<<NATSUKO< <<< <<< KK KK KK KK KK KK KK KKK
+        MJ45648787J5PN7406184F 04102 76<<<<<K<<<<<<<<<<0
+        """
+
+        fields = extract_passport_fields(raw_text)
+
+        self.assertEqual(fields["passport_number"], "MJ4564878")
+        self.assertEqual(fields["country_code"], "JPN")
+        self.assertEqual(fields["nationality"], "Japan")
+        self.assertEqual(fields["first_name"], "Natsuko")
+        self.assertEqual(fields["last_name"], "Gaimu")
+        self.assertEqual(fields["date_of_birth"], "1974-06-18")
+        self.assertEqual(fields["sex"], "Female")
+        self.assertEqual(fields["date_of_issue"], "1999-10-27")
+        self.assertEqual(fields["date_of_expiry"], "2004-10-27")
+
+        clean_raw_text = normalise_passport_raw_text(raw_text, fields)
+
+        self.assertIn("Date of Issue\n27 OCT 1999", clean_raw_text)
+        self.assertIn("Date of Expiry\n27 OCT 2004", clean_raw_text)
+        self.assertIn("Sex\nF", clean_raw_text)
+        self.assertIn("MJ45648787JPN7406184F0410276", clean_raw_text)
+
     def test_noisy_malaysian_passport_ocr_is_repaired(self):
         raw_text = """
         Paspert /

@@ -151,6 +151,25 @@ def submit_passport_attendance(data, request):
     status = _clean_text(data.get("status")) or PassportVisitor.STATUS_PENDING_VERIFICATION
     image_quality_note = _clean_text(data.get("image_quality_note"))
 
+    required_fields = {
+        "type": passport_type,
+        "country_code": country_code,
+        "nationality": nationality,
+        "first_name": first_name,
+        "last_name": last_name,
+        "date_of_birth": date_of_birth,
+        "sex": sex,
+        "date_of_issue": date_of_issue,
+        "date_of_expiry": date_of_expiry,
+    }
+    missing_fields = {
+        field: "This field is required."
+        for field, value in required_fields.items()
+        if not value
+    }
+    if missing_fields:
+        raise serializers.ValidationError(missing_fields)
+
     additional_fields_text = _normalise_additional_fields_text(data.get("additional_fields_text"))
     additional_fields = data.get("additional_fields")
     if not additional_fields_text and additional_fields:
@@ -257,6 +276,37 @@ def _parse_visible_date(value):
     except ValueError:
         return ""
     return f"{year}-{months[month]}-{day_number:02d}"
+
+
+def _month_abbreviation(value):
+    match = re.fullmatch(r"\d{4}-(\d{2})-\d{2}", value or "")
+    if not match:
+        return ""
+    return {
+        "01": "JAN",
+        "02": "FEB",
+        "03": "MAR",
+        "04": "APR",
+        "05": "MAY",
+        "06": "JUN",
+        "07": "JUL",
+        "08": "AUG",
+        "09": "SEP",
+        "10": "OCT",
+        "11": "NOV",
+        "12": "DEC",
+    }.get(match.group(1), "")
+
+
+def _repair_mrz_country_segment(line2, country_code):
+    country_code = _repair_country_code(country_code)
+    if len(line2) < 14 or len(country_code) != 3:
+        return line2
+    if _repair_country_code(line2[10:13].replace("<", "")) == country_code:
+        return line2
+    if line2[10] == country_code[0] and _repair_country_code(line2[11:14].replace("<", "")) == country_code:
+        return f"{line2[:10]}{country_code}{line2[14:]}"
+    return line2
 
 
 def _format_iso_date_for_passport_text(value):
@@ -461,6 +511,21 @@ def extract_visible_passport_fields(text):
         fields["date_of_issue"] = dates[1]
     if len(dates) >= 3:
         fields["date_of_expiry"] = dates[2]
+    if len(dates) == 2:
+        expiry_date = dates[-1]
+        expiry_match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", expiry_date)
+        expiry_month = _month_abbreviation(expiry_date)
+        existing_year_months = {date_value[:7] for date_value in dates}
+        partial_issue_candidates = []
+        if expiry_match and expiry_month:
+            expiry_year, expiry_month_number, expiry_day = expiry_match.groups()
+            for partial in re.finditer(rf"\b{expiry_month}\s+(\d{{4}})\b", upper_text):
+                year = partial.group(1)
+                year_month = f"{year}-{expiry_month_number}"
+                if year < expiry_year and year_month not in existing_year_months:
+                    partial_issue_candidates.append(f"{year}-{expiry_month_number}-{expiry_day}")
+        if len(partial_issue_candidates) == 1:
+            fields["date_of_issue"] = partial_issue_candidates[0]
 
     if re.search(r"\bJAPAN\b", upper_text):
         fields["nationality"] = "Japan"
@@ -491,9 +556,10 @@ def parse_mrz(text):
             continue
         names = line1[5:]
         surname, given = _split_mrz_names(names)
+        country_code = _repair_country_code(line1[2:5].replace("<", ""))
+        line2 = _repair_mrz_country_segment(line2, country_code).ljust(44, "<")
         nationality_code = _repair_country_code(line2[10:13].replace("<", ""))
         gender = {"M": "Male", "F": "Female"}.get(line2[20], line2[20].replace("<", ""))
-        country_code = _repair_country_code(line1[2:5].replace("<", ""))
         if country_code == "MYS" and "<<" not in names:
             first_name, last_name = _split_malaysian_name(names)
         else:

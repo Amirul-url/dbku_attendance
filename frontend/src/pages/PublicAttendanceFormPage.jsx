@@ -724,19 +724,19 @@ export function PassportAttendanceFormPage() {
           <div className="passport-step-title"><b>2</b><span>Review Extracted Details</span></div>
           <div className={`passport-review-status ${ocrStatus === 'auto-extracted' ? 'is-ok' : ''}`}>{ocrStatus === 'auto-extracted' ? 'Auto Extracted' : 'Pending Verification'}</div>
           <div className="passport-form-grid">
-            <label className="compact-field"><span>Passport Type</span><input value={form.passport_type} onChange={(e) => update('passport_type', e.target.value)} placeholder="e.g. P" /></label>
+            <label className="compact-field"><span>Passport Type *</span><input value={form.passport_type} onChange={(e) => update('passport_type', e.target.value)} placeholder="e.g. P" required /></label>
             <label className="compact-field"><span>Passport Number *</span><input value={form.passport_number} onChange={(e) => update('passport_number', e.target.value)} placeholder="e.g. AB1234567" required /></label>
             <label className="compact-field">
-              <span>Country Code</span>
-              <select value={form.country_code} onChange={(e) => updateCountryCode(e.target.value)}>
+              <span>Country Code *</span>
+              <select value={form.country_code} onChange={(e) => updateCountryCode(e.target.value)} required>
                 <option value="">-- Select country code --</option>
                 {hasCustomCountryCode && <option value={form.country_code}>{form.country_code}</option>}
                 {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
               </select>
             </label>
             <label className="compact-field">
-              <span>Nationality</span>
-              <select value={form.nationality} onChange={(e) => updateNationality(e.target.value)}>
+              <span>Nationality *</span>
+              <select value={form.nationality} onChange={(e) => updateNationality(e.target.value)} required>
                 <option value="">-- Select nationality --</option>
                 {hasCustomNationality && <option value={form.nationality}>{form.nationality}</option>}
                 {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
@@ -744,12 +744,12 @@ export function PassportAttendanceFormPage() {
             </label>
           </div>
           <div className="passport-form-grid">
-            <label className="compact-field"><span>First Name</span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" /></label>
-            <label className="compact-field"><span>Last Name</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name" /></label>
-            <label className="compact-field"><span>Date of Birth</span><input type="date" value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} /></label>
-            <label className="compact-field"><span>Sex</span><select value={form.sex} onChange={(e) => update('sex', e.target.value)}><option value="">-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
-            <label className="compact-field"><span>Date of Issue</span><input type="date" value={form.date_of_issue} onChange={(e) => update('date_of_issue', e.target.value)} /></label>
-            <label className="compact-field"><span>Date of Expiry</span><input type="date" value={form.date_of_expiry} onChange={(e) => update('date_of_expiry', e.target.value)} /></label>
+            <label className="compact-field"><span>First Name *</span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" required /></label>
+            <label className="compact-field"><span>Last Name *</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name" required /></label>
+            <label className="compact-field"><span>Date of Birth *</span><input type="date" value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} required /></label>
+            <label className="compact-field"><span>Sex *</span><select value={form.sex} onChange={(e) => update('sex', e.target.value)} required><option value="">-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+            <label className="compact-field"><span>Date of Issue *</span><input type="date" value={form.date_of_issue} onChange={(e) => update('date_of_issue', e.target.value)} required /></label>
+            <label className="compact-field"><span>Date of Expiry *</span><input type="date" value={form.date_of_expiry} onChange={(e) => update('date_of_expiry', e.target.value)} required /></label>
           </div>
           <label className="compact-field"><span>OCR Raw Text</span><textarea rows={5} value={form.ocr_raw_text} onChange={(e) => update('ocr_raw_text', e.target.value)} placeholder="OCR output will appear here." /></label>
           <p className="passport-helper-text">Keep this text if OCR extraction is incomplete. It helps manual verification and later correction.</p>
