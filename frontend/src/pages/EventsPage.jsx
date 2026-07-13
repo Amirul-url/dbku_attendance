@@ -121,7 +121,7 @@ function ensureRadiusCircle(map, longitude, latitude, radiusMeter) {
       source: 'event-radius',
       paint: {
         'fill-color': '#0e7c6b',
-        'fill-opacity': 0.2,
+        'fill-opacity': 0.14,
       },
     })
   }
@@ -133,8 +133,8 @@ function ensureRadiusCircle(map, longitude, latitude, radiusMeter) {
       source: 'event-radius',
       paint: {
         'line-color': '#ffffff',
-        'line-opacity': 0.9,
-        'line-width': 6,
+        'line-opacity': 0.65,
+        'line-width': 3,
       },
     })
   }
@@ -147,7 +147,7 @@ function ensureRadiusCircle(map, longitude, latitude, radiusMeter) {
       paint: {
         'line-color': '#003B46',
         'line-opacity': 0.95,
-        'line-width': 3,
+        'line-width': 2,
       },
     })
   }
