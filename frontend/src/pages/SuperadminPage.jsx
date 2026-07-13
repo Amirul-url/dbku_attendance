@@ -253,7 +253,7 @@ export function SuperadminPage() {
         <button type="button" className="btn btn-ocean" onClick={openCreate}><Plus size={16} /> Add Superadmin</button>
       </div>
       <div className="filter-card">
-        <input className="filter-input" placeholder="Search name, username, email, or phone" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <input className="filter-input" placeholder="Search name, staff ID, email, or phone" value={search} onChange={(event) => setSearch(event.target.value)} />
         <div className="filter-select-wrap">
           <select className="filter-input filter-select" value={department} onChange={(event) => setDepartment(event.target.value)}>
             <option value="">All Department</option>
@@ -286,7 +286,7 @@ export function SuperadminPage() {
             rows={pageRows}
             columns={[
               { key: 'full_name', label: 'Name', render: (row) => <span className="table-two-line table-name-cell" title={row.full_name}>{row.full_name}</span> },
-              { key: 'staff_id', label: 'ID' },
+              { key: 'staff_id', label: 'Staff ID' },
               { key: 'email', label: 'Email' },
               { key: 'phone_number', label: 'Phone' },
               { key: 'department', label: 'Department', render: (row) => <span className="table-two-line table-department-cell" title={row.department}>{row.department}</span> },
@@ -318,7 +318,7 @@ export function SuperadminPage() {
               <div className="form-section-title">Identity</div>
               <div className="form-grid-2">
                 <label className="compact-field"><span>Full Name</span><input value={form.full_name} onChange={(event) => update('full_name', event.target.value)} required /></label>
-                <label className="compact-field"><span>Username</span><input value={form.staff_id} onChange={(event) => update('staff_id', event.target.value)} required /></label>
+                <label className="compact-field"><span>Staff ID</span><input value={form.staff_id} onChange={(event) => update('staff_id', event.target.value)} required /></label>
               </div>
               <label className="compact-field"><span>Email</span><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} required /></label>
               <label className="compact-field"><span>WhatsApp Number</span><PhoneNumberSelectInput value={form.phone_number || ''} onChange={(value) => update('phone_number', value)} /></label>
