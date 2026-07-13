@@ -1,5 +1,6 @@
 import re
 import uuid
+from datetime import date
 from pathlib import Path
 
 from django.conf import settings
@@ -47,6 +48,15 @@ def _clean_text(value):
 
 def _normalise_passport_number(value):
     return re.sub(r"[^A-Z0-9]", "", _clean_text(value).upper())
+
+
+def _repair_passport_number(value, country_code=""):
+    passport_number = _normalise_passport_number(value)
+    if _repair_country_code(country_code) == "MYS" and len(passport_number) == 9 and passport_number[:1].isalpha():
+        repaired_digits = passport_number[1:].translate(str.maketrans({"O": "0", "D": "0", "Q": "0"}))
+        if repaired_digits.isdigit():
+            return f"{passport_number[0]}{repaired_digits}"
+    return passport_number
 
 
 def _normalise_additional_fields_text(value):
@@ -239,7 +249,14 @@ def _parse_visible_date(value):
     day, month, year = match.groups()
     if month not in months:
         return ""
-    return f"{year}-{months[month]}-{int(day):02d}"
+    day_number = int(day)
+    if 31 < day_number < 40:
+        day_number = 31
+    try:
+        date(int(year), int(months[month]), day_number)
+    except ValueError:
+        return ""
+    return f"{year}-{months[month]}-{day_number:02d}"
 
 
 def _format_iso_date_for_passport_text(value):
@@ -308,7 +325,11 @@ def _build_clean_mrz(fields):
     first_name = _mrz_safe(fields.get("first_name") or "")
     last_name = _mrz_safe(fields.get("last_name") or "")
 
-    line1 = f"{passport_type}<{country_code}{last_name}<<{first_name}".replace("<<<", "<<")
+    if country_code == "MYS":
+        full_name = _mrz_safe(" ".join(part for part in [first_name, last_name] if part))
+        line1 = f"{passport_type}<{country_code}{full_name}"
+    else:
+        line1 = f"{passport_type}<{country_code}{last_name}<<{first_name}".replace("<<<", "<<")
     line1 = line1[:44].ljust(44, "<")
 
     passport_field = passport_number[:9].ljust(9, "<")
@@ -340,12 +361,12 @@ def normalise_passport_raw_text(raw_text, fields):
     last_name = fields.get("last_name") or ""
     line1, line2 = _build_clean_mrz(fields)
 
-    lines = [
-        "PASSPORT " + " ".join(part for part in [passport_type, country_code, passport_number] if part),
-        "Surname",
-        last_name.upper(),
-        "Given Name",
-        first_name.upper(),
+    lines = ["PASSPORT " + " ".join(part for part in [passport_type, country_code, passport_number] if part)]
+    if country_code == "MYS":
+        lines.extend(["Name", " ".join(part for part in [first_name, last_name] if part).upper()])
+    else:
+        lines.extend(["Surname", last_name.upper(), "Given Name", first_name.upper()])
+    lines.extend([
         "Nationality / Date of Birth",
         " ".join(
             part
@@ -366,7 +387,7 @@ def normalise_passport_raw_text(raw_text, fields):
         "",
         line1,
         line2,
-    ]
+    ])
     return "\n".join(line for line in lines if line != "").strip()
 
 
@@ -404,6 +425,17 @@ def _split_mrz_names(names):
     return parts[0], " ".join(parts[1:])
 
 
+def _split_malaysian_name(value):
+    parts = [
+        part
+        for part in re.split(r"<+|\s+", (value or "").upper())
+        if part and not re.fullmatch(r"K+", part)
+    ]
+    if not parts:
+        return "", ""
+    return _title_name(parts[0]), _title_name(" ".join(parts[1:]))
+
+
 def extract_visible_passport_fields(text):
     upper_text = (text or "").upper()
     fields = {}
@@ -430,6 +462,18 @@ def extract_visible_passport_fields(text):
         fields["nationality"] = "Japan"
         fields["country_code"] = "JPN"
 
+    if re.search(r"\bMALAYSIA\b|\bMYS\b", upper_text):
+        fields["nationality"] = "Malaysia"
+        fields["country_code"] = "MYS"
+
+    name_match = re.search(r"\bNAMA\b[^\n]*\n\s*([A-Z][A-Z ]+)", upper_text)
+    if name_match:
+        first_name, last_name = _split_malaysian_name(name_match.group(1))
+        if first_name:
+            fields["first_name"] = first_name
+        if last_name:
+            fields["last_name"] = last_name
+
     return fields
 
 
@@ -443,12 +487,15 @@ def parse_mrz(text):
             continue
         names = line1[5:]
         surname, given = _split_mrz_names(names)
-        first_name = _title_name(given)
-        last_name = _title_name(surname)
-        passport_number = line2[:9].replace("<", "")
         nationality_code = _repair_country_code(line2[10:13].replace("<", ""))
         gender = {"M": "Male", "F": "Female"}.get(line2[20], line2[20].replace("<", ""))
         country_code = _repair_country_code(line1[2:5].replace("<", ""))
+        if country_code == "MYS" and "<<" not in names:
+            first_name, last_name = _split_malaysian_name(names)
+        else:
+            first_name = _title_name(given)
+            last_name = _title_name(surname)
+        passport_number = _repair_passport_number(line2[:9].replace("<", ""), country_code)
         return {
             "type": "P",
             "country_code": country_code,
@@ -469,7 +516,15 @@ def extract_passport_fields(text):
     parsed = parse_mrz(text)
     visible = extract_visible_passport_fields(text)
     visible_dates = visible.pop("_visible_dates", [])
+    visible_first_name = visible.get("first_name")
+    visible_last_name = visible.get("last_name")
     result = {**visible, **{key: value for key, value in parsed.items() if value}}
+    if result.get("country_code") == "MYS":
+        if visible_first_name:
+            result["first_name"] = visible_first_name
+        if visible_last_name:
+            result["last_name"] = visible_last_name
+        result["full_name"] = " ".join(part for part in [result.get("first_name"), result.get("last_name")] if part)
     if result.get("country_code") and not result.get("nationality"):
         result["nationality"] = COUNTRY_CODE_MAP.get(result["country_code"], result["country_code"])
     issue_candidates = [

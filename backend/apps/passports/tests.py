@@ -120,3 +120,48 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertNotIn("<K<", clean_raw_text)
         self.assertNotIn("5PN", clean_raw_text)
         self.assertNotIn("ccs", clean_raw_text)
+
+    def test_noisy_malaysian_passport_ocr_is_repaired(self):
+        raw_text = """
+        Paspert /
+        MALAYSIA Passport = Jenis / Type Kod Negara / Country Code No. Paspert / Passport Me.
+        P MYS 400060000
+
+        Nama Nome
+        MAHATHIR BIN IDRUS
+        Warganegars Natoneity No. Pengenaian identery No
+        MALAYSIA 930216146007
+        16 FEB 1993 KUALA LUMPUR
+        Jantina / Sex Tingo! / Height
+        M 174m
+        Taritth Dikeluarkan / Date of tsswe Tarthh Tamat / Date of Expiry
+        34 AUG 2017 31 AUG 2024
+        Pejabat Pengeluar / issuing Office
+        KUALA LUMPUR
+
+        P<MYSMAHATHIR<BIN<KIDRUS<<<<<< <<< KK KKK KKK KKK
+        ADDODOOOOOMY S9302165M2408312930216146007<<72
+        """
+
+        fields = extract_passport_fields(raw_text)
+
+        self.assertEqual(fields["passport_number"], "A00000000")
+        self.assertEqual(fields["country_code"], "MYS")
+        self.assertEqual(fields["nationality"], "Malaysia")
+        self.assertEqual(fields["first_name"], "Mahathir")
+        self.assertEqual(fields["last_name"], "Bin Idrus")
+        self.assertEqual(fields["date_of_birth"], "1993-02-16")
+        self.assertEqual(fields["sex"], "Male")
+        self.assertEqual(fields["date_of_issue"], "2017-08-31")
+        self.assertEqual(fields["date_of_expiry"], "2024-08-31")
+
+        clean_raw_text = normalise_passport_raw_text(raw_text, fields)
+
+        self.assertIn("PASSPORT P MYS A00000000", clean_raw_text)
+        self.assertIn("Name\nMAHATHIR BIN IDRUS", clean_raw_text)
+        self.assertIn("Date of Issue\n31 AUG 2017", clean_raw_text)
+        self.assertIn("P<MYSMAHATHIR<BIN<IDRUS", clean_raw_text)
+        self.assertIn("A000000000MYS9302165M2408312", clean_raw_text)
+        self.assertNotIn("ADDODOOOO", clean_raw_text)
+        self.assertNotIn("KIDRUS", clean_raw_text)
+        self.assertNotIn("34 AUG", clean_raw_text)
