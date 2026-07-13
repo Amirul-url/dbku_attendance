@@ -165,3 +165,37 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertNotIn("ADDODOOOO", clean_raw_text)
         self.assertNotIn("KIDRUS", clean_raw_text)
         self.assertNotIn("34 AUG", clean_raw_text)
+
+    def test_malaysian_binti_name_keeps_family_marker_in_last_name(self):
+        raw_text = """
+        Pasport /
+        Passport Jenis / Type Kod NegarayCountry Code No. Pasport / Passport No
+        P MYS K70464704
+
+        Nama / Name
+        SITI AISHAH BINT! ABDUL RAHMAN
+        Warganegara / Nationality Ro, Pengenalan / Identity No
+        MALAYSIA 550529135148
+        29 MAY 1955 SARAWAK
+        P-F 153 cm
+        03 MAY 2024 03 MAY 2029
+        UTC KUCHING
+
+        P<MYSSITI<AISHAH<BINTI<ABDUL<RAHMAN<K<<<<<<K<<
+        K704647044MYS5505290F2905039550529135148<<86
+        """
+
+        fields = extract_passport_fields(raw_text)
+
+        self.assertEqual(fields["passport_number"], "K70464704")
+        self.assertEqual(fields["first_name"], "Siti Aishah")
+        self.assertEqual(fields["last_name"], "Binti Abdul Rahman")
+        self.assertEqual(fields["date_of_birth"], "1955-05-29")
+        self.assertEqual(fields["sex"], "Female")
+        self.assertEqual(fields["date_of_issue"], "2024-05-03")
+        self.assertEqual(fields["date_of_expiry"], "2029-05-03")
+
+        clean_raw_text = normalise_passport_raw_text(raw_text, fields)
+
+        self.assertIn("Name\nSITI AISHAH BINTI ABDUL RAHMAN", clean_raw_text)
+        self.assertIn("P<MYSSITI<AISHAH<BINTI<ABDUL<RAHMAN", clean_raw_text)

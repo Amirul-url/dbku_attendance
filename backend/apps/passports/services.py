@@ -426,13 +426,17 @@ def _split_mrz_names(names):
 
 
 def _split_malaysian_name(value):
+    value = re.sub(r"\bBINT[!1|](?=\s|<|$)", "BINTI", (value or "").upper())
     parts = [
-        part
-        for part in re.split(r"<+|\s+", (value or "").upper())
-        if part and not re.fullmatch(r"K+", part)
+        re.sub(r"[^A-Z0-9]", "", part)
+        for part in re.split(r"<+|\s+", value)
     ]
+    parts = [part for part in parts if part and not re.fullmatch(r"K+", part)]
     if not parts:
         return "", ""
+    family_marker_index = next((index for index, part in enumerate(parts) if part in {"BIN", "BINTI"}), None)
+    if family_marker_index is not None:
+        return _title_name(" ".join(parts[:family_marker_index])), _title_name(" ".join(parts[family_marker_index:]))
     return _title_name(parts[0]), _title_name(" ".join(parts[1:]))
 
 
@@ -466,7 +470,7 @@ def extract_visible_passport_fields(text):
         fields["nationality"] = "Malaysia"
         fields["country_code"] = "MYS"
 
-    name_match = re.search(r"\bNAMA\b[^\n]*\n\s*([A-Z][A-Z ]+)", upper_text)
+    name_match = re.search(r"\bNAMA\b[^\n]*\n\s*([^\n]+)", upper_text)
     if name_match:
         first_name, last_name = _split_malaysian_name(name_match.group(1))
         if first_name:
