@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart3, CalendarDays, ChevronDown, Clock3, LayoutDashboard, LogOut, RefreshCw, ShieldCheck, Users } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronDown, Clock3, LayoutDashboard, LogOut, Menu, RefreshCw, ShieldCheck, Users } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext.jsx'
 
@@ -13,6 +13,7 @@ export function AppShell() {
   const { user, logout, showSessionWarning, extendSession, extendingSession } = useAuth()
   const profile = user?.staff_profile
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const accountName = profile?.full_name || user?.first_name || user?.username || 'User'
   const today = new Intl.DateTimeFormat('en-GB', {
     weekday: 'long',
@@ -30,7 +31,7 @@ export function AppShell() {
   ]
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <aside className="sidebar">
         <div>
           <div className="brand">
@@ -66,6 +67,14 @@ export function AppShell() {
         <div className="ocean-bar" />
         <header className="topbar">
           <div className="topbar-start">
+            <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
+              aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <Menu size={22} />
+            </button>
             <div>
               <div className="topbar-title">DBKU Attendance Management System</div>
               <div className="topbar-date">{today}</div>
