@@ -24,7 +24,7 @@ function formatShortDate(value) {
 function formatPhoneNumber(value) {
   if (!value) return '-'
   const digits = String(value).replace(/\D/g, '')
-  if (digits.startsWith('60')) return `Malaysia +60 ${digits.slice(2)}`.trim()
+  if (digits.startsWith('60')) return `Malaysia +${digits}`
   return value
 }
 
@@ -129,14 +129,14 @@ export function EventVisitorAttendancePage() {
           }}>Reset</button>
           <button type="button" className="btn btn-green" onClick={() => downloadApiFile(`/reports/events/${id}/export/visitor/`)}><Download size={15} /> Export CSV</button>
         </div>
-        <div className="event-detail-table">
+        <div className="event-detail-table attendance-table-card visitor-attendance-table">
           <DataTable
             rows={filteredRows}
             columns={[
-              { key: 'name', label: 'Name', render: (row) => row.visitor_detail?.full_name || '-' },
-              { key: 'phone', label: 'Phone', render: (row) => formatPhoneNumber(row.visitor_detail?.phone_number) },
-              { key: 'email', label: 'Email', render: (row) => row.visitor_detail?.email || '-' },
-              { key: 'organization', label: 'Organization', render: (row) => row.visitor_detail?.organization || '-' },
+              { key: 'name', label: 'Name', render: (row) => <span className="table-ellipsis" title={row.visitor_detail?.full_name}>{row.visitor_detail?.full_name || '-'}</span> },
+              { key: 'phone', label: 'Phone', render: (row) => <span className="table-ellipsis" title={formatPhoneNumber(row.visitor_detail?.phone_number)}>{formatPhoneNumber(row.visitor_detail?.phone_number)}</span> },
+              { key: 'email', label: 'Email', render: (row) => <span className="table-ellipsis" title={row.visitor_detail?.email}>{row.visitor_detail?.email || '-'}</span> },
+              { key: 'organization', label: 'Organization', render: (row) => <span className="table-ellipsis" title={row.visitor_detail?.organization}>{row.visitor_detail?.organization || '-'}</span> },
               { key: 'ipv4_address', label: 'IPv4', render: (row) => row.ipv4_address || '-' },
               { key: 'ipv6_address', label: 'IPv6', render: (row) => row.ipv6_address || '-' },
               { key: 'timestamp', label: 'Timestamp', render: renderTimestamp },

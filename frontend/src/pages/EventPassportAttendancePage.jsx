@@ -121,13 +121,13 @@ export function EventPassportAttendancePage() {
           }}>Reset</button>
           <button type="button" className="btn btn-green" onClick={() => downloadApiFile(`/reports/events/${id}/export/passport/`)}><Download size={15} /> Export CSV</button>
         </div>
-        <div className="event-detail-table">
+        <div className="event-detail-table attendance-table-card passport-attendance-table">
           <DataTable
             rows={filteredRows}
             columns={[
-              { key: 'name', label: 'Name', render: (row) => row.visitor_detail?.full_name || '-' },
-              { key: 'passport_number', label: 'Passport No', render: (row) => row.visitor_detail?.passport_number || '-' },
-              { key: 'country', label: 'Country', render: (row) => row.visitor_detail?.country || '-' },
+              { key: 'name', label: 'Name', render: (row) => <span className="table-ellipsis" title={row.visitor_detail?.full_name}>{row.visitor_detail?.full_name || '-'}</span> },
+              { key: 'passport_number', label: 'Passport No', render: (row) => <span className="table-ellipsis" title={row.visitor_detail?.passport_number}>{row.visitor_detail?.passport_number || '-'}</span> },
+              { key: 'country', label: 'Country', render: (row) => <span className="table-ellipsis" title={row.visitor_detail?.country}>{row.visitor_detail?.country || '-'}</span> },
               { key: 'ipv4_address', label: 'IPv4', render: (row) => row.ipv4_address || '-' },
               { key: 'ipv6_address', label: 'IPv6', render: (row) => row.ipv6_address || '-' },
               { key: 'timestamp', label: 'Timestamp', render: renderTimestamp },

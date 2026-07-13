@@ -121,15 +121,15 @@ export function EventStaffAttendancePage() {
           }}>Reset</button>
           <button type="button" className="btn btn-green" onClick={() => downloadApiFile(`/reports/events/${id}/export/staff/`)}><Download size={15} /> Export CSV</button>
         </div>
-        <div className="event-detail-table">
+        <div className="event-detail-table attendance-table-card staff-attendance-table">
           <DataTable
             rows={filteredRows}
             columns={[
-              { key: 'full_name', label: 'Name' },
-              { key: 'staff_id', label: 'Employee ID' },
-              { key: 'email', label: 'Email' },
-              { key: 'phone_number', label: 'Phone' },
-              { key: 'department', label: 'Department' },
+              { key: 'full_name', label: 'Name', render: (row) => <span className="table-ellipsis" title={row.full_name}>{row.full_name || '-'}</span> },
+              { key: 'staff_id', label: 'Employee ID', render: (row) => <span className="table-ellipsis" title={row.staff_id}>{row.staff_id || '-'}</span> },
+              { key: 'email', label: 'Email', render: (row) => <span className="table-ellipsis" title={row.email}>{row.email || '-'}</span> },
+              { key: 'phone_number', label: 'Phone', render: (row) => <span className="table-ellipsis" title={row.phone_number}>{row.phone_number || '-'}</span> },
+              { key: 'department', label: 'Department', render: (row) => <span className="table-ellipsis" title={row.department}>{row.department || '-'}</span> },
               { key: 'ipv4_address', label: 'IPv4', render: (row) => row.ipv4_address || '-' },
               { key: 'ipv6_address', label: 'IPv6', render: (row) => row.ipv6_address || '-' },
               { key: 'timestamp', label: 'Timestamp', render: renderTimestamp },
@@ -160,12 +160,11 @@ export function EventStaffAttendancePage() {
             </div>
             <div className="modal-body visitor-modal-grid">
               <label className="compact-field"><span>Full Name</span><input readOnly value={selectedRow.full_name || ''} /></label>
-              <label className="compact-field"><span>Employee ID</span><input readOnly value={selectedRow.staff_id || ''} /></label>
-              <label className="compact-field"><span>Email</span><input readOnly value={selectedRow.email || ''} /></label>
               <label className="compact-field"><span>Phone Number</span><input readOnly value={selectedRow.phone_number || ''} /></label>
+              <label className="compact-field"><span>Employee ID</span><input readOnly value={selectedRow.staff_id || ''} /></label>
               <label className="compact-field"><span>Department</span><input readOnly value={selectedRow.department || ''} /></label>
+              <label className="compact-field"><span>Email</span><input readOnly value={selectedRow.email || ''} /></label>
               <label className="compact-field"><span>IPv4 Address</span><input readOnly value={selectedRow.ipv4_address || ''} /></label>
-              <label className="compact-field"><span>IPv6 Address</span><input readOnly value={selectedRow.ipv6_address || ''} /></label>
               <label className="compact-field"><span>Attendance Date</span><input readOnly value={formatShortDate(selectedRow.date)} /></label>
               <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatTime12Hour(selectedRow.time)} /></label>
               <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(selectedRow.latitude)} /></label>
