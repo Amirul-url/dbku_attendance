@@ -3307,6 +3307,12 @@ input:focus {
   font-weight: 800;
 }
 
+.passport-review-status.is-ok {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #15803d;
+}
+
 .passport-add-field {
   border: 1px solid #8ee2d7;
   background: #fff;

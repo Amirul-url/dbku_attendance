@@ -470,6 +470,7 @@ export function PassportAttendanceFormPage() {
   const [passportPreview, setPassportPreview] = useState('')
   const [ocrStatus, setOcrStatus] = useState('pending verification')
   const [ocrSource, setOcrSource] = useState('-')
+  const [passportImageMeta, setPassportImageMeta] = useState({ original: '', processed: '', qualityNote: '' })
   const [extraFields, setExtraFields] = useState([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -493,40 +494,38 @@ export function PassportAttendanceFormPage() {
     setMessage('')
     setIsSubmitting(true)
     const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim()
-    const extraData = Object.fromEntries(
-      extraFields
-        .filter((item) => item.label.trim())
-        .map((item) => [item.label.trim(), item.value.trim()]),
-    )
+    const cleanExtraFields = extraFields
+      .map((item) => ({ label: item.label.trim(), value: item.value.trim() }))
+      .filter((item) => item.label || item.value)
+    const additionalFieldsText = cleanExtraFields
+      .map((item) => (item.label ? `${item.label}: ${item.value}` : item.value))
+      .join('\n')
     try {
-      await withLocation(async (coords) => {
-        const visitor = await apiRequest('/passport-visitors/', {
-          method: 'POST',
-          body: JSON.stringify({
-            full_name: fullName || form.passport_number,
-            passport_number: form.passport_number,
-            country: form.nationality || form.country_code,
-            date_of_birth: form.date_of_birth,
-            expiry_date: form.date_of_expiry,
-            gender: form.sex,
-            ocr_raw_text: form.ocr_raw_text,
-            status: ocrStatus,
-            extra_data: {
-              passport_type: form.passport_type,
-              country_code: form.country_code,
-              nationality: form.nationality,
-              first_name: form.first_name,
-              last_name: form.last_name,
-              date_of_issue: form.date_of_issue,
-              ...extraData,
-            },
-          }),
-        })
-        return apiRequest('/passport-attendance/', {
-          method: 'POST',
-          body: JSON.stringify({ passport_visitor: visitor.id, event: eventId, ...coords }),
-        })
-      })
+      await withLocation((coords) => apiRequest('/passport-attendance/submit/', {
+        method: 'POST',
+        body: JSON.stringify({
+          event: eventId,
+          type: form.passport_type,
+          country_code: form.country_code,
+          passport_number: form.passport_number,
+          nationality: form.nationality,
+          full_name: fullName,
+          first_name: form.first_name,
+          last_name: form.last_name,
+          date_of_birth: form.date_of_birth,
+          sex: form.sex,
+          date_of_issue: form.date_of_issue,
+          date_of_expiry: form.date_of_expiry,
+          raw_text: form.ocr_raw_text,
+          status: ocrStatus,
+          original_image_name: passportImageMeta.original,
+          processed_image_name: passportImageMeta.processed,
+          image_quality_note: passportImageMeta.qualityNote,
+          additional_fields: cleanExtraFields,
+          additional_fields_text: additionalFieldsText,
+          ...coords,
+        }),
+      }))
       setMessage('Passport attendance submitted successfully.')
     } catch (err) {
       setError(err.message)
@@ -548,6 +547,7 @@ export function PassportAttendanceFormPage() {
     setOcrNote('')
     setOcrSource(file.name)
     setOcrStatus('pending verification')
+    setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
   }
 
   async function scanPassportImage() {
@@ -575,6 +575,11 @@ export function PassportAttendanceFormPage() {
         ocr_raw_text: data.raw_text || current.ocr_raw_text,
       }))
       setOcrStatus(data.status || 'auto-extracted')
+      setPassportImageMeta({
+        original: data.original_image_name || '',
+        processed: data.processed_image_name || '',
+        qualityNote: data.image_quality_note || '',
+      })
       setOcrNote(data.image_quality_note || 'Passport scanned. Please verify the extracted fields before submitting.')
     } catch (err) {
       setOcrNote('')
@@ -590,6 +595,7 @@ export function PassportAttendanceFormPage() {
     })
     setOcrSource('-')
     setOcrStatus('pending verification')
+    setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
     setOcrNote('')
   }
 
@@ -666,7 +672,7 @@ export function PassportAttendanceFormPage() {
 
         <section className="passport-step-card">
           <div className="passport-step-title"><b>2</b><span>Review Extracted Details</span></div>
-          <div className="passport-review-status">Pending Verification</div>
+          <div className={`passport-review-status ${ocrStatus === 'auto-extracted' ? 'is-ok' : ''}`}>{ocrStatus === 'auto-extracted' ? 'Auto Extracted' : 'Pending Verification'}</div>
           <div className="passport-form-grid">
             <label className="compact-field"><span>Passport Type</span><input value={form.passport_type} onChange={(e) => update('passport_type', e.target.value)} placeholder="e.g. P" /></label>
             <label className="compact-field"><span>Country Code</span><input value={form.country_code} onChange={(e) => update('country_code', e.target.value)} placeholder="E.G. JPN" /></label>
@@ -677,7 +683,7 @@ export function PassportAttendanceFormPage() {
             <label className="compact-field"><span>First Name</span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" /></label>
             <label className="compact-field"><span>Last Name</span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name / BIN / BINTI section" /></label>
             <label className="compact-field"><span>Date of Birth</span><input type="date" value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} /></label>
-            <label className="compact-field"><span>Sex</span><select value={form.sex} onChange={(e) => update('sex', e.target.value)}><option value="">-- Select --</option><option value="M">Male</option><option value="F">Female</option><option value="X">Other</option></select></label>
+            <label className="compact-field"><span>Sex</span><select value={form.sex} onChange={(e) => update('sex', e.target.value)}><option value="">-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
             <label className="compact-field"><span>Date of Issue</span><input type="date" value={form.date_of_issue} onChange={(e) => update('date_of_issue', e.target.value)} /></label>
             <label className="compact-field"><span>Date of Expiry</span><input type="date" value={form.date_of_expiry} onChange={(e) => update('date_of_expiry', e.target.value)} /></label>
           </div>
