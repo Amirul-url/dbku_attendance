@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, Trash2, User } from 'lucide-react'
+import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, Trash2, User, X } from 'lucide-react'
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
@@ -502,11 +502,55 @@ export function PassportAttendanceFormPage() {
   const [error, setError] = useState('')
   const [ocrNote, setOcrNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState('')
   const submittingRef = useRef(false)
+  const cameraVideoRef = useRef(null)
+  const cameraCanvasRef = useRef(null)
+  const cameraStreamRef = useRef(null)
 
   useEffect(() => () => {
     if (passportPreview) URL.revokeObjectURL(passportPreview)
   }, [passportPreview])
+
+  useEffect(() => {
+    if (!isCameraOpen) return undefined
+    let cancelled = false
+
+    async function startCamera() {
+      setCameraError('')
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Camera is not supported on this browser.')
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          audio: false,
+        })
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+        cameraStreamRef.current = stream
+        if (cameraVideoRef.current) {
+          cameraVideoRef.current.srcObject = stream
+          await cameraVideoRef.current.play()
+        }
+      } catch (err) {
+        setCameraError(err.message || 'Camera permission was blocked. Please allow camera access and try again.')
+      }
+    }
+
+    startCamera()
+    return () => {
+      cancelled = true
+      stopCameraStream()
+    }
+  }, [isCameraOpen])
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -579,8 +623,7 @@ export function PassportAttendanceFormPage() {
     }
   }
 
-  function choosePassportImage(event) {
-    const file = event.target.files?.[0]
+  function setPassportImageFile(file, source = file?.name || 'Camera capture') {
     if (!file) return
     setPassportFile(file)
     setPassportPreview((current) => {
@@ -589,9 +632,53 @@ export function PassportAttendanceFormPage() {
     })
     setError('')
     setOcrNote('')
-    setOcrSource(file.name)
+    setOcrSource(source)
     setOcrStatus('pending verification')
     setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
+  }
+
+  function choosePassportImage(event) {
+    const file = event.target.files?.[0]
+    setPassportImageFile(file)
+    event.target.value = ''
+  }
+
+  function stopCameraStream() {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop())
+    cameraStreamRef.current = null
+    if (cameraVideoRef.current) cameraVideoRef.current.srcObject = null
+  }
+
+  function openPassportCamera() {
+    setError('')
+    setCameraError('')
+    setIsCameraOpen(true)
+  }
+
+  function closePassportCamera() {
+    setIsCameraOpen(false)
+  }
+
+  function capturePassportImage() {
+    const video = cameraVideoRef.current
+    const canvas = cameraCanvasRef.current
+    if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
+      setCameraError('Camera is still loading. Please try again.')
+      return
+    }
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const context = canvas.getContext('2d')
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCameraError('Unable to capture passport image. Please try again.')
+        return
+      }
+      const file = new File([blob], `passport-capture-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      setPassportImageFile(file, 'Camera capture')
+      closePassportCamera()
+    }, 'image/jpeg', 0.92)
   }
 
   async function scanPassportImage() {
@@ -698,10 +785,9 @@ export function PassportAttendanceFormPage() {
           <div className="passport-step-title"><b>1</b><span>Upload Passport Image</span></div>
           <div className="passport-upload-box">
             <div className="passport-upload-actions">
-              <label className="passport-file-button passport-camera-button">
+              <button type="button" className="passport-file-button passport-camera-button" onClick={openPassportCamera}>
                 <Camera size={20} /> Open Camera
-                <input type="file" accept="image/*" capture="environment" onChange={choosePassportImage} />
-              </label>
+              </button>
               <label className="passport-file-button">
                 <FileText size={20} /> Choose File
                 <input type="file" accept="image/*" onChange={choosePassportImage} />
@@ -789,6 +875,31 @@ export function PassportAttendanceFormPage() {
           </div>
         </section>
       </form>
+      {isCameraOpen && (
+        <div className="passport-camera-overlay" role="dialog" aria-modal="true" aria-label="Capture passport">
+          <div className="passport-camera-panel">
+            <div className="passport-camera-header">
+              <div>
+                <h2>Capture Passport</h2>
+                <p>Align the passport inside the guide frame.</p>
+              </div>
+              <button type="button" className="passport-camera-close" onClick={closePassportCamera} aria-label="Close camera"><X size={24} /></button>
+            </div>
+            <div className="passport-camera-view">
+              <video ref={cameraVideoRef} autoPlay playsInline muted />
+              <div className="passport-camera-guide">
+                <span>Fit full passport page inside frame</span>
+              </div>
+            </div>
+            {cameraError && <div className="passport-camera-error">{cameraError}</div>}
+            <div className="passport-camera-actions">
+              <button type="button" className="passport-camera-cancel" onClick={closePassportCamera}>Cancel</button>
+              <button type="button" className="passport-camera-capture" onClick={capturePassportImage}>Capture Passport</button>
+            </div>
+            <canvas ref={cameraCanvasRef} hidden />
+          </div>
+        </div>
+      )}
     </PublicFormShell>
   )
 }

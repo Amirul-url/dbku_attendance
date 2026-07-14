@@ -3176,6 +3176,131 @@ input:focus {
   color: #fff;
 }
 
+.passport-camera-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  background: rgba(12, 17, 31, 0.92);
+  padding: 22px;
+}
+
+.passport-camera-panel {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 16px;
+  color: #fff;
+}
+
+.passport-camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.passport-camera-header h2 {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.passport-camera-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+}
+
+.passport-camera-close {
+  width: 54px;
+  height: 54px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+.passport-camera-view {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #0f172a;
+}
+
+.passport-camera-view video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.passport-camera-guide {
+  position: absolute;
+  inset: 27% 12px auto;
+  height: 34%;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.passport-camera-guide span {
+  position: absolute;
+  left: 50%;
+  top: -46px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 86%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  padding: 8px 15px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.passport-camera-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.passport-camera-cancel,
+.passport-camera-capture {
+  min-height: 64px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.passport-camera-cancel {
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  background: transparent;
+  color: #fff;
+}
+
+.passport-camera-capture {
+  border: 0;
+  background: #fff;
+  color: #00584f;
+}
+
+.passport-camera-error {
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
 .passport-file-name {
   display: inline-flex;
   align-items: center;
