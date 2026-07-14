@@ -6,6 +6,27 @@ from apps.staff.selectors import staff_member_by_staff_id
 from .models import AssignmentAttendance, StaffAttendance, Visitor, VisitorAttendance
 
 
+IMMUTABLE_ATTENDANCE_FIELDS = {
+    "date",
+    "time",
+    "ipv4_address",
+    "ipv6_address",
+    "latitude",
+    "longitude",
+}
+
+
+def reject_immutable_attendance_updates(serializer):
+    if serializer.instance is None:
+        return
+    attempted_fields = IMMUTABLE_ATTENDANCE_FIELDS.intersection(serializer.initial_data)
+    if attempted_fields:
+        raise serializers.ValidationError({
+            field: "This field cannot be edited after attendance is submitted."
+            for field in sorted(attempted_fields)
+        })
+
+
 class VisitorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Visitor
@@ -39,6 +60,7 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
         return getattr(obj, "distance_meter", None)
 
     def validate(self, attrs):
+        reject_immutable_attendance_updates(self)
         event = attrs.get("event", getattr(self.instance, "event", None))
         staff_id = (attrs.get("staff_id") or getattr(self.instance, "staff_id", "") or "").strip().upper()
         email = (attrs.get("email") or getattr(self.instance, "email", "") or "").strip().lower()
@@ -91,6 +113,7 @@ class VisitorAttendanceSerializer(serializers.ModelSerializer):
         return getattr(obj, "distance_meter", None)
 
     def validate(self, attrs):
+        reject_immutable_attendance_updates(self)
         event = attrs.get("event", getattr(self.instance, "event", None))
         if event:
             visitor = attrs.get("visitor", getattr(self.instance, "visitor", None))
@@ -136,6 +159,7 @@ class AssignmentAttendanceSerializer(serializers.ModelSerializer):
         return getattr(obj, "distance_meter", None)
 
     def validate(self, attrs):
+        reject_immutable_attendance_updates(self)
         assignment = attrs.get("assignment", getattr(self.instance, "assignment", None))
         phone = (attrs.get("phone_number") or getattr(self.instance, "phone_number", "") or "").strip()
         email = (attrs.get("email") or getattr(self.instance, "email", "") or "").strip().lower()

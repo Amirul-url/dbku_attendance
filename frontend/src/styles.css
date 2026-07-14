@@ -3854,9 +3854,18 @@ input:focus {
 }
 
 .visitor-attendance-modal .modal-body {
+  flex: 1;
+  min-height: 0;
   max-height: none;
   overflow: auto;
   padding-bottom: 22px;
+}
+
+.visitor-attendance-modal > form {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
 }
 
 .visitor-attendance-modal .modal-footer {
@@ -3877,6 +3886,15 @@ input:focus {
 .visitor-modal-grid .compact-field input[readonly] {
   background: #f5f8f9;
   color: #5c8390;
+}
+
+.visitor-modal-grid .compact-field input:disabled,
+.visitor-modal-grid .compact-field select:disabled,
+.passport-extra-row input:disabled,
+.passport-extra-edit-row input:disabled {
+  background: #f5f8f9;
+  color: #5c8390;
+  opacity: 1;
 }
 
 .visitor-modal-grid .compact-field input,
@@ -3981,6 +3999,34 @@ input:focus {
   border-radius: 10px;
   background: #f8fbfc;
   padding: 12px 14px;
+}
+
+.passport-extra-edit > span {
+  justify-content: space-between;
+}
+
+.passport-extra-edit-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.45fr) minmax(0, 1fr) 54px;
+  gap: 12px;
+  align-items: center;
+}
+
+.passport-extra-edit-row input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: #172a34;
+  font: inherit;
+}
+
+.passport-extra-delete:disabled {
+  cursor: not-allowed;
+  background: #eef3f4;
+  color: #9aadb5;
+  opacity: 1;
 }
 
 .passport-extra-view-row strong {

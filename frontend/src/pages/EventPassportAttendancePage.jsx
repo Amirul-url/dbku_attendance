@@ -21,6 +21,38 @@ function formatShortDate(value) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
+const passportCountryOptions = [
+  { code: 'AUS', nationality: 'Australia' },
+  { code: 'BRN', nationality: 'Brunei' },
+  { code: 'CAN', nationality: 'Canada' },
+  { code: 'CHN', nationality: 'China' },
+  { code: 'GBR', nationality: 'United Kingdom' },
+  { code: 'IDN', nationality: 'Indonesia' },
+  { code: 'IND', nationality: 'India' },
+  { code: 'JPN', nationality: 'Japan' },
+  { code: 'KOR', nationality: 'South Korea' },
+  { code: 'MYS', nationality: 'Malaysia' },
+  { code: 'PHL', nationality: 'Philippines' },
+  { code: 'SGP', nationality: 'Singapore' },
+  { code: 'THA', nationality: 'Thailand' },
+  { code: 'USA', nationality: 'United States' },
+].sort((a, b) => a.nationality.localeCompare(b.nationality))
+
+const defaultPassportExtraFields = [
+  { id: 'default-phone-number', label: 'Phone Number', value: '', locked: true },
+  { id: 'default-email', label: 'Email', value: '', locked: true },
+]
+
+function findPassportCountryByCode(value) {
+  const code = String(value || '').trim().toUpperCase()
+  return passportCountryOptions.find((option) => option.code === code)
+}
+
+function findPassportCountryByNationality(value) {
+  const nationality = String(value || '').trim().toLowerCase()
+  return passportCountryOptions.find((option) => option.nationality.toLowerCase() === nationality)
+}
+
 function toDateInputValue(value) {
   if (!value) return ''
   const [year, month, day] = String(value).split('-')
@@ -34,11 +66,30 @@ function getPassportExtra(row) {
 function getAdditionalFields(row) {
   const extra = getPassportExtra(row)
   if (Array.isArray(extra.additional_fields)) {
-    return extra.additional_fields.filter((item) => item?.label || item?.value)
+    return mergeDefaultAdditionalFields(extra.additional_fields.filter((item) => item?.label || item?.value))
   }
-  return Object.entries(extra)
+  return mergeDefaultAdditionalFields(Object.entries(extra)
     .filter(([key]) => !['type', 'passport_type', 'country_code', 'nationality', 'first_name', 'last_name', 'date_of_issue', 'additional_fields_text', 'additional_fields'].includes(key))
-    .map(([label, value]) => ({ label, value }))
+    .map(([label, value]) => ({ label, value })))
+}
+
+function normalizeExtraLabel(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function mergeDefaultAdditionalFields(fields = []) {
+  const customFields = fields.map((item, index) => ({
+    id: item.id || `extra-${index}-${item.label || 'field'}`,
+    label: item.label || '',
+    value: item.value || '',
+    locked: Boolean(item.locked),
+  }))
+  const mergedDefaults = defaultPassportExtraFields.map((defaultField) => {
+    const existing = customFields.find((item) => normalizeExtraLabel(item.label) === normalizeExtraLabel(defaultField.label))
+    return existing ? { ...existing, id: defaultField.id, label: defaultField.label, locked: true } : { ...defaultField }
+  })
+  const nonDefaultFields = customFields.filter((item) => !defaultPassportExtraFields.some((defaultField) => normalizeExtraLabel(defaultField.label) === normalizeExtraLabel(item.label)))
+  return [...mergedDefaults, ...nonDefaultFields]
 }
 
 function buildPassportEditForm(row) {
@@ -63,6 +114,7 @@ function buildPassportEditForm(row) {
     longitude: row.longitude || '',
     status: visitor.status || '',
     ocr_raw_text: visitor.ocr_raw_text || '',
+    additional_fields: getAdditionalFields(row),
   }
 }
 
@@ -128,6 +180,52 @@ export function EventPassportAttendancePage() {
     setEditForm((current) => ({ ...current, [field]: value }))
   }
 
+  function updateEditCountryCode(value) {
+    const option = findPassportCountryByCode(value)
+    setEditForm((current) => ({
+      ...current,
+      country_code: value,
+      nationality: option?.nationality || current.nationality,
+    }))
+  }
+
+  function updateEditNationality(value) {
+    const option = findPassportCountryByNationality(value)
+    setEditForm((current) => ({
+      ...current,
+      nationality: value,
+      country_code: option?.code || current.country_code,
+    }))
+  }
+
+  function addEditExtraField() {
+    setEditForm((current) => ({
+      ...current,
+      additional_fields: [
+        ...(current.additional_fields || []),
+        { id: `extra-${Date.now()}`, label: '', value: '' },
+      ],
+    }))
+  }
+
+  function updateEditExtraField(fieldId, field, value) {
+    setEditForm((current) => ({
+      ...current,
+      additional_fields: (current.additional_fields || []).map((item) => {
+        if (item.id !== fieldId) return item
+        if (item.locked && field === 'label') return item
+        return { ...item, [field]: value }
+      }),
+    }))
+  }
+
+  function removeEditExtraField(fieldId) {
+    setEditForm((current) => ({
+      ...current,
+      additional_fields: (current.additional_fields || []).filter((item) => item.id !== fieldId || item.locked),
+    }))
+  }
+
   async function saveEdit(event) {
     event.preventDefault()
     if (!editRow || !editForm) return
@@ -152,6 +250,9 @@ export function EventPassportAttendancePage() {
             first_name: editForm.first_name,
             last_name: editForm.last_name,
             date_of_issue: editForm.date_of_issue,
+            additional_fields: (editForm.additional_fields || [])
+              .map((item) => ({ label: item.label.trim(), value: item.value.trim() }))
+              .filter((item) => item.label || item.value),
           },
         },
       }
@@ -194,6 +295,9 @@ export function EventPassportAttendancePage() {
       return matchesSearch && matchesCountry
     })
   }, [country, rows, search])
+
+  const editHasCustomCountryCode = editForm?.country_code && !findPassportCountryByCode(editForm.country_code)
+  const editHasCustomNationality = editForm?.nationality && !findPassportCountryByNationality(editForm.nationality)
 
   return (
     <>
@@ -266,9 +370,9 @@ export function EventPassportAttendancePage() {
                     : <span>No passport image</span>}
                 </div>
               </div>
-              <label className="compact-field"><span>Type</span><input readOnly value={getPassportExtra(selectedRow).type || getPassportExtra(selectedRow).passport_type || ''} /></label>
-              <label className="compact-field"><span>Country Code</span><input readOnly value={getPassportExtra(selectedRow).country_code || ''} /></label>
+              <label className="compact-field"><span>Passport Type</span><input readOnly value={getPassportExtra(selectedRow).type || getPassportExtra(selectedRow).passport_type || ''} /></label>
               <label className="compact-field"><span>Passport Number</span><input readOnly value={selectedRow.visitor_detail?.passport_number || ''} /></label>
+              <label className="compact-field"><span>Country Code</span><input readOnly value={getPassportExtra(selectedRow).country_code || ''} /></label>
               <label className="compact-field"><span>Nationality</span><input readOnly value={getPassportExtra(selectedRow).nationality || selectedRow.visitor_detail?.country || ''} /></label>
               <label className="compact-field"><span>First Name</span><input readOnly value={getPassportExtra(selectedRow).first_name || ''} /></label>
               <label className="compact-field"><span>Last Name</span><input readOnly value={getPassportExtra(selectedRow).last_name || selectedRow.visitor_detail?.full_name || ''} /></label>
@@ -276,13 +380,6 @@ export function EventPassportAttendancePage() {
               <label className="compact-field"><span>Sex</span><input readOnly value={selectedRow.visitor_detail?.gender || ''} /></label>
               <label className="compact-field"><span>Date of Issue</span><input readOnly value={formatShortDate(getPassportExtra(selectedRow).date_of_issue)} /></label>
               <label className="compact-field"><span>Date of Expiry</span><input readOnly value={formatShortDate(selectedRow.visitor_detail?.expiry_date)} /></label>
-              <label className="compact-field"><span>IPv4 Address</span><input readOnly value={selectedRow.ipv4_address || ''} /></label>
-              <label className="compact-field"><span>IPv6 Address</span><input readOnly value={selectedRow.ipv6_address || ''} /></label>
-              <label className="compact-field"><span>Attendance Date</span><input readOnly value={formatShortDate(selectedRow.date)} /></label>
-              <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatTime12Hour(selectedRow.time)} /></label>
-              <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(selectedRow.latitude)} /></label>
-              <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(selectedRow.longitude)} /></label>
-              <label className="compact-field modal-field-wide"><span>Status</span><input readOnly value={selectedRow.visitor_detail?.status || ''} /></label>
               <label className="compact-field modal-field-wide"><span>OCR Raw Text</span><textarea readOnly rows={6} value={selectedRow.visitor_detail?.ocr_raw_text || ''} /></label>
               <div className="passport-extra-view modal-field-wide">
                 <span>Additional Passport Fields <b>{getAdditionalFields(selectedRow).length}</b></span>
@@ -293,6 +390,13 @@ export function EventPassportAttendancePage() {
                   </div>
                 )) : <div className="passport-extra-view-empty">No additional fields.</div>}
               </div>
+              <label className="compact-field"><span>IPv4 Address</span><input readOnly value={selectedRow.ipv4_address || ''} /></label>
+              <label className="compact-field"><span>IPv6 Address</span><input readOnly value={selectedRow.ipv6_address || ''} /></label>
+              <label className="compact-field"><span>Attendance Date</span><input readOnly value={formatShortDate(selectedRow.date)} /></label>
+              <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatTime12Hour(selectedRow.time)} /></label>
+              <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(selectedRow.latitude)} /></label>
+              <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(selectedRow.longitude)} /></label>
+              <label className="compact-field modal-field-wide"><span>Status</span><input readOnly value={selectedRow.visitor_detail?.status || ''} /></label>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-blue" onClick={() => {
@@ -322,33 +426,51 @@ export function EventPassportAttendancePage() {
                       : <span>No passport image</span>}
                   </div>
                 </div>
-                <label className="compact-field"><span>Type</span><input value={editForm.type} onChange={(event) => updateEdit('type', event.target.value)} /></label>
-                <label className="compact-field"><span>Country Code</span><input value={editForm.country_code} onChange={(event) => updateEdit('country_code', event.target.value)} /></label>
+                <label className="compact-field"><span>Passport Type</span><input value={editForm.type} onChange={(event) => updateEdit('type', event.target.value)} /></label>
                 <label className="compact-field"><span>Passport Number</span><input value={editForm.passport_number} onChange={(event) => updateEdit('passport_number', event.target.value)} required /></label>
-                <label className="compact-field"><span>Nationality</span><input value={editForm.nationality} onChange={(event) => updateEdit('nationality', event.target.value)} /></label>
+                <label className="compact-field">
+                  <span>Country Code</span>
+                  <select value={editForm.country_code} onChange={(event) => updateEditCountryCode(event.target.value)}>
+                    <option value="">-- Select country code --</option>
+                    {editHasCustomCountryCode && <option value={editForm.country_code}>{editForm.country_code}</option>}
+                    {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
+                  </select>
+                </label>
+                <label className="compact-field">
+                  <span>Nationality</span>
+                  <select value={editForm.nationality} onChange={(event) => updateEditNationality(event.target.value)}>
+                    <option value="">-- Select nationality --</option>
+                    {editHasCustomNationality && <option value={editForm.nationality}>{editForm.nationality}</option>}
+                    {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
+                  </select>
+                </label>
                 <label className="compact-field"><span>First Name</span><input value={editForm.first_name} onChange={(event) => updateEdit('first_name', event.target.value)} /></label>
                 <label className="compact-field"><span>Last Name</span><input value={editForm.last_name} onChange={(event) => updateEdit('last_name', event.target.value)} /></label>
                 <label className="compact-field"><span>Date of Birth</span><input type="date" value={editForm.date_of_birth} onChange={(event) => updateEdit('date_of_birth', event.target.value)} /></label>
                 <label className="compact-field"><span>Sex</span><select value={editForm.sex} onChange={(event) => updateEdit('sex', event.target.value)}><option value="">-</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
                 <label className="compact-field"><span>Date of Issue</span><input type="date" value={editForm.date_of_issue} onChange={(event) => updateEdit('date_of_issue', event.target.value)} /></label>
                 <label className="compact-field"><span>Date of Expiry</span><input type="date" value={editForm.date_of_expiry} onChange={(event) => updateEdit('date_of_expiry', event.target.value)} /></label>
-                <label className="compact-field"><span>IPv4 Address</span><input readOnly value={editForm.ipv4_address} /></label>
-                <label className="compact-field"><span>IPv6 Address</span><input readOnly value={editForm.ipv6_address} /></label>
-                <label className="compact-field"><span>Attendance Date</span><input readOnly value={editForm.attendance_date} /></label>
-                <label className="compact-field"><span>Attendance Time</span><input readOnly value={editForm.attendance_time} /></label>
-                <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(editForm.latitude)} /></label>
-                <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(editForm.longitude)} /></label>
-                <label className="compact-field modal-field-wide"><span>Status</span><select value={editForm.status} onChange={(event) => updateEdit('status', event.target.value)}><option value="auto-extracted">Auto Extracted</option><option value="manually-corrected">Manually Corrected</option><option value="pending verification">Pending Verification</option></select></label>
                 <label className="compact-field modal-field-wide"><span>OCR Raw Text</span><textarea rows={5} value={editForm.ocr_raw_text} onChange={(event) => updateEdit('ocr_raw_text', event.target.value)} /></label>
-                <div className="passport-extra-view modal-field-wide">
-                  <span>Additional Passport Fields <b>{getAdditionalFields(editRow).length}</b></span>
-                  {getAdditionalFields(editRow).length ? getAdditionalFields(editRow).map((item, index) => (
-                    <div className="passport-extra-view-row" key={`${item.label}-${index}`}>
-                      <strong>{item.label}</strong>
-                      <p>{String(item.value || '-')}</p>
+                <div className="passport-extra-view passport-extra-edit modal-field-wide">
+                  <span>
+                    Additional Passport Fields <b>{(editForm.additional_fields || []).length}</b>
+                    <button type="button" className="btn btn-small btn-ghost" onClick={addEditExtraField}>Add Field</button>
+                  </span>
+                  {(editForm.additional_fields || []).map((item) => (
+                    <div className="passport-extra-edit-row" key={item.id}>
+                      <input value={item.label} onChange={(event) => updateEditExtraField(item.id, 'label', event.target.value)} placeholder="Field label" disabled={item.locked} />
+                      <input value={item.value} onChange={(event) => updateEditExtraField(item.id, 'value', event.target.value)} placeholder="Value" />
+                      <button type="button" className="passport-extra-delete" onClick={() => removeEditExtraField(item.id)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                     </div>
-                  )) : <div className="passport-extra-view-empty">No additional fields.</div>}
+                  ))}
                 </div>
+                <label className="compact-field"><span>IPv4 Address</span><input disabled value={editForm.ipv4_address} /></label>
+                <label className="compact-field"><span>IPv6 Address</span><input disabled value={editForm.ipv6_address} /></label>
+                <label className="compact-field"><span>Attendance Date</span><input disabled value={editForm.attendance_date} /></label>
+                <label className="compact-field"><span>Attendance Time</span><input disabled value={editForm.attendance_time} /></label>
+                <label className="compact-field"><span>Latitude</span><input disabled value={formatCoordinate(editForm.latitude)} /></label>
+                <label className="compact-field"><span>Longitude</span><input disabled value={formatCoordinate(editForm.longitude)} /></label>
+                <label className="compact-field modal-field-wide"><span>Status</span><select value={editForm.status} onChange={(event) => updateEdit('status', event.target.value)}><option value="auto-extracted">Auto Extracted</option><option value="manually-corrected">Manually Corrected</option><option value="pending verification">Pending Verification</option></select></label>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setEditRow(null)}>Cancel</button>

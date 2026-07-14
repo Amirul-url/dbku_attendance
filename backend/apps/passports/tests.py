@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 
@@ -71,6 +72,43 @@ class PassportAttendanceSubmitApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(PassportAttendance.objects.count(), 1)
+
+    def test_passport_attendance_audit_fields_cannot_be_edited(self):
+        admin = User.objects.create_superuser(
+            username="admin",
+            email="admin@example.com",
+            password="password123",
+        )
+        visitor = PassportVisitor.objects.create(
+            full_name="Satoshi Nakamoto",
+            passport_number="AB1234567",
+            country="Japan",
+        )
+        attendance = PassportAttendance.objects.create(
+            event=self.event,
+            passport_visitor=visitor,
+            latitude="1.580821",
+            longitude="110.321767",
+            ipv4_address="10.0.0.1",
+        )
+        self.client.force_authenticate(admin)
+
+        response = self.client.patch(
+            f"/api/passport-attendance/{attendance.id}/",
+            {
+                "date": "2026-07-14",
+                "time": "10:54:35",
+                "ipv4_address": "10.0.0.2",
+                "longitude": "111.000000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("longitude", response.json())
+        attendance.refresh_from_db()
+        self.assertEqual(str(attendance.longitude), "110.321767")
+        self.assertEqual(attendance.ipv4_address, "10.0.0.1")
 
     def test_expired_passport_attendance_is_rejected(self):
         payload = self.payload(self.event)

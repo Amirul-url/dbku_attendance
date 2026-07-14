@@ -1,9 +1,54 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, Eye, Pencil, Search, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Download, Eye, Pencil, Search, Trash2, Users } from 'lucide-react'
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
+
+const countryNameFormatter = new Intl.DisplayNames(['en'], { type: 'region' })
+const priorityCountries = ['MY', 'SG', 'ID', 'BN', 'TH', 'AU', 'CN', 'IN', 'GB', 'US', 'CA']
+const countryCodeOptions = getCountries()
+  .map((iso) => ({
+    country: countryNameFormatter.of(iso) || iso,
+    code: `+${getCountryCallingCode(iso)}`,
+    iso,
+  }))
+  .sort((a, b) => {
+    const priorityA = priorityCountries.indexOf(a.iso)
+    const priorityB = priorityCountries.indexOf(b.iso)
+    if (priorityA !== -1 || priorityB !== -1) {
+      return (priorityA === -1 ? 999 : priorityA) - (priorityB === -1 ? 999 : priorityB)
+    }
+    return a.country.localeCompare(b.country)
+  })
+
+const staffDepartmentChoices = [
+  'Administration (ADM)',
+  'Internal Audit (AUD)',
+  'Building (BLG)',
+  'Community Development & Services (CDS)',
+  'Contract and Procurement (COP)',
+  'Committee Secretariat (CTS)',
+  'Engineering Project (ENG)',
+  'Enforcement and Security (ENS)',
+  'Health and Environment (ENV)',
+  'Finance (FIN)',
+  'Geoinformation and Property Management (GPM)',
+  'Human Resource Management (HRM)',
+  'Information and Communication Technology (ICT)',
+  'Infrastructure Maintenance (IMT)',
+  'Information Resource (IRD)',
+  'Legal Affairs (LAW)',
+  'Licensing (LES)',
+  'Landscape and Planning (LNP)',
+  'Mechanical and Electrical (MNE)',
+  'Public Relations (PRD)',
+  'Special Project & Public Facility (SPF)',
+  'Transformation and Innovation (TRI)',
+  'Valuation and Taxation (VAL)',
+  'Others',
+]
 
 function toNumber(value) {
   const number = Number(value)
@@ -26,6 +71,99 @@ function formatPhoneNumber(value) {
   const digits = String(value).replace(/\D/g, '')
   if (digits.startsWith('60')) return `Malaysia +${digits}`
   return value
+}
+
+function splitPhoneNumber(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  const matchedCountry = [...countryCodeOptions]
+    .sort((a, b) => b.code.length - a.code.length)
+    .find((option) => digits.startsWith(option.code.replace(/\D/g, '')))
+  const countryCode = matchedCountry?.code || '+60'
+  const countryDigits = countryCode.replace(/\D/g, '')
+  return {
+    countryCode,
+    localNumber: digits.startsWith(countryDigits) ? digits.slice(countryDigits.length) : digits,
+  }
+}
+
+function combinePhoneNumber(countryCode, localNumber) {
+  const cleanLocalNumber = String(localNumber || '').replace(/\D/g, '')
+  if (!cleanLocalNumber) return ''
+  return `${String(countryCode || '+60').replace(/\D/g, '')}${cleanLocalNumber}`
+}
+
+function PhoneNumberSelectInput({ value, onChange, required = false }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const { countryCode, localNumber } = splitPhoneNumber(value)
+  const selectedCountry = countryCodeOptions.find((option) => option.code === countryCode) || countryCodeOptions[0]
+  const filteredCountries = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    if (!normalizedQuery) return countryCodeOptions
+    return countryCodeOptions.filter((option) => (
+      option.country.toLowerCase().includes(normalizedQuery)
+      || option.code.includes(normalizedQuery)
+      || option.iso.toLowerCase().includes(normalizedQuery)
+    ))
+  }, [query])
+
+  function updatePhone(nextCountryCode, nextLocalNumber) {
+    onChange(combinePhoneNumber(nextCountryCode, nextLocalNumber))
+  }
+
+  function chooseCountry(option) {
+    updatePhone(option.code, localNumber)
+    setQuery('')
+    setIsOpen(false)
+  }
+
+  return (
+    <div className="phone-input-grid public-phone-input visitor-phone-input">
+      <div className="public-country-picker" onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false)
+      }}>
+        <button type="button" className="public-country-trigger" onClick={() => setIsOpen((current) => !current)}>
+          <span>{selectedCountry.country}</span>
+          <strong>{selectedCountry.code}</strong>
+          <ChevronDown size={16} aria-hidden="true" />
+        </button>
+        {isOpen && (
+          <div className="public-country-menu">
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && filteredCountries[0]) {
+                  event.preventDefault()
+                  chooseCountry(filteredCountries[0])
+                }
+              }}
+              placeholder="Search country or code"
+              aria-label="Search country or dialing code"
+              autoFocus
+            />
+            <div className="public-country-list">
+              {filteredCountries.map((option) => (
+                <button type="button" key={option.iso} onClick={() => chooseCountry(option)}>
+                  <span>{option.country}</span>
+                  <strong>{option.code}</strong>
+                </button>
+              ))}
+              {filteredCountries.length === 0 && <div className="public-country-empty">No country found</div>}
+            </div>
+          </div>
+        )}
+      </div>
+      <input
+        inputMode="tel"
+        autoComplete="tel"
+        value={localNumber}
+        onChange={(event) => updatePhone(countryCode, event.target.value)}
+        placeholder="Phone number"
+        required={required}
+      />
+    </div>
+  )
 }
 
 function renderTimestamp(row) {
@@ -153,6 +291,7 @@ export function EventStaffAttendancePage() {
       return matchesSearch && matchesDepartment
     })
   }, [department, rows, search])
+  const editHasCustomDepartment = editForm?.department && !staffDepartmentChoices.includes(editForm.department)
 
   return (
     <>
@@ -249,15 +388,22 @@ export function EventStaffAttendancePage() {
               <div className="modal-body visitor-modal-grid">
                 <label className="compact-field"><span>Full Name</span><input value={editForm.full_name} onChange={(event) => updateEdit('full_name', event.target.value)} required /></label>
                 <label className="compact-field"><span>Employee ID</span><input value={editForm.staff_id} onChange={(event) => updateEdit('staff_id', event.target.value)} required /></label>
-                <label className="compact-field"><span>Phone Number</span><input value={editForm.phone_number} onChange={(event) => updateEdit('phone_number', event.target.value)} required /></label>
+                <label className="compact-field"><span>Phone Number</span><PhoneNumberSelectInput value={editForm.phone_number} onChange={(value) => updateEdit('phone_number', value)} required /></label>
                 <label className="compact-field"><span>Email</span><input type="email" value={editForm.email} onChange={(event) => updateEdit('email', event.target.value)} required /></label>
-                <label className="compact-field modal-field-wide"><span>Department</span><input value={editForm.department} onChange={(event) => updateEdit('department', event.target.value)} required /></label>
-                <label className="compact-field"><span>IPv4 Address</span><input readOnly value={editForm.ipv4_address} /></label>
-                <label className="compact-field"><span>IPv6 Address</span><input readOnly value={editForm.ipv6_address} /></label>
-                <label className="compact-field"><span>Attendance Date</span><input readOnly value={editForm.attendance_date} /></label>
-                <label className="compact-field"><span>Attendance Time</span><input readOnly value={editForm.attendance_time} /></label>
-                <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(editForm.latitude)} /></label>
-                <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(editForm.longitude)} /></label>
+                <label className="compact-field modal-field-wide">
+                  <span>Department</span>
+                  <select value={editForm.department} onChange={(event) => updateEdit('department', event.target.value)} required>
+                    <option value="">-- Select department --</option>
+                    {editHasCustomDepartment && <option value={editForm.department}>{editForm.department}</option>}
+                    {staffDepartmentChoices.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label className="compact-field"><span>IPv4 Address</span><input disabled value={editForm.ipv4_address} /></label>
+                <label className="compact-field"><span>IPv6 Address</span><input disabled value={editForm.ipv6_address} /></label>
+                <label className="compact-field"><span>Attendance Date</span><input disabled value={editForm.attendance_date} /></label>
+                <label className="compact-field"><span>Attendance Time</span><input disabled value={editForm.attendance_time} /></label>
+                <label className="compact-field"><span>Latitude</span><input disabled value={formatCoordinate(editForm.latitude)} /></label>
+                <label className="compact-field"><span>Longitude</span><input disabled value={formatCoordinate(editForm.longitude)} /></label>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setEditRow(null)}>Cancel</button>

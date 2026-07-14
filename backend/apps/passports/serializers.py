@@ -5,6 +5,27 @@ from apps.core.geo import validate_event_geofence
 from .models import PassportAttendance, PassportVisitor
 
 
+IMMUTABLE_ATTENDANCE_FIELDS = {
+    "date",
+    "time",
+    "ipv4_address",
+    "ipv6_address",
+    "latitude",
+    "longitude",
+}
+
+
+def reject_immutable_attendance_updates(serializer):
+    if serializer.instance is None:
+        return
+    attempted_fields = IMMUTABLE_ATTENDANCE_FIELDS.intersection(serializer.initial_data)
+    if attempted_fields:
+        raise serializers.ValidationError({
+            field: "This field cannot be edited after attendance is submitted."
+            for field in sorted(attempted_fields)
+        })
+
+
 class PassportVisitorSerializer(serializers.ModelSerializer):
     class Meta:
         model = PassportVisitor
@@ -30,6 +51,7 @@ class PassportAttendanceSerializer(serializers.ModelSerializer):
         return getattr(obj, "distance_meter", None)
 
     def validate(self, attrs):
+        reject_immutable_attendance_updates(self)
         event = attrs.get("event", getattr(self.instance, "event", None))
         if event:
             latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))

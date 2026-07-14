@@ -68,6 +68,7 @@ const passportCountryOptions = [
   { code: 'IND', nationality: 'India' },
   { code: 'JPN', nationality: 'Japan' },
   { code: 'KOR', nationality: 'South Korea' },
+  { code: 'MYS', nationality: 'Malaysia' },
   { code: 'PHL', nationality: 'Philippines' },
   { code: 'SGP', nationality: 'Singapore' },
   { code: 'THA', nationality: 'Thailand' },
@@ -90,8 +91,35 @@ const passportStatusMeta = {
   'pending verification': { label: 'Pending Verification', className: '', chipClassName: 'passport-pending-chip' },
 }
 
+const defaultPassportExtraFields = [
+  { id: 'default-phone-number', label: 'Phone Number', value: '', locked: true },
+  { id: 'default-email', label: 'Email', value: '', locked: true },
+]
+
 function getPassportStatusMeta(status) {
   return passportStatusMeta[status] || passportStatusMeta['pending verification']
+}
+
+function createDefaultPassportExtraFields() {
+  return defaultPassportExtraFields.map((item) => ({ ...item }))
+}
+
+function normalizePassportExtraLabel(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function ensureDefaultPassportExtraFields(fields = []) {
+  const safeFields = Array.isArray(fields) ? fields : []
+  const defaults = defaultPassportExtraFields.map((defaultField) => {
+    const existing = safeFields.find((item) => normalizePassportExtraLabel(item.label) === normalizePassportExtraLabel(defaultField.label))
+    return existing
+      ? { ...existing, id: defaultField.id, label: defaultField.label, locked: true }
+      : { ...defaultField }
+  })
+  const customFields = safeFields.filter((item) => (
+    !defaultPassportExtraFields.some((defaultField) => normalizePassportExtraLabel(defaultField.label) === normalizePassportExtraLabel(item.label))
+  ))
+  return [...defaults, ...customFields]
 }
 
 function splitPhoneNumber(value) {
@@ -507,7 +535,7 @@ export function PassportAttendanceFormPage() {
   const [ocrStatus, setOcrStatus] = useState('pending verification')
   const [ocrSource, setOcrSource] = useState('-')
   const [passportImageMeta, setPassportImageMeta] = useState({ original: '', processed: '', qualityNote: '' })
-  const [extraFields, setExtraFields] = useState([])
+  const [extraFields, setExtraFields] = useState(createDefaultPassportExtraFields)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [ocrNote, setOcrNote] = useState('')
@@ -522,6 +550,13 @@ export function PassportAttendanceFormPage() {
   const cameraStreamRef = useRef(null)
   const ocrSnapshotRef = useRef(null)
   const statusMeta = getPassportStatusMeta(ocrStatus)
+  const visibleExtraFields = useMemo(() => ensureDefaultPassportExtraFields(extraFields), [extraFields])
+
+  useEffect(() => {
+    if (visibleExtraFields.length !== extraFields.length) {
+      setExtraFields(visibleExtraFields)
+    }
+  }, [extraFields.length, visibleExtraFields])
 
   useEffect(() => () => {
     if (passportPreview) URL.revokeObjectURL(passportPreview)
@@ -611,7 +646,7 @@ export function PassportAttendanceFormPage() {
     setMessage('')
     setIsSubmitting(true)
     const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim()
-    const cleanExtraFields = extraFields
+    const cleanExtraFields = visibleExtraFields
       .map((item) => ({ label: item.label.trim(), value: item.value.trim() }))
       .filter((item) => item.label || item.value)
     const additionalFieldsText = cleanExtraFields
@@ -644,6 +679,7 @@ export function PassportAttendanceFormPage() {
         }),
       }))
       setMessage('Passport attendance submitted successfully.')
+      resetForm()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -808,7 +844,7 @@ export function PassportAttendanceFormPage() {
 
   function resetForm() {
     resetPassportImage()
-    setExtraFields([])
+    setExtraFields(createDefaultPassportExtraFields())
     setForm({
       passport_type: '',
       country_code: '',
@@ -825,15 +861,19 @@ export function PassportAttendanceFormPage() {
   }
 
   function addExtraField() {
-    setExtraFields((current) => [...current, { id: Date.now(), label: '', value: '' }])
+    setExtraFields((current) => [...ensureDefaultPassportExtraFields(current), { id: Date.now(), label: '', value: '' }])
   }
 
   function updateExtraField(id, field, value) {
-    setExtraFields((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
+    setExtraFields((current) => current.map((item) => {
+      if (item.id !== id) return item
+      if (item.locked && field === 'label') return item
+      return { ...item, [field]: value }
+    }))
   }
 
   function removeExtraField(id) {
-    setExtraFields((current) => current.filter((item) => item.id !== id))
+    setExtraFields((current) => current.filter((item) => item.id !== id || item.locked))
   }
 
   const hasCustomCountryCode = form.country_code && !findPassportCountryByCode(form.country_code)
@@ -920,18 +960,18 @@ export function PassportAttendanceFormPage() {
 
         <section className="passport-step-card">
           <div className="passport-step-title passport-step-title-row">
-            <span><b>3</b> Additional Passport Fields <em>Optional</em><i>{extraFields.length}</i></span>
+            <span><b>3</b> Additional Passport Fields <em>Optional</em><i>{visibleExtraFields.length}</i></span>
             <button type="button" className="btn btn-ghost passport-add-field" onClick={addExtraField}><Plus size={16} /> Add Field</button>
           </div>
-          {extraFields.length === 0 ? (
+          {visibleExtraFields.length === 0 ? (
             <div className="passport-empty-extra"><FileText size={20} /> <span>No additional fields added yet.</span><small>Tap "Add Field" to include supplementary passport data.</small></div>
           ) : (
             <div className="passport-extra-list">
-              {extraFields.map((item) => (
+              {visibleExtraFields.map((item) => (
                 <div className="passport-extra-row" key={item.id}>
-                  <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" />
+                  <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" disabled={item.locked} />
                   <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder="Value" />
-                  <button type="button" className="passport-extra-delete" onClick={() => removeExtraField(item.id)} aria-label="Delete additional field"><Trash2 size={18} /></button>
+                  <button type="button" className="passport-extra-delete" onClick={() => removeExtraField(item.id)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                 </div>
               ))}
             </div>
