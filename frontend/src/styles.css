@@ -4292,97 +4292,173 @@ input:focus {
   }
 
   .public-attendance-body {
-    gap: 22px;
-    padding: 24px 18px 26px;
+    gap: 18px;
+    padding: 20px 14px 24px;
   }
 
   .public-event-card-header {
     align-items: center;
     flex-direction: row;
-    gap: 10px;
-    padding: 18px 16px;
+    gap: 8px;
+    padding: 14px 12px;
   }
 
   .public-event-card {
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   .public-event-title-row {
-    gap: 10px;
+    gap: 8px;
+    min-width: 0;
   }
 
   .public-event-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
   }
 
   .public-event-title-row h2 {
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.25;
   }
 
   .public-event-radius-pill {
     gap: 5px;
-    border-radius: 9px;
-    padding: 8px 10px;
-    font-size: 11px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    padding: 7px 8px;
+    font-size: 10px;
   }
 
   .public-event-summary-grid {
-    grid-template-columns: repeat(3, minmax(150px, 1fr));
-    gap: 28px;
-    padding: 20px 24px 22px;
-  }
-
-  .public-event-card-header,
-  .public-event-summary-grid {
-    min-width: 620px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px 12px 18px;
   }
 
   .public-event-section-label {
-    margin-bottom: 12px;
-    font-size: 9px;
-    letter-spacing: 1.2px;
+    margin-bottom: 9px;
+    font-size: 8px;
+    letter-spacing: 1px;
   }
 
   .public-event-info-item {
     gap: 5px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .public-event-info-item span {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .public-event-info-item strong {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.4;
   }
 
   .passport-step-card,
   .passport-upload-box {
-    padding: 18px;
+    padding: 14px;
   }
 
   .passport-step-card {
-    overflow-x: auto;
+    gap: 14px;
+    overflow-x: hidden;
   }
 
-  .passport-step-card > .passport-step-title,
-  .passport-step-card > .passport-upload-box,
-  .passport-step-card > .passport-form-grid,
-  .passport-step-card > .compact-field,
-  .passport-step-card > .passport-helper-text,
-  .passport-step-card > .passport-step-title-row,
-  .passport-step-card > .passport-empty-extra,
-  .passport-step-card > .passport-extra-list,
-  .passport-step-card > .passport-extra-help,
-  .passport-step-card > .passport-step-actions {
-    min-width: 680px;
+  .passport-upload-actions,
+  .passport-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .passport-extra-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+    gap: 8px;
+  }
+
+  .passport-step-title-row {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .passport-step-title {
+    gap: 9px;
+    font-size: 12px;
+  }
+
+  .passport-step-title b {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .passport-step-title-row span {
+    gap: 7px;
+  }
+
+  .passport-step-title-row em,
+  .passport-step-title-row i {
+    padding: 2px 7px;
+    font-size: 10px;
   }
 
   .passport-preview-box {
     min-height: 220px;
+  }
+
+  .passport-file-button {
+    min-height: 48px;
+    gap: 8px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .passport-file-name,
+  .passport-upload-box p,
+  .passport-helper-text,
+  .passport-extra-help {
+    font-size: 11px;
+  }
+
+  .passport-chip {
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+
+  .passport-review-status {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .passport-step-card .compact-field {
+    gap: 6px;
+  }
+
+  .passport-step-card .compact-field span {
+    font-size: 11px;
+  }
+
+  .passport-step-card .compact-field input,
+  .passport-step-card .compact-field select,
+  .passport-step-card .compact-field textarea,
+  .passport-extra-row input {
+    min-height: 48px;
+    border-radius: 10px;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .passport-extra-delete {
+    min-height: 48px;
+    border-radius: 10px;
+  }
+
+  .passport-add-field {
+    min-height: 40px;
+    padding-inline: 10px;
+    font-size: 12px;
   }
 
   .public-field input,
