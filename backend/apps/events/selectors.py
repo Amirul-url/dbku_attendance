@@ -42,6 +42,10 @@ def event_count():
     return Event.objects.count()
 
 
+def event_years():
+    return Event.objects.exclude(start_date__isnull=True).dates("start_date", "year", "DESC")
+
+
 def event_report_list(event_id=None):
     queryset = Event.objects.all()
     if event_id:

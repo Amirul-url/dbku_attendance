@@ -11,7 +11,6 @@ import {
   RotateCcw,
   Search,
   ShieldCheck,
-  Trophy,
   Users,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -34,18 +33,13 @@ const monthOptions = [
   { value: '12', label: 'Dec' },
 ]
 
-function yearOptions() {
-  const currentYear = new Date().getFullYear()
-  return ['', ...Array.from({ length: 7 }, (_, index) => String(currentYear - 3 + index))]
-}
-
 function numberText(value) {
   return new Intl.NumberFormat('en-MY').format(Number(value) || 0)
 }
 
-function percentage(value, total) {
+function shareWidth(value, total) {
   if (!total) return '0%'
-  return `${Math.round((Number(value || 0) / total) * 100)}%`
+  return `${Math.max(4, Math.round((Number(value || 0) / total) * 100))}%`
 }
 
 function normalizeTopList(items) {
@@ -102,17 +96,32 @@ function CategoryShareChart({ rows, total }) {
             <strong>{item.label}</strong>
           </div>
           <div className="analytics-share-meter">
-            <span style={{ width: percentage(item.value, total) }} />
+            <span style={{ width: shareWidth(item.value, total) }} />
           </div>
-          <em>{numberText(item.value)} ({percentage(item.value, total)})</em>
+          <em>{numberText(item.value)}</em>
         </div>
       ))}
     </div>
   )
 }
 
-function TopList({ title, subtitle, icon: Icon, items }) {
-  const maxValue = Math.max(1, ...items.map((item) => item.value))
+const pieColors = ['#004b55', '#08aeca', '#7e57c2', '#2e7d32', '#d46b00']
+
+function pieGradient(items) {
+  const total = items.reduce((sum, item) => sum + item.value, 0)
+  if (!total) return '#edf3f5'
+  let cursor = 0
+  const slices = items.map((item, index) => {
+    const start = cursor
+    const end = cursor + (item.value / total) * 360
+    cursor = end
+    return `${pieColors[index % pieColors.length]} ${start}deg ${end}deg`
+  })
+  return `conic-gradient(${slices.join(', ')})`
+}
+
+function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
+  const total = items.reduce((sum, item) => sum + item.value, 0)
   return (
     <section className="analytics-card">
       <div className="analytics-card-header compact">
@@ -126,24 +135,41 @@ function TopList({ title, subtitle, icon: Icon, items }) {
           </div>
         </div>
       </div>
-      <div className="analytics-ranked-list">
+      <div className="analytics-pie-card-body">
         {items.length === 0 ? (
           <div className="analytics-empty">No data available.</div>
-        ) : items.map((item, index) => (
-          <div className="analytics-ranked-row" key={item.id}>
-            <span>{index + 1}</span>
-            <div>
-              <strong>{item.label}</strong>
-              <div className="analytics-ranked-meter">
-                <i style={{ width: `${Math.max(6, (item.value / maxValue) * 100)}%` }} />
-              </div>
+        ) : (
+          <>
+            <div className="analytics-pie-chart" style={{ background: pieGradient(items) }}>
+              <span>{numberText(total)}</span>
             </div>
-            <em>{numberText(item.value)}</em>
-          </div>
-        ))}
+            <div className="analytics-pie-legend">
+              {items.map((item, index) => (
+                <div key={item.id}>
+                  <i style={{ background: pieColors[index % pieColors.length] }} />
+                  <span title={item.label}>{item.label}</span>
+                  <strong>{numberText(item.value)}</strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   )
+}
+
+function paginateItems(items, page, pageSize = 5) {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const safePage = Math.min(Math.max(page, 1), totalPages)
+  const startIndex = (safePage - 1) * pageSize
+  return {
+    items: items.slice(startIndex, startIndex + pageSize),
+    page: safePage,
+    totalPages,
+    start: items.length ? startIndex + 1 : 0,
+    end: Math.min(startIndex + pageSize, items.length),
+  }
 }
 
 export function ReportsPage() {
@@ -152,6 +178,7 @@ export function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [filters, setFilters] = useState({ name: '', location: '', month: '', year: '' })
   const [appliedFilters, setAppliedFilters] = useState({ name: '', location: '', month: '', year: '' })
+  const [topEventsPage, setTopEventsPage] = useState(1)
 
   async function loadAnalytics(nextFilters = filters) {
     setIsLoading(true)
@@ -201,9 +228,13 @@ export function ReportsPage() {
   const topOrganizations = useMemo(() => normalizeTopList(data?.top_organizations), [data?.top_organizations])
   const topCountries = useMemo(() => normalizeTopList(data?.top_countries), [data?.top_countries])
   const topEvents = useMemo(() => (data?.top_events || []).map((item) => ({ ...item, id: item.event_id })), [data?.top_events])
-  const allEvents = useMemo(() => (data?.events || []).map((item) => ({ ...item, id: item.event_id })), [data?.events])
-  const bestEvent = topEvents[0]
+  const topEventsPagination = paginateItems(topEvents, topEventsPage)
+  const availableYears = data?.available_years || []
   const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length
+
+  useEffect(() => {
+    setTopEventsPage(1)
+  }, [topEvents.length])
 
   return (
     <div className="analytics-page">
@@ -211,11 +242,6 @@ export function ReportsPage() {
         <div>
           <h1>Analytics</h1>
           <div className="page-sub">Attendance performance, visitor mix, and event participation insights.</div>
-        </div>
-        <div className="analytics-header-summary">
-          <span>Total Attendance</span>
-          <strong>{numberText(totalAttendance)}</strong>
-          <small>{numberText(data?.total_filtered_events ?? 0)} filtered events</small>
         </div>
       </div>
 
@@ -234,7 +260,13 @@ export function ReportsPage() {
         </label>
         <label>
           <span>Year</span>
-          <div><CalendarDays size={16} /><select value={filters.year} onChange={(event) => updateFilter('year', event.target.value)}>{yearOptions().map((year) => <option key={year || 'all'} value={year}>{year || 'All Years'}</option>)}</select></div>
+          <div>
+            <CalendarDays size={16} />
+            <select value={filters.year} onChange={(event) => updateFilter('year', event.target.value)}>
+              <option value="">All Years</option>
+              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+            </select>
+          </div>
         </label>
         <button type="submit" className="btn btn-ocean"><Filter size={16} /> Apply</button>
         <button type="button" className="btn btn-ghost" onClick={resetFilters}><RotateCcw size={16} /> Reset</button>
@@ -249,9 +281,9 @@ export function ReportsPage() {
 
       <div className="analytics-kpi-grid">
         <AnalyticsKpiCard label="Events" value={data?.total_filtered_events ?? 0} detail="Matched by current filters" icon={CalendarDays} tone="blue" />
-        <AnalyticsKpiCard label="Staff Attendance" value={data?.total_filtered_staff ?? 0} detail={`${percentage(data?.total_filtered_staff, totalAttendance)} of total`} icon={ShieldCheck} tone="green" />
-        <AnalyticsKpiCard label="Malaysian Visitors" value={data?.total_filtered_visitors ?? 0} detail={`${percentage(data?.total_filtered_visitors, totalAttendance)} of total`} icon={Contact} tone="cyan" />
-        <AnalyticsKpiCard label="Non-Malaysian Visitors" value={data?.total_filtered_passport ?? 0} detail={`${percentage(data?.total_filtered_passport, totalAttendance)} of total`} icon={IdCard} tone="purple" />
+        <AnalyticsKpiCard label="Staff Attendance" value={data?.total_filtered_staff ?? 0} detail={`${numberText(totalAttendance)} total attendance`} icon={ShieldCheck} tone="green" />
+        <AnalyticsKpiCard label="Malaysian Visitors" value={data?.total_filtered_visitors ?? 0} detail={`${numberText(totalAttendance)} total attendance`} icon={Contact} tone="cyan" />
+        <AnalyticsKpiCard label="Non-Malaysian Visitors" value={data?.total_filtered_passport ?? 0} detail={`${numberText(totalAttendance)} total attendance`} icon={IdCard} tone="purple" />
       </div>
 
       <div className="analytics-main-grid">
@@ -285,56 +317,26 @@ export function ReportsPage() {
       </div>
 
       <div className="analytics-insight-grid">
-        <section className="analytics-card analytics-highlight-card">
-          <div className="analytics-card-title">
-            <div className="analytics-card-icon"><Trophy size={17} /></div>
-            <div>
-              <h2>Top Performing Event</h2>
-              <p>Highest attendance in current filter</p>
-            </div>
-          </div>
-          {bestEvent ? (
-            <div className="analytics-highlight-body">
-              <strong>{bestEvent.event_name}</strong>
-              <span>{numberText(bestEvent.grand_total)}</span>
-              <p>Total attendance</p>
-              <div>
-                <em>Staff {numberText(bestEvent.staff_total)}</em>
-                <em>Malaysian {numberText(bestEvent.visitor_total)}</em>
-                <em>Non-Malaysian {numberText(bestEvent.passport_total)}</em>
-              </div>
-            </div>
-          ) : <div className="analytics-empty">No event data available.</div>}
-        </section>
-        <TopList title="Top Departments" subtitle="Staff attendance concentration" icon={Users} items={topDepartments} />
-        <TopList title="Top Organizations" subtitle="Malaysian visitor organization mix" icon={Building2} items={topOrganizations} />
-        <TopList title="Top Countries" subtitle="Non-Malaysian visitor origin" icon={Globe2} items={topCountries} />
+        <PieSummaryCard title="Top Departments" subtitle="Staff attendance concentration" icon={Users} items={topDepartments} />
+        <PieSummaryCard title="Top Organizations" subtitle="Malaysian visitor organization mix" icon={Building2} items={topOrganizations} />
+        <PieSummaryCard title="Top Countries" subtitle="Non-Malaysian visitor origin" icon={Globe2} items={topCountries} />
       </div>
 
       <section className="table-card analytics-table-card">
         <div className="table-card-header">
           <div>
             <div className="table-card-title">Top Events</div>
-            <div className="table-card-sub">Ranked by total attendance</div>
+            <div className="table-card-sub">Top 5 events per page, ranked by total attendance</div>
+          </div>
+          <div className="table-pagination table-pagination-header">
+            <span>{topEventsPagination.start}-{topEventsPagination.end} of {topEvents.length}</span>
+            <div className="pagination-buttons">
+              <button type="button" onClick={() => setTopEventsPage((current) => Math.max(1, current - 1))} disabled={topEventsPagination.page === 1} aria-label="Previous page">&lt;</button>
+              <button type="button" onClick={() => setTopEventsPage((current) => Math.min(topEventsPagination.totalPages, current + 1))} disabled={topEventsPagination.page === topEventsPagination.totalPages} aria-label="Next page">&gt;</button>
+            </div>
           </div>
         </div>
-        <DataTable rows={topEvents} columns={[
-          { key: 'event_name', label: 'Event' },
-          { key: 'staff_total', label: 'Staff' },
-          { key: 'visitor_total', label: 'Malaysian Visitors' },
-          { key: 'passport_total', label: 'Non-Malaysian Visitors' },
-          { key: 'grand_total', label: 'Total' },
-        ]} />
-      </section>
-
-      <section className="table-card analytics-table-card">
-        <div className="table-card-header">
-          <div>
-            <div className="table-card-title">Event Drill-Down</div>
-            <div className="table-card-sub">Per-event category totals for current filters</div>
-          </div>
-        </div>
-        <DataTable rows={allEvents} columns={[
+        <DataTable rows={topEventsPagination.items} columns={[
           { key: 'event_name', label: 'Event' },
           { key: 'staff_total', label: 'Staff' },
           { key: 'visitor_total', label: 'Malaysian Visitors' },

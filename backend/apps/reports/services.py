@@ -20,6 +20,7 @@ from apps.events.selectors import (
     event_by_id,
     event_count,
     event_report_list,
+    event_years,
     filtered_event_report_list,
     assignments_for_event_export,
     upcoming_events_after_date,
@@ -235,8 +236,9 @@ def build_analytics_report(params):
         "top_departments": sorted(department_totals.items(), key=lambda item: item[1], reverse=True)[:5],
         "top_organizations": sorted(organization_totals.items(), key=lambda item: item[1], reverse=True)[:5],
         "top_countries": sorted(country_totals.items(), key=lambda item: item[1], reverse=True)[:5],
-        "top_events": sorted(event_analytics, key=lambda item: item["grand_total"], reverse=True)[:5],
+        "top_events": sorted(event_analytics, key=lambda item: item["grand_total"], reverse=True),
         "events": event_analytics,
+        "available_years": [item.year for item in event_years()],
     }
 
 
