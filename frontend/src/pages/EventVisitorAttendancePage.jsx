@@ -91,6 +91,8 @@ export function EventVisitorAttendancePage() {
       organization: row.visitor_detail?.organization || '',
       ipv4_address: row.ipv4_address || '',
       ipv6_address: row.ipv6_address || '',
+      attendance_date: formatShortDate(row.date),
+      attendance_time: formatTime12Hour(row.time),
       latitude: row.latitude || '',
       longitude: row.longitude || '',
     })
@@ -109,10 +111,6 @@ export function EventVisitorAttendancePage() {
       const updated = await apiRequest(`/visitor-attendance/${editRow.id}/`, {
         method: 'PATCH',
         body: JSON.stringify({
-          ipv4_address: editForm.ipv4_address || null,
-          ipv6_address: editForm.ipv6_address || null,
-          latitude: editForm.latitude || null,
-          longitude: editForm.longitude || null,
           visitor_detail: {
             full_name: editForm.full_name,
             phone_number: editForm.phone_number,
@@ -252,10 +250,12 @@ export function EventVisitorAttendancePage() {
                 <label className="compact-field"><span>Phone Number</span><input value={editForm.phone_number} onChange={(event) => updateEdit('phone_number', event.target.value)} required /></label>
                 <label className="compact-field"><span>Email</span><input type="email" value={editForm.email} onChange={(event) => updateEdit('email', event.target.value)} required /></label>
                 <label className="compact-field"><span>Organization</span><input value={editForm.organization} onChange={(event) => updateEdit('organization', event.target.value)} required /></label>
-                <label className="compact-field"><span>IPv4 Address</span><input value={editForm.ipv4_address} onChange={(event) => updateEdit('ipv4_address', event.target.value)} /></label>
-                <label className="compact-field"><span>IPv6 Address</span><input value={editForm.ipv6_address} onChange={(event) => updateEdit('ipv6_address', event.target.value)} /></label>
-                <label className="compact-field"><span>Latitude</span><input value={editForm.latitude} onChange={(event) => updateEdit('latitude', event.target.value)} /></label>
-                <label className="compact-field"><span>Longitude</span><input value={editForm.longitude} onChange={(event) => updateEdit('longitude', event.target.value)} /></label>
+                <label className="compact-field"><span>IPv4 Address</span><input readOnly value={editForm.ipv4_address} /></label>
+                <label className="compact-field"><span>IPv6 Address</span><input readOnly value={editForm.ipv6_address} /></label>
+                <label className="compact-field"><span>Attendance Date</span><input readOnly value={editForm.attendance_date} /></label>
+                <label className="compact-field"><span>Attendance Time</span><input readOnly value={editForm.attendance_time} /></label>
+                <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(editForm.latitude)} /></label>
+                <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(editForm.longitude)} /></label>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setEditRow(null)}>Cancel</button>

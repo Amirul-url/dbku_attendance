@@ -57,6 +57,8 @@ function buildPassportEditForm(row) {
     date_of_expiry: toDateInputValue(visitor.expiry_date),
     ipv4_address: row.ipv4_address || '',
     ipv6_address: row.ipv6_address || '',
+    attendance_date: formatShortDate(row.date),
+    attendance_time: formatTime12Hour(row.time),
     latitude: row.latitude || '',
     longitude: row.longitude || '',
     status: visitor.status || '',
@@ -133,10 +135,6 @@ export function EventPassportAttendancePage() {
     setError('')
     try {
       const payload = {
-        ipv4_address: editForm.ipv4_address || null,
-        ipv6_address: editForm.ipv6_address || null,
-        latitude: editForm.latitude || null,
-        longitude: editForm.longitude || null,
         visitor_detail: {
           full_name: `${editForm.first_name} ${editForm.last_name}`.trim(),
           passport_number: editForm.passport_number,
@@ -280,6 +278,10 @@ export function EventPassportAttendancePage() {
               <label className="compact-field"><span>Date of Expiry</span><input readOnly value={formatShortDate(selectedRow.visitor_detail?.expiry_date)} /></label>
               <label className="compact-field"><span>IPv4 Address</span><input readOnly value={selectedRow.ipv4_address || ''} /></label>
               <label className="compact-field"><span>IPv6 Address</span><input readOnly value={selectedRow.ipv6_address || ''} /></label>
+              <label className="compact-field"><span>Attendance Date</span><input readOnly value={formatShortDate(selectedRow.date)} /></label>
+              <label className="compact-field"><span>Attendance Time</span><input readOnly value={formatTime12Hour(selectedRow.time)} /></label>
+              <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(selectedRow.latitude)} /></label>
+              <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(selectedRow.longitude)} /></label>
               <label className="compact-field modal-field-wide"><span>Status</span><input readOnly value={selectedRow.visitor_detail?.status || ''} /></label>
               <label className="compact-field modal-field-wide"><span>OCR Raw Text</span><textarea readOnly rows={6} value={selectedRow.visitor_detail?.ocr_raw_text || ''} /></label>
               <div className="passport-extra-view modal-field-wide">
@@ -312,6 +314,14 @@ export function EventPassportAttendancePage() {
             </div>
             <form onSubmit={saveEdit}>
               <div className="modal-body visitor-modal-grid">
+                <div className="passport-modal-image modal-field-wide">
+                  <span>Passport Image</span>
+                  <div>
+                    {editRow.visitor_detail?.image
+                      ? <img src={editRow.visitor_detail.image} alt="Passport" />
+                      : <span>No passport image</span>}
+                  </div>
+                </div>
                 <label className="compact-field"><span>Type</span><input value={editForm.type} onChange={(event) => updateEdit('type', event.target.value)} /></label>
                 <label className="compact-field"><span>Country Code</span><input value={editForm.country_code} onChange={(event) => updateEdit('country_code', event.target.value)} /></label>
                 <label className="compact-field"><span>Passport Number</span><input value={editForm.passport_number} onChange={(event) => updateEdit('passport_number', event.target.value)} required /></label>
@@ -322,12 +332,23 @@ export function EventPassportAttendancePage() {
                 <label className="compact-field"><span>Sex</span><select value={editForm.sex} onChange={(event) => updateEdit('sex', event.target.value)}><option value="">-</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
                 <label className="compact-field"><span>Date of Issue</span><input type="date" value={editForm.date_of_issue} onChange={(event) => updateEdit('date_of_issue', event.target.value)} /></label>
                 <label className="compact-field"><span>Date of Expiry</span><input type="date" value={editForm.date_of_expiry} onChange={(event) => updateEdit('date_of_expiry', event.target.value)} /></label>
-                <label className="compact-field"><span>IPv4 Address</span><input value={editForm.ipv4_address} onChange={(event) => updateEdit('ipv4_address', event.target.value)} /></label>
-                <label className="compact-field"><span>IPv6 Address</span><input value={editForm.ipv6_address} onChange={(event) => updateEdit('ipv6_address', event.target.value)} /></label>
-                <label className="compact-field"><span>Latitude</span><input value={editForm.latitude} onChange={(event) => updateEdit('latitude', event.target.value)} /></label>
-                <label className="compact-field"><span>Longitude</span><input value={editForm.longitude} onChange={(event) => updateEdit('longitude', event.target.value)} /></label>
+                <label className="compact-field"><span>IPv4 Address</span><input readOnly value={editForm.ipv4_address} /></label>
+                <label className="compact-field"><span>IPv6 Address</span><input readOnly value={editForm.ipv6_address} /></label>
+                <label className="compact-field"><span>Attendance Date</span><input readOnly value={editForm.attendance_date} /></label>
+                <label className="compact-field"><span>Attendance Time</span><input readOnly value={editForm.attendance_time} /></label>
+                <label className="compact-field"><span>Latitude</span><input readOnly value={formatCoordinate(editForm.latitude)} /></label>
+                <label className="compact-field"><span>Longitude</span><input readOnly value={formatCoordinate(editForm.longitude)} /></label>
                 <label className="compact-field modal-field-wide"><span>Status</span><select value={editForm.status} onChange={(event) => updateEdit('status', event.target.value)}><option value="auto-extracted">Auto Extracted</option><option value="manually-corrected">Manually Corrected</option><option value="pending verification">Pending Verification</option></select></label>
                 <label className="compact-field modal-field-wide"><span>OCR Raw Text</span><textarea rows={5} value={editForm.ocr_raw_text} onChange={(event) => updateEdit('ocr_raw_text', event.target.value)} /></label>
+                <div className="passport-extra-view modal-field-wide">
+                  <span>Additional Passport Fields <b>{getAdditionalFields(editRow).length}</b></span>
+                  {getAdditionalFields(editRow).length ? getAdditionalFields(editRow).map((item, index) => (
+                    <div className="passport-extra-view-row" key={`${item.label}-${index}`}>
+                      <strong>{item.label}</strong>
+                      <p>{String(item.value || '-')}</p>
+                    </div>
+                  )) : <div className="passport-extra-view-empty">No additional fields.</div>}
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setEditRow(null)}>Cancel</button>
