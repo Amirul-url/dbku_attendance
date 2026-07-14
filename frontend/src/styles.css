@@ -3210,31 +3210,31 @@ input:focus {
 .analytics-pie-card-body {
   display: grid;
   justify-items: center;
-  gap: 16px;
-  padding: 22px;
+  gap: 14px;
+  padding: 22px 20px 24px;
 }
 
 .analytics-pie-chart {
   position: relative;
-  width: 132px;
+  width: 150px;
   aspect-ratio: 1;
   border-radius: 50%;
 }
 
 .analytics-pie-chart-large {
-  width: 178px;
+  width: 184px;
 }
 
 .analytics-pie-chart::after {
   content: "";
   position: absolute;
-  inset: 34px;
+  inset: 28px;
   border-radius: 50%;
   background: #fff;
 }
 
 .analytics-pie-chart-large::after {
-  inset: 46px;
+  inset: 36px;
 }
 
 .analytics-pie-chart span {
@@ -3255,9 +3255,9 @@ input:focus {
 }
 
 .analytics-pie-chart span em {
-  max-width: 90px;
+  max-width: 96px;
   color: #6b8a93;
-  font-size: 11px;
+  font-size: 10.5px;
   font-style: normal;
   font-weight: 900;
   line-height: 1.25;

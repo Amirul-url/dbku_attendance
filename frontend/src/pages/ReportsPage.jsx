@@ -60,7 +60,7 @@ function AnalyticsKpiCard({ label, value, detail, icon: Icon, tone }) {
   )
 }
 
-function MonthlyTrend({ rows, selectedMonth, onSelectMonth }) {
+function MonthlyTrend({ rows, selectedMonth, onSelectMonth, onPreviewMonth, onClearPreview }) {
   const maxValue = Math.max(1, ...rows.map((item) => Number(item.value) || 0))
   return (
     <div className="analytics-trend-chart" role="img" aria-label="Monthly attendance trend">
@@ -69,7 +69,16 @@ function MonthlyTrend({ rows, selectedMonth, onSelectMonth }) {
         const height = Math.max(4, (value / maxValue) * 100)
         const isSelected = item.label === selectedMonth
         return (
-          <button type="button" className={`analytics-trend-item ${isSelected ? 'is-selected' : ''}`} key={item.label} onClick={() => onSelectMonth(item.label)}>
+          <button
+            type="button"
+            className={`analytics-trend-item ${isSelected ? 'is-selected' : ''}`}
+            key={item.label}
+            onClick={() => onSelectMonth(item.label)}
+            onFocus={() => onPreviewMonth(item.label)}
+            onBlur={onClearPreview}
+            onMouseEnter={() => onPreviewMonth(item.label)}
+            onMouseLeave={onClearPreview}
+          >
             <div className="analytics-trend-bar-wrap">
               <div className="analytics-trend-bar" style={{ height: `${height}%` }} title={`${item.label}: ${value}`} />
             </div>
@@ -182,6 +191,7 @@ export function ReportsPage() {
   const [appliedFilters, setAppliedFilters] = useState({ name: '', location: '', month: '', year: '' })
   const [topEventsPage, setTopEventsPage] = useState(1)
   const [selectedMonth, setSelectedMonth] = useState('')
+  const [hoveredMonth, setHoveredMonth] = useState('')
 
   async function loadAnalytics(nextFilters = filters) {
     setIsLoading(true)
@@ -195,6 +205,7 @@ export function ReportsPage() {
       setData(await apiRequest(`/reports/analytics/${query ? `?${query}` : ''}`))
       setAppliedFilters(nextFilters)
       setSelectedMonth('')
+      setHoveredMonth('')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -222,7 +233,8 @@ export function ReportsPage() {
   }
 
   const totalAttendance = (data?.total_filtered_staff ?? 0) + (data?.total_filtered_visitors ?? 0) + (data?.total_filtered_passport ?? 0)
-  const selectedMonthlyBreakdown = (data?.monthly_breakdown || []).find((item) => item.label === selectedMonth)
+  const activeMonth = hoveredMonth || selectedMonth
+  const selectedMonthlyBreakdown = (data?.monthly_breakdown || []).find((item) => item.label === activeMonth)
   const audienceTotals = selectedMonthlyBreakdown
     ? {
       total: selectedMonthlyBreakdown.grand_total || 0,
@@ -314,9 +326,15 @@ export function ReportsPage() {
                 <p>Monthly attendance volume across filtered events</p>
               </div>
             </div>
-            <span className="analytics-pill">{selectedMonth ? `${selectedMonth} selected` : '12 months'}</span>
+            <span className="analytics-pill">{activeMonth ? `${activeMonth} selected` : '12 months'}</span>
           </div>
-          <MonthlyTrend rows={monthlyRows} selectedMonth={selectedMonth} onSelectMonth={(month) => setSelectedMonth((current) => (current === month ? '' : month))} />
+          <MonthlyTrend
+            rows={monthlyRows}
+            selectedMonth={activeMonth}
+            onPreviewMonth={setHoveredMonth}
+            onClearPreview={() => setHoveredMonth('')}
+            onSelectMonth={(month) => setSelectedMonth((current) => (current === month ? '' : month))}
+          />
         </section>
 
         <section className="analytics-card">
@@ -325,7 +343,7 @@ export function ReportsPage() {
               <div className="analytics-card-icon"><PieChart size={17} /></div>
               <div>
                 <h2>Audience Mix</h2>
-                <p>{selectedMonth ? `${selectedMonth} category breakdown` : 'Staff, Malaysian visitors, and Non-Malaysian visitors'}</p>
+                <p>{activeMonth ? `${activeMonth} category breakdown` : 'Staff, Malaysian visitors, and Non-Malaysian visitors'}</p>
               </div>
             </div>
             <span className="analytics-pill">{numberText(audienceTotals.total)} total</span>
