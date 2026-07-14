@@ -3274,19 +3274,12 @@ input:focus {
   gap: 12px;
 }
 
-.passport-camera-cancel,
 .passport-camera-capture {
   min-height: 64px;
   border-radius: 14px;
   font-size: 17px;
   font-weight: 800;
   cursor: pointer;
-}
-
-.passport-camera-cancel {
-  border: 2px solid rgba(255, 255, 255, 0.38);
-  background: transparent;
-  color: #fff;
 }
 
 .passport-camera-capture {
@@ -3436,6 +3429,10 @@ input:focus {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.passport-submit-actions {
+  justify-content: flex-end;
 }
 
 .passport-step-actions .btn {

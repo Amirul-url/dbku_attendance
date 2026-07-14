@@ -867,7 +867,7 @@ export function PassportAttendanceFormPage() {
             {ocrNote && <div className="requirement-box passport-ocr-note">{ocrNote}</div>}
             <div className="passport-step-actions">
               <button type="button" className="btn btn-green" onClick={scanPassportImage}><ScanLine size={18} /> Scan Passport</button>
-              <button type="button" className="btn btn-ghost" onClick={resetPassportImage}>Reset Image</button>
+              <button type="button" className="btn btn-ghost" onClick={resetForm}><RotateCcw size={17} /> Reset All</button>
             </div>
           </div>
         </section>
@@ -931,9 +931,8 @@ export function PassportAttendanceFormPage() {
         <section className="passport-step-card">
           <div className="passport-step-title"><b>4</b><span>Submit Attendance</span></div>
           <p className="passport-helper-text">GPS/location access is required before attendance submission.</p>
-          <div className="passport-step-actions">
+          <div className="passport-step-actions passport-submit-actions">
             <SubmitButton isSubmitting={isSubmitting} className="btn btn-green"><Check size={18} /> Submit Attendance</SubmitButton>
-            <button type="button" className="btn btn-ghost" onClick={resetForm}><RotateCcw size={17} /> Clear Form</button>
           </div>
         </section>
       </form>
@@ -955,7 +954,6 @@ export function PassportAttendanceFormPage() {
             </div>
             {cameraError && <div className="passport-camera-error">{cameraError}</div>}
             <div className="passport-camera-actions">
-              <button type="button" className="passport-camera-cancel" onClick={closePassportCamera}>Cancel</button>
               <button type="button" className="passport-camera-capture" onClick={capturePassportImage}>Capture Passport</button>
             </div>
             <canvas ref={cameraCanvasRef} hidden />
