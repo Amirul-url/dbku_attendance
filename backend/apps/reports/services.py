@@ -184,6 +184,10 @@ def build_analytics_report(params):
     organization_totals = {}
     country_totals = {}
     monthly_map = {month: 0 for month in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]}
+    monthly_breakdown = {
+        month: {"staff_total": 0, "visitor_total": 0, "passport_total": 0, "grand_total": 0}
+        for month in monthly_map
+    }
     event_analytics = []
 
     for event in events:
@@ -200,7 +204,12 @@ def build_analytics_report(params):
         total_visitors += visitor_total
         total_passport += passport_total
         if event.start_date:
-            monthly_map[event.start_date.strftime("%b")] += grand_total
+            month_label = event.start_date.strftime("%b")
+            monthly_map[month_label] += grand_total
+            monthly_breakdown[month_label]["staff_total"] += staff_total
+            monthly_breakdown[month_label]["visitor_total"] += visitor_total
+            monthly_breakdown[month_label]["passport_total"] += passport_total
+            monthly_breakdown[month_label]["grand_total"] += grand_total
         for item in staff_group:
             department_totals[item["department"]] = department_totals.get(item["department"], 0) + item["total"]
         for item in visitor_group:
@@ -233,6 +242,7 @@ def build_analytics_report(params):
             {"label": "Visitor (Non-Malaysian)", "value": total_passport},
         ],
         "monthly": [{"label": key, "value": value} for key, value in monthly_map.items()],
+        "monthly_breakdown": [{"label": key, **value} for key, value in monthly_breakdown.items()],
         "top_departments": sorted(department_totals.items(), key=lambda item: item[1], reverse=True)[:5],
         "top_organizations": sorted(organization_totals.items(), key=lambda item: item[1], reverse=True)[:5],
         "top_countries": sorted(country_totals.items(), key=lambda item: item[1], reverse=True)[:5],

@@ -3053,8 +3053,13 @@ input:focus {
   display: grid;
   gap: 7px;
   justify-items: center;
+  border: 0;
+  background: transparent;
   color: #6b8a93;
+  cursor: pointer;
+  font: inherit;
   font-size: 11px;
+  padding: 0;
 }
 
 .analytics-trend-bar-wrap {
@@ -3079,18 +3084,27 @@ input:focus {
   opacity: 0.78;
 }
 
+.analytics-trend-item.is-selected .analytics-trend-bar {
+  background: var(--nav);
+}
+
+.analytics-trend-item:focus-visible .analytics-trend-bar-wrap {
+  outline: 2px solid #1565c0;
+  outline-offset: 3px;
+}
+
 .analytics-trend-item strong {
   color: #071d26;
   font-size: 11px;
 }
 
 .analytics-audience-donut {
-  min-height: 260px;
+  min-height: 250px;
   display: grid;
-  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 22px;
-  padding: 26px;
+  justify-items: center;
+  align-content: center;
+  gap: 18px;
+  padding: 24px;
 }
 
 .analytics-highlight-card {
@@ -3195,33 +3209,32 @@ input:focus {
 
 .analytics-pie-card-body {
   display: grid;
-  grid-template-columns: minmax(170px, 0.9fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 22px;
-  padding: 24px;
+  justify-items: center;
+  gap: 16px;
+  padding: 22px;
 }
 
 .analytics-pie-chart {
   position: relative;
-  width: 172px;
+  width: 132px;
   aspect-ratio: 1;
   border-radius: 50%;
 }
 
 .analytics-pie-chart-large {
-  width: 216px;
+  width: 178px;
 }
 
 .analytics-pie-chart::after {
   content: "";
   position: absolute;
-  inset: 44px;
+  inset: 34px;
   border-radius: 50%;
   background: #fff;
 }
 
 .analytics-pie-chart-large::after {
-  inset: 56px;
+  inset: 46px;
 }
 
 .analytics-pie-chart span {
@@ -3237,7 +3250,7 @@ input:focus {
 }
 
 .analytics-pie-chart span strong {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
 }
 
@@ -3251,20 +3264,23 @@ input:focus {
 }
 
 .analytics-pie-legend {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
   min-width: 0;
+  width: 100%;
 }
 
 .analytics-audience-legend {
-  gap: 14px;
+  gap: 18px;
 }
 
 .analytics-pie-legend div {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .analytics-pie-legend i {

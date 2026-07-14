@@ -60,21 +60,22 @@ function AnalyticsKpiCard({ label, value, detail, icon: Icon, tone }) {
   )
 }
 
-function MonthlyTrend({ rows }) {
+function MonthlyTrend({ rows, selectedMonth, onSelectMonth }) {
   const maxValue = Math.max(1, ...rows.map((item) => Number(item.value) || 0))
   return (
     <div className="analytics-trend-chart" role="img" aria-label="Monthly attendance trend">
       {rows.map((item) => {
         const value = Number(item.value) || 0
         const height = Math.max(4, (value / maxValue) * 100)
+        const isSelected = item.label === selectedMonth
         return (
-          <div className="analytics-trend-item" key={item.label}>
+          <button type="button" className={`analytics-trend-item ${isSelected ? 'is-selected' : ''}`} key={item.label} onClick={() => onSelectMonth(item.label)}>
             <div className="analytics-trend-bar-wrap">
               <div className="analytics-trend-bar" style={{ height: `${height}%` }} title={`${item.label}: ${value}`} />
             </div>
             <span>{item.label}</span>
             <strong>{value}</strong>
-          </div>
+          </button>
         )
       })}
     </div>
@@ -180,6 +181,7 @@ export function ReportsPage() {
   const [filters, setFilters] = useState({ name: '', location: '', month: '', year: '' })
   const [appliedFilters, setAppliedFilters] = useState({ name: '', location: '', month: '', year: '' })
   const [topEventsPage, setTopEventsPage] = useState(1)
+  const [selectedMonth, setSelectedMonth] = useState('')
 
   async function loadAnalytics(nextFilters = filters) {
     setIsLoading(true)
@@ -192,6 +194,7 @@ export function ReportsPage() {
       const query = params.toString()
       setData(await apiRequest(`/reports/analytics/${query ? `?${query}` : ''}`))
       setAppliedFilters(nextFilters)
+      setSelectedMonth('')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -219,10 +222,24 @@ export function ReportsPage() {
   }
 
   const totalAttendance = (data?.total_filtered_staff ?? 0) + (data?.total_filtered_visitors ?? 0) + (data?.total_filtered_passport ?? 0)
+  const selectedMonthlyBreakdown = (data?.monthly_breakdown || []).find((item) => item.label === selectedMonth)
+  const audienceTotals = selectedMonthlyBreakdown
+    ? {
+      total: selectedMonthlyBreakdown.grand_total || 0,
+      staff: selectedMonthlyBreakdown.staff_total || 0,
+      visitors: selectedMonthlyBreakdown.visitor_total || 0,
+      passport: selectedMonthlyBreakdown.passport_total || 0,
+    }
+    : {
+      total: totalAttendance,
+      staff: data?.total_filtered_staff ?? 0,
+      visitors: data?.total_filtered_visitors ?? 0,
+      passport: data?.total_filtered_passport ?? 0,
+    }
   const categoryRows = [
-    { label: 'Staff', value: data?.total_filtered_staff ?? 0, tone: 'staff' },
-    { label: 'Malaysian Visitors', value: data?.total_filtered_visitors ?? 0, tone: 'visitor' },
-    { label: 'Non-Malaysian Visitors', value: data?.total_filtered_passport ?? 0, tone: 'passport' },
+    { label: 'Staff', value: audienceTotals.staff, tone: 'staff' },
+    { label: 'Malaysian Visitors', value: audienceTotals.visitors, tone: 'visitor' },
+    { label: 'Non-Malaysian Visitors', value: audienceTotals.passport, tone: 'passport' },
   ]
   const monthlyRows = data?.monthly || []
   const topDepartments = useMemo(() => normalizeTopList(data?.top_departments), [data?.top_departments])
@@ -297,9 +314,9 @@ export function ReportsPage() {
                 <p>Monthly attendance volume across filtered events</p>
               </div>
             </div>
-            <span className="analytics-pill">12 months</span>
+            <span className="analytics-pill">{selectedMonth ? `${selectedMonth} selected` : '12 months'}</span>
           </div>
-          <MonthlyTrend rows={monthlyRows} />
+          <MonthlyTrend rows={monthlyRows} selectedMonth={selectedMonth} onSelectMonth={(month) => setSelectedMonth((current) => (current === month ? '' : month))} />
         </section>
 
         <section className="analytics-card">
@@ -308,12 +325,12 @@ export function ReportsPage() {
               <div className="analytics-card-icon"><PieChart size={17} /></div>
               <div>
                 <h2>Audience Mix</h2>
-                <p>Staff, Malaysian visitors, and Non-Malaysian visitors</p>
+                <p>{selectedMonth ? `${selectedMonth} category breakdown` : 'Staff, Malaysian visitors, and Non-Malaysian visitors'}</p>
               </div>
             </div>
-            <span className="analytics-pill">{numberText(totalAttendance)} total</span>
+            <span className="analytics-pill">{numberText(audienceTotals.total)} total</span>
           </div>
-          <CategoryShareChart rows={categoryRows} total={totalAttendance} />
+          <CategoryShareChart rows={categoryRows} total={audienceTotals.total} />
         </section>
       </div>
 
