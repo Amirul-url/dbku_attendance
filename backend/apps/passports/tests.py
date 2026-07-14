@@ -42,7 +42,11 @@ class PassportAttendanceSubmitApiTests(APITestCase):
             "date_of_expiry": "2034-01-01",
             "raw_text": "OCR text",
             "status": "pending verification",
-            "additional_fields": [{"label": "Place of Birth", "value": "Tokyo"}],
+            "additional_fields": [
+                {"label": "Phone Number", "value": "+60123456789"},
+                {"label": "Email", "value": "visitor@example.com"},
+                {"label": "Place of Birth", "value": "Tokyo"},
+            ],
             "latitude": 1.580821,
             "longitude": 110.321767,
         }
@@ -55,7 +59,30 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertEqual(PassportAttendance.objects.count(), 1)
         visitor = PassportVisitor.objects.get()
         self.assertEqual(visitor.passport_number, "AB1234567")
-        self.assertEqual(visitor.extra_data["additional_fields"][0]["label"], "Place of Birth")
+        self.assertTrue(any(item["label"] == "Place of Birth" for item in visitor.extra_data["additional_fields"]))
+
+    def test_dash_is_allowed_for_required_passport_contact_fields(self):
+        payload = self.payload(self.event)
+        payload["additional_fields"] = [
+            {"label": "Phone Number", "value": "-"},
+            {"label": "Email", "value": "-"},
+        ]
+
+        response = self.client.post("/api/passport-attendance/submit/", payload, format="json")
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_required_passport_contact_fields_are_rejected_when_empty(self):
+        payload = self.payload(self.event)
+        payload["additional_fields"] = [
+            {"label": "Phone Number", "value": ""},
+            {"label": "Email", "value": ""},
+        ]
+
+        response = self.client.post("/api/passport-attendance/submit/", payload, format="json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("additional_fields", response.json())
 
     def test_same_passport_can_submit_to_another_event_without_duplicate_visitor(self):
         first = self.client.post("/api/passport-attendance/submit/", self.payload(self.event), format="json")

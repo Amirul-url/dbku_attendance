@@ -103,6 +103,7 @@ const defaultPassportExtraFields = [
   { id: 'default-phone-number', label: 'Phone Number', value: '', locked: true },
   { id: 'default-email', label: 'Email', value: '', locked: true },
 ]
+const requiredPassportExtraLabels = defaultPassportExtraFields.map((item) => item.label)
 
 function getPassportStatusMeta(status) {
   return passportStatusMeta[status] || passportStatusMeta['pending verification']
@@ -128,6 +129,13 @@ function ensureDefaultPassportExtraFields(fields = []) {
     !defaultPassportExtraFields.some((defaultField) => normalizePassportExtraLabel(defaultField.label) === normalizePassportExtraLabel(item.label))
   ))
   return [...defaults, ...customFields]
+}
+
+function getMissingRequiredPassportExtraFields(fields = []) {
+  return requiredPassportExtraLabels.filter((requiredLabel) => {
+    const matched = fields.find((item) => normalizePassportExtraLabel(item.label) === normalizePassportExtraLabel(requiredLabel))
+    return !String(matched?.value || '').trim()
+  })
 }
 
 function splitPhoneNumber(value) {
@@ -667,6 +675,11 @@ export function PassportAttendanceFormPage() {
       setExpiredPassportMessage(PASSPORT_EXPIRED_MESSAGE)
       return
     }
+    const missingRequiredExtraFields = getMissingRequiredPassportExtraFields(visibleExtraFields)
+    if (missingRequiredExtraFields.length) {
+      setError(`${missingRequiredExtraFields.join(' and ')} must be filled in Additional Passport Fields. Enter - if not available.`)
+      return
+    }
     submittingRef.current = true
     setError('')
     setMessage('')
@@ -1004,7 +1017,7 @@ export function PassportAttendanceFormPage() {
 
         <section className="passport-step-card">
           <div className="passport-step-title passport-step-title-row">
-            <span><b>3</b> Additional Passport Fields <em>Optional</em><i>{visibleExtraFields.length}</i></span>
+            <span><b>3</b> Additional Passport Fields <em>Required</em><i>{visibleExtraFields.length}</i></span>
             <button type="button" className="btn btn-ghost passport-add-field" onClick={addExtraField}><Plus size={16} /> Add Field</button>
           </div>
           {visibleExtraFields.length === 0 ? (
@@ -1014,13 +1027,13 @@ export function PassportAttendanceFormPage() {
               {visibleExtraFields.map((item) => (
                 <div className="passport-extra-row" key={item.id}>
                   <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" disabled={item.locked} />
-                  <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder="Value" />
+                  <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder={item.locked ? 'Required, or - if unavailable' : 'Value'} required={item.locked} />
                   <button type="button" className="passport-extra-delete" onClick={() => confirmRemoveExtraField(item)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                 </div>
               ))}
             </div>
           )}
-          <p className="passport-extra-help">Capture supplementary data from the passport such as <code>Height</code>, <code>Place of Birth</code> or <code>Hair Colour</code>. Each entry is stored as a labelled key-value pair.</p>
+          <p className="passport-extra-help"><code>Phone Number</code> and <code>Email</code> are required. Enter <code>-</code> if unavailable. You may add supplementary passport data such as <code>Height</code>, <code>Place of Birth</code> or <code>Hair Colour</code>.</p>
         </section>
 
         <section className="passport-step-card">

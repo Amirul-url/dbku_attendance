@@ -14,6 +14,8 @@ from apps.events.models import Event
 
 from .models import PassportAttendance, PassportVisitor
 
+REQUIRED_ADDITIONAL_FIELD_LABELS = ("Phone Number", "Email")
+
 TESSERACT_CANDIDATE_PATHS = (
     Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
     Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
@@ -110,6 +112,23 @@ def _additional_fields_from_text(value):
     return result
 
 
+def _validate_required_additional_fields(fields):
+    lookup = {
+        _clean_text(item.get("label")).lower(): _clean_text(item.get("value"))
+        for item in fields
+        if isinstance(item, dict)
+    }
+    missing = [
+        label
+        for label in REQUIRED_ADDITIONAL_FIELD_LABELS
+        if not lookup.get(label.lower())
+    ]
+    if missing:
+        raise serializers.ValidationError({
+            "additional_fields": f"{' and '.join(missing)} must be provided. Enter - if not available."
+        })
+
+
 def _safe_media_name(value):
     name = Path(_clean_text(value)).name
     return name if name and name not in {".", ".."} else ""
@@ -190,6 +209,7 @@ def submit_passport_attendance(data, request):
         additional_fields_text = _additional_fields_to_text(additional_fields)
     if not isinstance(additional_fields, list):
         additional_fields = _additional_fields_from_text(additional_fields_text)
+    _validate_required_additional_fields(additional_fields)
 
     ipv4_address, ipv6_address = split_client_ips(request)
 
