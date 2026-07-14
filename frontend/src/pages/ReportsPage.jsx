@@ -37,11 +37,6 @@ function numberText(value) {
   return new Intl.NumberFormat('en-MY').format(Number(value) || 0)
 }
 
-function shareWidth(value, total) {
-  if (!total) return '0%'
-  return `${Math.max(4, Math.round((Number(value || 0) / total) * 100))}%`
-}
-
 function normalizeTopList(items) {
   return (items || []).map((item, index) => ({
     id: `${item[0] || 'unknown'}-${index}`,
@@ -56,7 +51,7 @@ function AnalyticsKpiCard({ label, value, detail, icon: Icon, tone }) {
       <div>
         <span>{label}</span>
         <strong>{numberText(value)}</strong>
-        <small>{detail}</small>
+        {detail && <small>{detail}</small>}
       </div>
       <div className="analytics-kpi-icon">
         <Icon size={21} />
@@ -88,24 +83,27 @@ function MonthlyTrend({ rows }) {
 
 function CategoryShareChart({ rows, total }) {
   return (
-    <div className="analytics-share-list">
-      {rows.map((item) => (
-        <div className="analytics-share-row" key={item.label}>
-          <div>
-            <span className={`analytics-share-dot analytics-share-${item.tone}`} />
-            <strong>{item.label}</strong>
+    <div className="analytics-audience-donut">
+      <div className="analytics-pie-chart analytics-pie-chart-large" style={{ background: pieGradient(rows) }}>
+        <span>
+          <strong>{numberText(total)}</strong>
+          <em>Total Attendance</em>
+        </span>
+      </div>
+      <div className="analytics-pie-legend analytics-audience-legend">
+        {rows.map((item, index) => (
+          <div key={item.label}>
+            <i style={{ background: pieColors[index % pieColors.length] }} />
+            <span>{item.label}</span>
+            <strong>{numberText(item.value)}</strong>
           </div>
-          <div className="analytics-share-meter">
-            <span style={{ width: shareWidth(item.value, total) }} />
-          </div>
-          <em>{numberText(item.value)}</em>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
 
-const pieColors = ['#004b55', '#08aeca', '#7e57c2', '#2e7d32', '#d46b00']
+const pieColors = ['#004b55', '#08aeca', '#c4c4c4', '#2e7d32', '#d46b00']
 
 function pieGradient(items) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
@@ -141,7 +139,10 @@ function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
         ) : (
           <>
             <div className="analytics-pie-chart" style={{ background: pieGradient(items) }}>
-              <span>{numberText(total)}</span>
+              <span>
+                <strong>{numberText(total)}</strong>
+                <em>Total Attendance</em>
+              </span>
             </div>
             <div className="analytics-pie-legend">
               {items.map((item, index) => (
@@ -281,9 +282,9 @@ export function ReportsPage() {
 
       <div className="analytics-kpi-grid">
         <AnalyticsKpiCard label="Events" value={data?.total_filtered_events ?? 0} detail="Matched by current filters" icon={CalendarDays} tone="blue" />
-        <AnalyticsKpiCard label="Staff Attendance" value={data?.total_filtered_staff ?? 0} detail={`${numberText(totalAttendance)} total attendance`} icon={ShieldCheck} tone="green" />
-        <AnalyticsKpiCard label="Malaysian Visitors" value={data?.total_filtered_visitors ?? 0} detail={`${numberText(totalAttendance)} total attendance`} icon={Contact} tone="cyan" />
-        <AnalyticsKpiCard label="Non-Malaysian Visitors" value={data?.total_filtered_passport ?? 0} detail={`${numberText(totalAttendance)} total attendance`} icon={IdCard} tone="purple" />
+        <AnalyticsKpiCard label="Staff Attendance" value={data?.total_filtered_staff ?? 0} icon={ShieldCheck} tone="green" />
+        <AnalyticsKpiCard label="Malaysian Visitors" value={data?.total_filtered_visitors ?? 0} icon={Contact} tone="cyan" />
+        <AnalyticsKpiCard label="Non-Malaysian Visitors" value={data?.total_filtered_passport ?? 0} icon={IdCard} tone="purple" />
       </div>
 
       <div className="analytics-main-grid">
