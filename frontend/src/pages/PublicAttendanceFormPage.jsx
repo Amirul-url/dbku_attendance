@@ -84,6 +84,16 @@ function findPassportCountryByNationality(value) {
   return passportCountryOptions.find((option) => option.nationality.toLowerCase() === nationality)
 }
 
+const passportStatusMeta = {
+  'auto-extracted': { label: 'Auto Extracted', className: 'is-ok', chipClassName: 'passport-ok-chip' },
+  'manually-corrected': { label: 'Manually Corrected', className: 'is-manual', chipClassName: 'passport-manual-chip' },
+  'pending verification': { label: 'Pending Verification', className: '', chipClassName: 'passport-pending-chip' },
+}
+
+function getPassportStatusMeta(status) {
+  return passportStatusMeta[status] || passportStatusMeta['pending verification']
+}
+
 function splitPhoneNumber(value) {
   const digits = String(value || '').replace(/\D/g, '')
   const matchedCountry = [...countryCodeOptions]
@@ -511,6 +521,7 @@ export function PassportAttendanceFormPage() {
   const cameraGuideRef = useRef(null)
   const cameraStreamRef = useRef(null)
   const ocrSnapshotRef = useRef(null)
+  const statusMeta = getPassportStatusMeta(ocrStatus)
 
   useEffect(() => () => {
     if (passportPreview) URL.revokeObjectURL(passportPreview)
@@ -862,7 +873,7 @@ export function PassportAttendanceFormPage() {
             </div>
             <div className="passport-status-row">
               <span className="passport-chip passport-source-chip">Source: {ocrSource}</span>
-              <span className={`passport-chip ${ocrStatus === 'auto-extracted' ? 'passport-ok-chip' : 'passport-pending-chip'}`}>Status: {ocrStatus}</span>
+              <span className={`passport-chip ${statusMeta.chipClassName}`}>Status: {statusMeta.label}</span>
             </div>
             {ocrNote && <div className="requirement-box passport-ocr-note">{ocrNote}</div>}
             <div className="passport-step-actions">
@@ -874,7 +885,7 @@ export function PassportAttendanceFormPage() {
 
         <section className="passport-step-card">
           <div className="passport-step-title"><b>2</b><span>Review Extracted Details</span></div>
-          <div className={`passport-review-status ${ocrStatus === 'auto-extracted' ? 'is-ok' : ''}`}>{ocrStatus === 'auto-extracted' ? 'Auto Extracted' : 'Pending Verification'}</div>
+          <div className={`passport-review-status ${statusMeta.className}`}>{statusMeta.label}</div>
           <div className="passport-form-grid">
             <label className="compact-field"><span>Passport Type <span className="required-star">*</span></span><input value={form.passport_type} onChange={(e) => update('passport_type', e.target.value)} placeholder="e.g. P" required /></label>
             <label className="compact-field"><span>Passport Number <span className="required-star">*</span></span><input value={form.passport_number} onChange={(e) => update('passport_number', e.target.value)} placeholder="e.g. AB1234567" required /></label>

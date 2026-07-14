@@ -3421,6 +3421,11 @@ input:focus {
   color: #15803d;
 }
 
+.passport-manual-chip {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .passport-ocr-note {
   margin: 0;
 }
@@ -3490,6 +3495,12 @@ input:focus {
   border-color: #86efac;
   background: #dcfce7;
   color: #15803d;
+}
+
+.passport-review-status.is-manual {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .passport-add-field {
