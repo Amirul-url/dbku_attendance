@@ -207,13 +207,12 @@ export function ReportsPage() {
 
   return (
     <div className="analytics-page">
-      <div className="analytics-hero">
+      <div className="page-header analytics-page-header">
         <div>
-          <div className="analytics-eyebrow"><BarChart3 size={15} /> Google Analytics Style</div>
           <h1>Analytics</h1>
-          <p>Attendance performance, visitor mix, and event participation insights.</p>
+          <div className="page-sub">Attendance performance, visitor mix, and event participation insights.</div>
         </div>
-        <div className="analytics-hero-metric">
+        <div className="analytics-header-summary">
           <span>Total Attendance</span>
           <strong>{numberText(totalAttendance)}</strong>
           <small>{numberText(data?.total_filtered_events ?? 0)} filtered events</small>
@@ -297,7 +296,8 @@ export function ReportsPage() {
           {bestEvent ? (
             <div className="analytics-highlight-body">
               <strong>{bestEvent.event_name}</strong>
-              <span>{numberText(bestEvent.grand_total)} total attendance</span>
+              <span>{numberText(bestEvent.grand_total)}</span>
+              <p>Total attendance</p>
               <div>
                 <em>Staff {numberText(bestEvent.staff_total)}</em>
                 <em>Malaysian {numberText(bestEvent.visitor_total)}</em>
