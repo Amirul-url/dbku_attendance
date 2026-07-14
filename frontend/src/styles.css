@@ -4112,6 +4112,20 @@ input:focus {
   color: #b45309;
 }
 
+.passport-expired-icon {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.passport-expired-dialog .btn {
+  background: #c62828;
+  color: #fff;
+}
+
+.passport-expired-dialog .btn:hover {
+  background: #9f1f1f;
+}
+
 .passport-quality-dialog h2 {
   margin: 0;
   color: #102331;

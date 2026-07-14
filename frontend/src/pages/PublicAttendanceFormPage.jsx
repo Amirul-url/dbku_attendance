@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, Trash2, User, X } from 'lucide-react'
+import { AlertTriangle, Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, ClipboardCheck, FileText, ImageIcon, LocateFixed, Mail, MapPin, Phone, Plus, RotateCcw, ScanLine, ShieldCheck, Trash2, User, X } from 'lucide-react'
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
@@ -43,6 +43,13 @@ const organizationOptions = [
 ]
 
 const countryNameFormatter = new Intl.DisplayNames(['en'], { type: 'region' })
+const PASSPORT_EXPIRED_MESSAGE = 'Passport has expired. Please use a valid passport before submitting attendance.'
+
+function isPassportExpired(dateValue) {
+  if (!dateValue) return false
+  const today = new Date().toISOString().slice(0, 10)
+  return dateValue < today
+}
 const priorityCountries = ['MY', 'SG', 'ID', 'BN', 'TH', 'AU', 'CN', 'IN', 'GB', 'US', 'CA']
 const countryCodeOptions = getCountries()
   .map((iso) => ({
@@ -371,6 +378,21 @@ function SuccessModal({ message, onClose }) {
   )
 }
 
+function PassportExpiredModal({ message, onClose }) {
+  if (!message) return null
+
+  return (
+    <div className="passport-quality-overlay" role="alertdialog" aria-modal="true" aria-label="Expired passport">
+      <div className="passport-quality-dialog passport-expired-dialog">
+        <div className="passport-quality-icon passport-expired-icon"><AlertTriangle size={24} /></div>
+        <h2>Passport Expired</h2>
+        <p>{message}</p>
+        <button type="button" className="btn btn-red" onClick={onClose}>OK</button>
+      </div>
+    </div>
+  )
+}
+
 function PublicFormShell({ type, title, subtitle, event, children, message, onDismissMessage, error, showEvent = true, showGpsNote = true }) {
   return (
     <div className="public-attendance-screen">
@@ -545,6 +567,7 @@ export function PassportAttendanceFormPage() {
   const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const [qualityPopupMessage, setQualityPopupMessage] = useState('')
+  const [expiredPassportMessage, setExpiredPassportMessage] = useState('')
   const submittingRef = useRef(false)
   const cameraVideoRef = useRef(null)
   const cameraCanvasRef = useRef(null)
@@ -639,8 +662,9 @@ export function PassportAttendanceFormPage() {
   async function submit(submitEvent) {
     submitEvent.preventDefault()
     if (submittingRef.current) return
-    if (form.date_of_expiry && new Date(`${form.date_of_expiry}T23:59:59`) < new Date()) {
-      setError('Passport has expired. Please use a valid passport.')
+    if (isPassportExpired(form.date_of_expiry)) {
+      setError('')
+      setExpiredPassportMessage(PASSPORT_EXPIRED_MESSAGE)
       return
     }
     submittingRef.current = true
@@ -683,7 +707,12 @@ export function PassportAttendanceFormPage() {
       setMessage('Passport attendance submitted successfully.')
       resetForm()
     } catch (err) {
-      setError(err.message)
+      if ((err.message || '').toLowerCase().includes('passport has expired')) {
+        setError('')
+        setExpiredPassportMessage(PASSPORT_EXPIRED_MESSAGE)
+      } else {
+        setError(err.message)
+      }
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -822,6 +851,9 @@ export function PassportAttendanceFormPage() {
         processed: data.processed_image_name || '',
         qualityNote: data.image_quality_note || '',
       })
+      if (isPassportExpired(data.date_of_expiry)) {
+        setExpiredPassportMessage(PASSPORT_EXPIRED_MESSAGE)
+      }
       if (data.image_quality_note) setQualityPopupMessage(data.image_quality_note)
       setOcrNote(data.image_quality_note || 'Passport scanned. Please verify the extracted fields before submitting.')
     } catch (err) {
@@ -842,6 +874,7 @@ export function PassportAttendanceFormPage() {
     setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
     setOcrNote('')
     setQualityPopupMessage('')
+    setExpiredPassportMessage('')
   }
 
   function resetForm() {
@@ -1032,6 +1065,7 @@ export function PassportAttendanceFormPage() {
           </div>
         </div>
       )}
+      <PassportExpiredModal message={expiredPassportMessage} onClose={() => setExpiredPassportMessage('')} />
       {confirmDialog}
     </PublicFormShell>
   )
