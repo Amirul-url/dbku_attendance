@@ -37,6 +37,10 @@ function numberText(value) {
   return new Intl.NumberFormat('en-MY').format(Number(value) || 0)
 }
 
+function pluralText(value, singular, plural = `${singular}s`) {
+  return `${numberText(value)} ${Number(value) === 1 ? singular : plural}`
+}
+
 function normalizeTopList(items) {
   return (items || []).map((item, index) => ({
     id: `${item[0] || 'unknown'}-${index}`,
@@ -126,7 +130,7 @@ function AnalyticsPie({ items, total, size = 'default', ariaLabel = 'Analytics p
         {hasData ? items.map((item, index) => {
           const value = Number(item.value) || 0
           if (!value) return null
-          const color = pieColors[index % pieColors.length]
+          const color = pieColor(index)
           if (value === total) {
             return (
               <circle
@@ -183,7 +187,7 @@ function CategoryShareChart({ rows, total }) {
       <div className="analytics-pie-legend analytics-audience-legend">
         {rows.map((item, index) => (
           <div key={item.label}>
-            <i style={{ background: pieColors[index % pieColors.length] }} />
+            <i style={{ background: pieColor(index) }} />
             <span>{item.label}</span>
             <strong>{numberText(item.value)}</strong>
           </div>
@@ -193,10 +197,41 @@ function CategoryShareChart({ rows, total }) {
   )
 }
 
-const pieColors = ['#a6a6a6', '#4775c4', '#f47c27', '#0b5c66', '#08aeca']
+const pieColors = [
+  '#a6a6a6',
+  '#4775c4',
+  '#f47c27',
+  '#6f4bb8',
+  '#0b8f6a',
+  '#d34b4b',
+  '#2f8cc9',
+  '#bf8b2e',
+  '#6d8f33',
+  '#c94b9b',
+  '#0b5c66',
+  '#9b6a3c',
+  '#6173d9',
+  '#db6f45',
+  '#4f9f45',
+  '#8a5aa8',
+  '#268a9c',
+  '#b65b72',
+  '#756f2f',
+  '#516d7f',
+  '#c26f1a',
+  '#5e8d73',
+  '#a64f4f',
+  '#3f6fb5',
+]
+
+function pieColor(index) {
+  return pieColors[index] || `hsl(${(index * 47) % 360} 58% 48%)`
+}
 
 function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
+  const visibleItems = items.slice(0, 5)
+  const hiddenCount = Math.max(0, items.length - visibleItems.length)
   return (
     <section className="analytics-card">
       <div className="analytics-card-header compact">
@@ -209,6 +244,7 @@ function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
             <p>{subtitle}</p>
           </div>
         </div>
+        <span className="analytics-pill">Total: {numberText(total)}</span>
       </div>
       <div className="analytics-pie-card-body">
         {items.length === 0 ? (
@@ -217,13 +253,14 @@ function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
           <>
             <AnalyticsPie items={items} total={total} ariaLabel={`${title} chart`} />
             <div className="analytics-pie-legend">
-              {items.map((item, index) => (
+              {visibleItems.map((item, index) => (
                 <div key={item.id}>
-                  <i style={{ background: pieColors[index % pieColors.length] }} />
+                  <i style={{ background: pieColor(index) }} />
                   <span title={item.label}>{item.label}</span>
                   <strong>{numberText(item.value)}</strong>
                 </div>
               ))}
+              {hiddenCount > 0 && <em>+{numberText(hiddenCount)} more categories</em>}
             </div>
           </>
         )}
@@ -330,7 +367,7 @@ export function ReportsPage() {
       <div className="page-header analytics-page-header">
         <div>
           <h1>Analytics</h1>
-          <div className="page-sub">Attendance performance, visitor mix, and event participation insights.</div>
+          <div className="page-sub">Attendance totals, monthly trends, and category breakdowns for filtered events.</div>
         </div>
       </div>
 
@@ -364,15 +401,15 @@ export function ReportsPage() {
       {error && <div className="alert-error">{error}</div>}
 
       <div className="analytics-status-row">
-        <span>{isLoading ? 'Loading analytics...' : `Showing ${numberText(data?.total_filtered_events ?? 0)} event(s)`}</span>
+        <span>{isLoading ? 'Loading analytics...' : `${pluralText(data?.total_filtered_events ?? 0, 'event')} included in this report`}</span>
         <em>{activeFilterCount ? `${activeFilterCount} active filter(s)` : 'All data'}</em>
       </div>
 
       <div className="analytics-kpi-grid">
-        <AnalyticsKpiCard label="Events" value={data?.total_filtered_events ?? 0} detail="Matched by current filters" icon={CalendarDays} tone="blue" />
-        <AnalyticsKpiCard label="Staff Attendance" value={data?.total_filtered_staff ?? 0} icon={ShieldCheck} tone="green" />
-        <AnalyticsKpiCard label="Malaysian Visitors" value={data?.total_filtered_visitors ?? 0} icon={Contact} tone="cyan" />
-        <AnalyticsKpiCard label="Non-Malaysian Visitors" value={data?.total_filtered_passport ?? 0} icon={IdCard} tone="purple" />
+        <AnalyticsKpiCard label="Filtered Events" value={data?.total_filtered_events ?? 0} detail="Included in this report" icon={CalendarDays} tone="blue" />
+        <AnalyticsKpiCard label="Staff Check-ins" value={data?.total_filtered_staff ?? 0} icon={ShieldCheck} tone="green" />
+        <AnalyticsKpiCard label="Malaysian Visitor Check-ins" value={data?.total_filtered_visitors ?? 0} icon={Contact} tone="cyan" />
+        <AnalyticsKpiCard label="Non-Malaysian Visitor Check-ins" value={data?.total_filtered_passport ?? 0} icon={IdCard} tone="purple" />
       </div>
 
       <div className="analytics-main-grid">
@@ -382,7 +419,7 @@ export function ReportsPage() {
               <div className="analytics-card-icon"><BarChart3 size={17} /></div>
               <div>
                 <h2>Attendance Trend</h2>
-                <p>Monthly attendance volume across filtered events</p>
+                <p>Monthly check-ins across filtered events</p>
               </div>
             </div>
             <span className="analytics-pill">{selectedMonth ? `${selectedMonth} selected` : '12 months'}</span>
@@ -399,8 +436,8 @@ export function ReportsPage() {
             <div className="analytics-card-title">
               <div className="analytics-card-icon"><PieChart size={17} /></div>
               <div>
-                <h2>Audience Mix</h2>
-                <p>{selectedMonth ? `${selectedMonth} category breakdown` : 'Staff, Malaysian visitors, and Non-Malaysian visitors'}</p>
+                <h2>Attendance Category Breakdown</h2>
+                <p>{selectedMonth ? `${selectedMonth} attendee-type breakdown` : 'Check-ins by attendee type'}</p>
               </div>
             </div>
             <span className="analytics-pill">{numberText(audienceTotals.total)} total</span>
@@ -410,9 +447,9 @@ export function ReportsPage() {
       </div>
 
       <div className="analytics-insight-grid">
-        <PieSummaryCard title="Top Departments" subtitle="Staff attendance concentration" icon={Users} items={topDepartments} />
-        <PieSummaryCard title="Top Organizations" subtitle="Malaysian visitor organization mix" icon={Building2} items={topOrganizations} />
-        <PieSummaryCard title="Top Countries" subtitle="Non-Malaysian visitor origin" icon={Globe2} items={topCountries} />
+        <PieSummaryCard title="Top Departments" subtitle="Staff check-ins by department" icon={Users} items={topDepartments} />
+        <PieSummaryCard title="Top Organizations" subtitle="Malaysian visitor check-ins by organization" icon={Building2} items={topOrganizations} />
+        <PieSummaryCard title="Top Countries" subtitle="Non-Malaysian visitor check-ins by country" icon={Globe2} items={topCountries} />
       </div>
 
       <section className="table-card analytics-table-card">

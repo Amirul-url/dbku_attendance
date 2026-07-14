@@ -3330,6 +3330,16 @@ input:focus {
   font-weight: 900;
 }
 
+.analytics-pie-legend em {
+  display: block;
+  border-top: 1px solid #edf3f5;
+  color: #5b7e8b;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  padding-top: 10px;
+}
+
 .analytics-empty {
   color: var(--muted);
   font-size: 13px;
