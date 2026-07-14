@@ -260,7 +260,23 @@ function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
                   <strong>{numberText(item.value)}</strong>
                 </div>
               ))}
-              {hiddenCount > 0 && <em>+{numberText(hiddenCount)} more categories</em>}
+              {hiddenCount > 0 && (
+                <details className="analytics-pie-more">
+                  <summary>{numberText(hiddenCount)} more categories</summary>
+                  <div className="analytics-pie-more-list">
+                    {items.slice(visibleItems.length).map((item, index) => {
+                      const itemIndex = visibleItems.length + index
+                      return (
+                        <div key={item.id}>
+                          <i style={{ background: pieColor(itemIndex) }} />
+                          <span title={item.label}>{item.label}</span>
+                          <strong>{numberText(item.value)}</strong>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </details>
+              )}
             </div>
           </>
         )}
