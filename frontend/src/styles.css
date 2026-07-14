@@ -4364,20 +4364,21 @@ input:focus {
     padding: 18px;
   }
 
-  .passport-upload-actions,
-  .passport-form-grid,
-  .passport-extra-row {
-    grid-template-columns: 1fr;
+  .passport-step-card {
+    overflow-x: auto;
   }
 
-  .passport-extra-delete {
-    justify-self: end;
-    width: 52px;
-  }
-
-  .passport-step-title-row {
-    align-items: flex-start;
-    flex-direction: column;
+  .passport-step-card > .passport-step-title,
+  .passport-step-card > .passport-upload-box,
+  .passport-step-card > .passport-form-grid,
+  .passport-step-card > .compact-field,
+  .passport-step-card > .passport-helper-text,
+  .passport-step-card > .passport-step-title-row,
+  .passport-step-card > .passport-empty-extra,
+  .passport-step-card > .passport-extra-list,
+  .passport-step-card > .passport-extra-help,
+  .passport-step-card > .passport-step-actions {
+    min-width: 680px;
   }
 
   .passport-preview-box {
