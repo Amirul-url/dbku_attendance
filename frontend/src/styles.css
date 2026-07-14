@@ -3080,10 +3080,6 @@ input:focus {
   transition: height 0.18s ease, opacity 0.18s ease;
 }
 
-.analytics-trend-bar:hover {
-  opacity: 0.78;
-}
-
 .analytics-trend-item.is-selected .analytics-trend-bar {
   background: var(--nav);
 }
@@ -3101,7 +3097,9 @@ input:focus {
 .analytics-audience-donut {
   min-height: 250px;
   display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(190px, max-content);
   justify-items: center;
+  align-items: center;
   align-content: center;
   gap: 18px;
   padding: 24px;
@@ -3209,92 +3207,98 @@ input:focus {
 
 .analytics-pie-card-body {
   display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(190px, max-content);
+  align-items: center;
   justify-items: center;
   gap: 14px;
   padding: 22px 20px 24px;
 }
 
-.analytics-svg-donut {
+.analytics-svg-pie {
   position: relative;
-  width: 150px;
+  width: 170px;
   aspect-ratio: 1;
 }
 
-.analytics-svg-donut-large {
-  width: 184px;
+.analytics-svg-pie-large {
+  width: 210px;
 }
 
-.analytics-svg-donut-chart {
+.analytics-svg-pie-chart {
   width: 100%;
   height: 100%;
   display: block;
-  transform: rotate(-90deg);
 }
 
-.analytics-svg-donut-track,
-.analytics-svg-donut-segment {
-  fill: none;
-  stroke-width: 42;
+.analytics-svg-pie-empty {
+  fill: #edf3f5;
 }
 
-.analytics-svg-donut-track {
-  stroke: #edf3f5;
-}
-
-.analytics-svg-donut-segment {
+.analytics-svg-pie-segment {
   cursor: pointer;
   outline: none;
-  transition: opacity 0.16s ease, stroke-width 0.16s ease;
+  stroke: #fff;
+  stroke-width: 1.2;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.analytics-svg-donut-segment:hover,
-.analytics-svg-donut-segment:focus {
-  opacity: 0.84;
-  stroke-width: 46;
+.analytics-svg-pie-segment:hover,
+.analytics-svg-pie-segment:focus {
+  opacity: 0.88;
+  transform: scale(1.015);
 }
 
-.analytics-svg-donut-center {
+.analytics-pie-tooltip {
   position: absolute;
-  inset: 38px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 4px;
-  border-radius: 50%;
+  z-index: 3;
+  min-width: 90px;
+  border: 1px solid #17314a;
   background: #fff;
+  box-shadow: 0 8px 18px rgba(7, 29, 38, 0.12);
   color: #071d26;
-  text-align: center;
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  padding: 8px 10px;
   pointer-events: none;
+  transform: translate(-8px, -8px);
 }
 
-.analytics-svg-donut-large .analytics-svg-donut-center {
-  inset: 47px;
+.analytics-pie-tooltip span {
+  font-weight: 800;
 }
 
-.analytics-svg-donut-center strong {
-  font-size: 22px;
-  line-height: 1;
+.analytics-pie-tooltip em {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-style: normal;
+  font-weight: 800;
 }
 
-.analytics-svg-donut-center span {
-  max-width: 96px;
-  color: #6b8a93;
-  font-size: 10.5px;
-  font-weight: 900;
-  line-height: 1.25;
+.analytics-pie-tooltip i {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
 }
 
 .analytics-pie-legend {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 14px;
   min-width: 0;
   width: 100%;
+  max-width: 310px;
+  border: 1px solid #d7e4e8;
+  background: #fff;
+  padding: 14px;
 }
 
 .analytics-audience-legend {
-  gap: 18px;
+  gap: 14px;
 }
 
 .analytics-pie-legend div {
@@ -3305,9 +3309,10 @@ input:focus {
 }
 
 .analytics-pie-legend i {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 0;
 }
 
 .analytics-pie-legend span {

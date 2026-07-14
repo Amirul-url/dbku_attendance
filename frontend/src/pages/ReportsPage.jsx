@@ -60,7 +60,7 @@ function AnalyticsKpiCard({ label, value, detail, icon: Icon, tone }) {
   )
 }
 
-function MonthlyTrend({ rows, selectedMonth, onSelectMonth, onPreviewMonth, onClearPreview }) {
+function MonthlyTrend({ rows, selectedMonth, onSelectMonth }) {
   const maxValue = Math.max(1, ...rows.map((item) => Number(item.value) || 0))
   return (
     <div className="analytics-trend-chart" role="img" aria-label="Monthly attendance trend">
@@ -74,10 +74,6 @@ function MonthlyTrend({ rows, selectedMonth, onSelectMonth, onPreviewMonth, onCl
             className={`analytics-trend-item ${isSelected ? 'is-selected' : ''}`}
             key={item.label}
             onClick={() => onSelectMonth(item.label)}
-            onFocus={() => onPreviewMonth(item.label)}
-            onBlur={onClearPreview}
-            onMouseEnter={() => onPreviewMonth(item.label)}
-            onMouseLeave={onClearPreview}
           >
             <div className="analytics-trend-bar-wrap">
               <div className="analytics-trend-bar" style={{ height: `${height}%` }} title={`${item.label}: ${value}`} />
@@ -91,47 +87,91 @@ function MonthlyTrend({ rows, selectedMonth, onSelectMonth, onPreviewMonth, onCl
   )
 }
 
-function AnalyticsDonut({ items, total, size = 'default', ariaLabel = 'Analytics donut chart' }) {
-  const [hoveredItem, setHoveredItem] = useState(null)
-  const radius = 78
-  const circumference = 2 * Math.PI * radius
+function describePieSlice(cx, cy, radius, startAngle, endAngle) {
+  const startRadians = ((startAngle - 90) * Math.PI) / 180
+  const endRadians = ((endAngle - 90) * Math.PI) / 180
+  const startX = cx + radius * Math.cos(startRadians)
+  const startY = cy + radius * Math.sin(startRadians)
+  const endX = cx + radius * Math.cos(endRadians)
+  const endY = cy + radius * Math.sin(endRadians)
+  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0
+  return `M ${cx} ${cy} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`
+}
+
+function AnalyticsPie({ items, total, size = 'default', ariaLabel = 'Analytics pie chart' }) {
+  const [tooltip, setTooltip] = useState(null)
+  const radius = 90
+  const center = 110
   const hasData = total > 0
-  const activeItem = hoveredItem || { label: 'Total Attendance', value: total }
-  let offset = 0
+  let cursor = 0
+
+  function showTooltip(event, item, color) {
+    const wrapper = event.currentTarget.ownerSVGElement.parentElement
+    const bounds = wrapper.getBoundingClientRect()
+    const clientX = event.clientX || bounds.left + bounds.width / 2
+    const clientY = event.clientY || bounds.top + bounds.height / 2
+    setTooltip({
+      label: item.label,
+      value: Number(item.value) || 0,
+      color,
+      x: clientX - bounds.left + 12,
+      y: clientY - bounds.top + 12,
+    })
+  }
 
   return (
-    <div className={`analytics-svg-donut ${size === 'large' ? 'analytics-svg-donut-large' : ''}`} onMouseLeave={() => setHoveredItem(null)}>
-      <svg className="analytics-svg-donut-chart" viewBox="0 0 220 220" role="img" aria-label={ariaLabel}>
-        <circle className="analytics-svg-donut-track" cx="110" cy="110" r={radius} />
+    <div className={`analytics-svg-pie ${size === 'large' ? 'analytics-svg-pie-large' : ''}`} onMouseLeave={() => setTooltip(null)}>
+      <svg className="analytics-svg-pie-chart" viewBox="0 0 220 220" role="img" aria-label={ariaLabel}>
+        {!hasData && <circle className="analytics-svg-pie-empty" cx={center} cy={center} r={radius} />}
         {hasData ? items.map((item, index) => {
           const value = Number(item.value) || 0
-          const dash = (value / total) * circumference
-          const dashOffset = -offset
-          offset += dash
+          if (!value) return null
+          const color = pieColors[index % pieColors.length]
+          if (value === total) {
+            return (
+              <circle
+                key={item.id || item.label}
+                className="analytics-svg-pie-segment"
+                cx={center}
+                cy={center}
+                r={radius}
+                fill={color}
+                onMouseEnter={(event) => showTooltip(event, item, color)}
+                onMouseMove={(event) => showTooltip(event, item, color)}
+                onFocus={(event) => showTooltip(event, item, color)}
+                onBlur={() => setTooltip(null)}
+                tabIndex={0}
+              >
+                <title>{item.label}: {numberText(value)}</title>
+              </circle>
+            )
+          }
+          const startAngle = cursor
+          const endAngle = cursor + (value / total) * 360
+          cursor = endAngle
           return (
-            <circle
+            <path
               key={item.id || item.label}
-              className="analytics-svg-donut-segment"
-              cx="110"
-              cy="110"
-              r={radius}
-              stroke={pieColors[index % pieColors.length]}
-              strokeDasharray={`${dash} ${circumference - dash}`}
-              strokeDashoffset={dashOffset}
-              onMouseEnter={() => setHoveredItem(item)}
-              onFocus={() => setHoveredItem(item)}
-              onBlur={() => setHoveredItem(null)}
+              className="analytics-svg-pie-segment"
+              d={describePieSlice(center, center, radius, startAngle, endAngle)}
+              fill={color}
+              onMouseEnter={(event) => showTooltip(event, item, color)}
+              onMouseMove={(event) => showTooltip(event, item, color)}
+              onFocus={(event) => showTooltip(event, item, color)}
+              onBlur={() => setTooltip(null)}
               tabIndex={0}
             >
               <title>{item.label}: {numberText(value)}</title>
-            </circle>
+            </path>
           )
         }) : null}
       </svg>
-      <div className="analytics-svg-donut-center">
-        <strong>{numberText(activeItem.value)}</strong>
-        <span>{activeItem.label}</span>
-      </div>
+      {tooltip && (
+        <div className="analytics-pie-tooltip" style={{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }}>
+          <span>{tooltip.label}</span>
+          <em><i style={{ background: tooltip.color }} /> {numberText(tooltip.value)}</em>
+        </div>
+      )}
     </div>
   )
 }
@@ -139,7 +179,7 @@ function AnalyticsDonut({ items, total, size = 'default', ariaLabel = 'Analytics
 function CategoryShareChart({ rows, total }) {
   return (
     <div className="analytics-audience-donut">
-      <AnalyticsDonut items={rows} total={total} size="large" ariaLabel="Audience mix chart" />
+      <AnalyticsPie items={rows} total={total} size="large" ariaLabel="Audience mix chart" />
       <div className="analytics-pie-legend analytics-audience-legend">
         {rows.map((item, index) => (
           <div key={item.label}>
@@ -153,7 +193,7 @@ function CategoryShareChart({ rows, total }) {
   )
 }
 
-const pieColors = ['#004b55', '#08aeca', '#c4c4c4', '#2e7d32', '#d46b00']
+const pieColors = ['#a6a6a6', '#4775c4', '#f47c27', '#0b5c66', '#08aeca']
 
 function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
@@ -175,7 +215,7 @@ function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
           <div className="analytics-empty">No data available.</div>
         ) : (
           <>
-            <AnalyticsDonut items={items} total={total} ariaLabel={`${title} chart`} />
+            <AnalyticsPie items={items} total={total} ariaLabel={`${title} chart`} />
             <div className="analytics-pie-legend">
               {items.map((item, index) => (
                 <div key={item.id}>
@@ -213,7 +253,6 @@ export function ReportsPage() {
   const [appliedFilters, setAppliedFilters] = useState({ name: '', location: '', month: '', year: '' })
   const [topEventsPage, setTopEventsPage] = useState(1)
   const [selectedMonth, setSelectedMonth] = useState('')
-  const [hoveredMonth, setHoveredMonth] = useState('')
 
   async function loadAnalytics(nextFilters = filters) {
     setIsLoading(true)
@@ -227,7 +266,6 @@ export function ReportsPage() {
       setData(await apiRequest(`/reports/analytics/${query ? `?${query}` : ''}`))
       setAppliedFilters(nextFilters)
       setSelectedMonth('')
-      setHoveredMonth('')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -255,8 +293,7 @@ export function ReportsPage() {
   }
 
   const totalAttendance = (data?.total_filtered_staff ?? 0) + (data?.total_filtered_visitors ?? 0) + (data?.total_filtered_passport ?? 0)
-  const activeMonth = hoveredMonth || selectedMonth
-  const selectedMonthlyBreakdown = (data?.monthly_breakdown || []).find((item) => item.label === activeMonth)
+  const selectedMonthlyBreakdown = (data?.monthly_breakdown || []).find((item) => item.label === selectedMonth)
   const audienceTotals = selectedMonthlyBreakdown
     ? {
       total: selectedMonthlyBreakdown.grand_total || 0,
@@ -348,13 +385,11 @@ export function ReportsPage() {
                 <p>Monthly attendance volume across filtered events</p>
               </div>
             </div>
-            <span className="analytics-pill">{activeMonth ? `${activeMonth} selected` : '12 months'}</span>
+            <span className="analytics-pill">{selectedMonth ? `${selectedMonth} selected` : '12 months'}</span>
           </div>
           <MonthlyTrend
             rows={monthlyRows}
-            selectedMonth={activeMonth}
-            onPreviewMonth={setHoveredMonth}
-            onClearPreview={() => setHoveredMonth('')}
+            selectedMonth={selectedMonth}
             onSelectMonth={(month) => setSelectedMonth((current) => (current === month ? '' : month))}
           />
         </section>
@@ -365,7 +400,7 @@ export function ReportsPage() {
               <div className="analytics-card-icon"><PieChart size={17} /></div>
               <div>
                 <h2>Audience Mix</h2>
-                <p>{activeMonth ? `${activeMonth} category breakdown` : 'Staff, Malaysian visitors, and Non-Malaysian visitors'}</p>
+                <p>{selectedMonth ? `${selectedMonth} category breakdown` : 'Staff, Malaysian visitors, and Non-Malaysian visitors'}</p>
               </div>
             </div>
             <span className="analytics-pill">{numberText(audienceTotals.total)} total</span>
