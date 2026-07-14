@@ -3214,51 +3214,72 @@ input:focus {
   padding: 22px 20px 24px;
 }
 
-.analytics-pie-chart {
+.analytics-svg-donut {
   position: relative;
   width: 150px;
   aspect-ratio: 1;
-  border-radius: 50%;
 }
 
-.analytics-pie-chart-large {
+.analytics-svg-donut-large {
   width: 184px;
 }
 
-.analytics-pie-chart::after {
-  content: "";
-  position: absolute;
-  inset: 28px;
-  border-radius: 50%;
-  background: #fff;
+.analytics-svg-donut-chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform: rotate(-90deg);
 }
 
-.analytics-pie-chart-large::after {
-  inset: 36px;
+.analytics-svg-donut-track,
+.analytics-svg-donut-segment {
+  fill: none;
+  stroke-width: 42;
 }
 
-.analytics-pie-chart span {
+.analytics-svg-donut-track {
+  stroke: #edf3f5;
+}
+
+.analytics-svg-donut-segment {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.16s ease, stroke-width 0.16s ease;
+}
+
+.analytics-svg-donut-segment:hover,
+.analytics-svg-donut-segment:focus {
+  opacity: 0.84;
+  stroke-width: 46;
+}
+
+.analytics-svg-donut-center {
   position: absolute;
-  inset: 0;
-  z-index: 1;
+  inset: 38px;
   display: grid;
   place-items: center;
   align-content: center;
   gap: 4px;
+  border-radius: 50%;
+  background: #fff;
   color: #071d26;
   text-align: center;
+  pointer-events: none;
 }
 
-.analytics-pie-chart span strong {
+.analytics-svg-donut-large .analytics-svg-donut-center {
+  inset: 47px;
+}
+
+.analytics-svg-donut-center strong {
   font-size: 22px;
   line-height: 1;
 }
 
-.analytics-pie-chart span em {
+.analytics-svg-donut-center span {
   max-width: 96px;
   color: #6b8a93;
   font-size: 10.5px;
-  font-style: normal;
   font-weight: 900;
   line-height: 1.25;
 }

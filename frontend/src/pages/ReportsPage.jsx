@@ -91,15 +91,55 @@ function MonthlyTrend({ rows, selectedMonth, onSelectMonth, onPreviewMonth, onCl
   )
 }
 
+function AnalyticsDonut({ items, total, size = 'default', ariaLabel = 'Analytics donut chart' }) {
+  const [hoveredItem, setHoveredItem] = useState(null)
+  const radius = 78
+  const circumference = 2 * Math.PI * radius
+  const hasData = total > 0
+  const activeItem = hoveredItem || { label: 'Total Attendance', value: total }
+  let offset = 0
+
+  return (
+    <div className={`analytics-svg-donut ${size === 'large' ? 'analytics-svg-donut-large' : ''}`} onMouseLeave={() => setHoveredItem(null)}>
+      <svg className="analytics-svg-donut-chart" viewBox="0 0 220 220" role="img" aria-label={ariaLabel}>
+        <circle className="analytics-svg-donut-track" cx="110" cy="110" r={radius} />
+        {hasData ? items.map((item, index) => {
+          const value = Number(item.value) || 0
+          const dash = (value / total) * circumference
+          const dashOffset = -offset
+          offset += dash
+          return (
+            <circle
+              key={item.id || item.label}
+              className="analytics-svg-donut-segment"
+              cx="110"
+              cy="110"
+              r={radius}
+              stroke={pieColors[index % pieColors.length]}
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={dashOffset}
+              onMouseEnter={() => setHoveredItem(item)}
+              onFocus={() => setHoveredItem(item)}
+              onBlur={() => setHoveredItem(null)}
+              tabIndex={0}
+            >
+              <title>{item.label}: {numberText(value)}</title>
+            </circle>
+          )
+        }) : null}
+      </svg>
+      <div className="analytics-svg-donut-center">
+        <strong>{numberText(activeItem.value)}</strong>
+        <span>{activeItem.label}</span>
+      </div>
+    </div>
+  )
+}
+
 function CategoryShareChart({ rows, total }) {
   return (
     <div className="analytics-audience-donut">
-      <div className="analytics-pie-chart analytics-pie-chart-large" style={{ background: pieGradient(rows) }}>
-        <span>
-          <strong>{numberText(total)}</strong>
-          <em>Total Attendance</em>
-        </span>
-      </div>
+      <AnalyticsDonut items={rows} total={total} size="large" ariaLabel="Audience mix chart" />
       <div className="analytics-pie-legend analytics-audience-legend">
         {rows.map((item, index) => (
           <div key={item.label}>
@@ -114,19 +154,6 @@ function CategoryShareChart({ rows, total }) {
 }
 
 const pieColors = ['#004b55', '#08aeca', '#c4c4c4', '#2e7d32', '#d46b00']
-
-function pieGradient(items) {
-  const total = items.reduce((sum, item) => sum + item.value, 0)
-  if (!total) return '#edf3f5'
-  let cursor = 0
-  const slices = items.map((item, index) => {
-    const start = cursor
-    const end = cursor + (item.value / total) * 360
-    cursor = end
-    return `${pieColors[index % pieColors.length]} ${start}deg ${end}deg`
-  })
-  return `conic-gradient(${slices.join(', ')})`
-}
 
 function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
@@ -148,12 +175,7 @@ function PieSummaryCard({ title, subtitle, icon: Icon, items }) {
           <div className="analytics-empty">No data available.</div>
         ) : (
           <>
-            <div className="analytics-pie-chart" style={{ background: pieGradient(items) }}>
-              <span>
-                <strong>{numberText(total)}</strong>
-                <em>Total Attendance</em>
-              </span>
-            </div>
+            <AnalyticsDonut items={items} total={total} ariaLabel={`${title} chart`} />
             <div className="analytics-pie-legend">
               {items.map((item, index) => (
                 <div key={item.id}>
