@@ -54,7 +54,9 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
         if staff.email.lower() != email:
             raise serializers.ValidationError({"email": "Email does not match registered employee."})
         if event:
-            attrs["distance_meter"] = validate_event_geofence(event, attrs.get("latitude"), attrs.get("longitude"))
+            latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))
+            longitude = attrs.get("longitude", getattr(self.instance, "longitude", None))
+            attrs["distance_meter"] = validate_event_geofence(event, latitude, longitude)
         attrs["staff_id"] = staff.staff_id
         attrs["staff_member"] = staff
         attrs["full_name"] = staff.full_name
@@ -65,6 +67,12 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         distance_meter = validated_data.pop("distance_meter", None)
         instance = super().create(validated_data)
+        instance.distance_meter = distance_meter
+        return instance
+
+    def update(self, instance, validated_data):
+        distance_meter = validated_data.pop("distance_meter", None)
+        instance = super().update(instance, validated_data)
         instance.distance_meter = distance_meter
         return instance
 
@@ -88,12 +96,28 @@ class VisitorAttendanceSerializer(serializers.ModelSerializer):
             visitor = attrs.get("visitor", getattr(self.instance, "visitor", None))
             if visitor and VisitorAttendance.objects.filter(visitor=visitor, event=event).exclude(pk=getattr(self.instance, "pk", None)).exists():
                 raise serializers.ValidationError("Attendance already registered for this visitor and event.")
-            attrs["distance_meter"] = validate_event_geofence(event, attrs.get("latitude"), attrs.get("longitude"))
+            latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))
+            longitude = attrs.get("longitude", getattr(self.instance, "longitude", None))
+            attrs["distance_meter"] = validate_event_geofence(event, latitude, longitude)
         return attrs
 
     def create(self, validated_data):
         distance_meter = validated_data.pop("distance_meter", None)
         instance = super().create(validated_data)
+        instance.distance_meter = distance_meter
+        return instance
+
+    def update(self, instance, validated_data):
+        visitor_payload = self.initial_data.get("visitor_detail", {})
+        if isinstance(visitor_payload, dict):
+            allowed_fields = {"full_name", "phone_number", "email", "organization"}
+            for field in allowed_fields:
+                if field in visitor_payload:
+                    setattr(instance.visitor, field, visitor_payload[field])
+            instance.visitor.save()
+
+        distance_meter = validated_data.pop("distance_meter", None)
+        instance = super().update(instance, validated_data)
         instance.distance_meter = distance_meter
         return instance
 

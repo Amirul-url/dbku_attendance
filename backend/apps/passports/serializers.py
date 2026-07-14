@@ -32,11 +32,43 @@ class PassportAttendanceSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         event = attrs.get("event", getattr(self.instance, "event", None))
         if event:
-            attrs["distance_meter"] = validate_event_geofence(event, attrs.get("latitude"), attrs.get("longitude"))
+            latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))
+            longitude = attrs.get("longitude", getattr(self.instance, "longitude", None))
+            attrs["distance_meter"] = validate_event_geofence(event, latitude, longitude)
         return attrs
 
     def create(self, validated_data):
         distance_meter = validated_data.pop("distance_meter", None)
         instance = super().create(validated_data)
+        instance.distance_meter = distance_meter
+        return instance
+
+    def update(self, instance, validated_data):
+        visitor_payload = self.initial_data.get("visitor_detail", {})
+        if isinstance(visitor_payload, dict):
+            visitor = instance.passport_visitor
+            direct_fields = {
+                "full_name",
+                "passport_number",
+                "country",
+                "date_of_birth",
+                "expiry_date",
+                "gender",
+                "ocr_raw_text",
+                "image_quality_note",
+                "status",
+            }
+            for field in direct_fields:
+                if field in visitor_payload:
+                    setattr(visitor, field, visitor_payload[field])
+
+            extra_data = dict(visitor.extra_data or {})
+            if isinstance(visitor_payload.get("extra_data"), dict):
+                extra_data.update(visitor_payload["extra_data"])
+            visitor.extra_data = extra_data
+            visitor.save()
+
+        distance_meter = validated_data.pop("distance_meter", None)
+        instance = super().update(instance, validated_data)
         instance.distance_meter = distance_meter
         return instance

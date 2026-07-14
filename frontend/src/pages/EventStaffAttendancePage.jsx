@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, Eye, Search, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, Download, Eye, Pencil, Search, Trash2, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
@@ -44,6 +44,9 @@ export function EventStaffAttendancePage() {
   const [department, setDepartment] = useState('')
   const [error, setError] = useState('')
   const [selectedRow, setSelectedRow] = useState(null)
+  const [editRow, setEditRow] = useState(null)
+  const [editForm, setEditForm] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -72,8 +75,59 @@ export function EventStaffAttendancePage() {
       await apiRequest(`/staff-attendance/${row.id}/`, { method: 'DELETE' })
       setRows((current) => current.filter((item) => item.id !== row.id))
       if (selectedRow?.id === row.id) setSelectedRow(null)
+      if (editRow?.id === row.id) setEditRow(null)
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  function openEdit(row) {
+    setEditRow(row)
+    setEditForm({
+      full_name: row.full_name || '',
+      staff_id: row.staff_id || '',
+      phone_number: row.phone_number || '',
+      email: row.email || '',
+      department: row.department || '',
+      ipv4_address: row.ipv4_address || '',
+      ipv6_address: row.ipv6_address || '',
+      latitude: row.latitude || '',
+      longitude: row.longitude || '',
+    })
+  }
+
+  function updateEdit(field, value) {
+    setEditForm((current) => ({ ...current, [field]: value }))
+  }
+
+  async function saveEdit(event) {
+    event.preventDefault()
+    if (!editRow || !editForm) return
+    setIsSaving(true)
+    setError('')
+    try {
+      const updated = await apiRequest(`/staff-attendance/${editRow.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          full_name: editForm.full_name,
+          staff_id: editForm.staff_id,
+          phone_number: editForm.phone_number,
+          email: editForm.email,
+          department: editForm.department,
+          ipv4_address: editForm.ipv4_address || null,
+          ipv6_address: editForm.ipv6_address || null,
+          latitude: editForm.latitude || null,
+          longitude: editForm.longitude || null,
+        }),
+      })
+      setRows((current) => current.map((item) => (item.id === updated.id ? updated : item)))
+      setEditRow(null)
+      setEditForm(null)
+      if (selectedRow?.id === updated.id) setSelectedRow(updated)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -147,8 +201,9 @@ export function EventStaffAttendancePage() {
                 label: 'Action',
                 render: (row) => (
                   <div className="button-row event-action-row">
-                    <button type="button" className="btn btn-small btn-green" onClick={() => setSelectedRow(row)}><Eye size={14} /> View</button>
-                    <button type="button" className="btn btn-small btn-red" onClick={() => deleteAttendance(row)}><Trash2 size={14} /> Delete</button>
+                    <button type="button" className="btn btn-small btn-icon btn-green" title="View" aria-label="View staff attendance" onClick={() => setSelectedRow(row)}><Eye size={15} /></button>
+                    <button type="button" className="btn btn-small btn-icon btn-blue" title="Edit" aria-label="Edit staff attendance" onClick={() => openEdit(row)}><Pencil size={15} /></button>
+                    <button type="button" className="btn btn-small btn-icon btn-red" title="Delete" aria-label="Delete staff attendance" onClick={() => deleteAttendance(row)}><Trash2 size={15} /></button>
                   </div>
                 ),
               },
@@ -181,6 +236,34 @@ export function EventStaffAttendancePage() {
             <div className="modal-footer">
               <button type="button" className="btn btn-ghost" onClick={() => setSelectedRow(null)}>Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {editRow && editForm && (
+        <div className="modal-overlay open">
+          <div className="modal-box visitor-attendance-modal staff-attendance-modal">
+            <div className="modal-header">
+              <div className="modal-title">Edit Staff Attendance</div>
+              <button type="button" className="modal-close" onClick={() => setEditRow(null)}>x</button>
+            </div>
+            <form onSubmit={saveEdit}>
+              <div className="modal-body visitor-modal-grid">
+                <label className="compact-field"><span>Full Name</span><input value={editForm.full_name} onChange={(event) => updateEdit('full_name', event.target.value)} required /></label>
+                <label className="compact-field"><span>Employee ID</span><input value={editForm.staff_id} onChange={(event) => updateEdit('staff_id', event.target.value)} required /></label>
+                <label className="compact-field"><span>Phone Number</span><input value={editForm.phone_number} onChange={(event) => updateEdit('phone_number', event.target.value)} required /></label>
+                <label className="compact-field"><span>Email</span><input type="email" value={editForm.email} onChange={(event) => updateEdit('email', event.target.value)} required /></label>
+                <label className="compact-field modal-field-wide"><span>Department</span><input value={editForm.department} onChange={(event) => updateEdit('department', event.target.value)} required /></label>
+                <label className="compact-field"><span>IPv4 Address</span><input value={editForm.ipv4_address} onChange={(event) => updateEdit('ipv4_address', event.target.value)} /></label>
+                <label className="compact-field"><span>IPv6 Address</span><input value={editForm.ipv6_address} onChange={(event) => updateEdit('ipv6_address', event.target.value)} /></label>
+                <label className="compact-field"><span>Latitude</span><input value={editForm.latitude} onChange={(event) => updateEdit('latitude', event.target.value)} /></label>
+                <label className="compact-field"><span>Longitude</span><input value={editForm.longitude} onChange={(event) => updateEdit('longitude', event.target.value)} /></label>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setEditRow(null)}>Cancel</button>
+                <button type="submit" className="btn btn-ocean" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
