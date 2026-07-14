@@ -3243,8 +3243,11 @@ input:focus {
 
 .passport-camera-guide {
   position: absolute;
-  inset: 27% 12px auto;
-  height: 34%;
+  left: 16px;
+  right: 16px;
+  top: 23%;
+  aspect-ratio: 1.42 / 1;
+  height: auto;
   border: 3px solid rgba(255, 255, 255, 0.92);
   border-radius: 4px;
   pointer-events: none;
@@ -3299,6 +3302,56 @@ input:focus {
   color: #991b1b;
   padding: 12px 14px;
   font-size: 13px;
+}
+
+.passport-quality-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 18, 28, 0.5);
+  padding: 20px;
+}
+
+.passport-quality-dialog {
+  width: min(420px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  border-radius: 16px;
+  background: #fff;
+  padding: 26px 24px 22px;
+  box-shadow: 0 20px 54px rgba(7, 29, 38, 0.28);
+  text-align: center;
+}
+
+.passport-quality-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.passport-quality-dialog h2 {
+  margin: 0;
+  color: #102331;
+  font-size: 18px;
+}
+
+.passport-quality-dialog p {
+  margin: 0;
+  color: #52677c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.passport-quality-dialog .btn {
+  margin-top: 8px;
+  min-width: 120px;
 }
 
 .passport-file-name {

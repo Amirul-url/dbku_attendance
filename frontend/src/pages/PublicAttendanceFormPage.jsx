@@ -504,10 +504,13 @@ export function PassportAttendanceFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [cameraError, setCameraError] = useState('')
+  const [qualityPopupMessage, setQualityPopupMessage] = useState('')
   const submittingRef = useRef(false)
   const cameraVideoRef = useRef(null)
   const cameraCanvasRef = useRef(null)
+  const cameraGuideRef = useRef(null)
   const cameraStreamRef = useRef(null)
+  const ocrSnapshotRef = useRef(null)
 
   useEffect(() => () => {
     if (passportPreview) URL.revokeObjectURL(passportPreview)
@@ -552,11 +555,21 @@ export function PassportAttendanceFormPage() {
     }
   }, [isCameraOpen])
 
+  function markManualCorrection(field, value) {
+    if (field === 'ocr_raw_text') return
+    const snapshot = ocrSnapshotRef.current
+    if (!snapshot || String(snapshot[field] || '') !== String(value || '')) {
+      setOcrStatus('manually-corrected')
+    }
+  }
+
   function update(field, value) {
+    markManualCorrection(field, value)
     setForm((current) => ({ ...current, [field]: value }))
   }
 
   function updateCountryCode(value) {
+    markManualCorrection('country_code', value)
     const option = findPassportCountryByCode(value)
     setForm((current) => ({
       ...current,
@@ -566,6 +579,7 @@ export function PassportAttendanceFormPage() {
   }
 
   function updateNationality(value) {
+    markManualCorrection('nationality', value)
     const option = findPassportCountryByNationality(value)
     setForm((current) => ({
       ...current,
@@ -577,6 +591,10 @@ export function PassportAttendanceFormPage() {
   async function submit(submitEvent) {
     submitEvent.preventDefault()
     if (submittingRef.current) return
+    if (form.date_of_expiry && new Date(`${form.date_of_expiry}T23:59:59`) < new Date()) {
+      setError('Passport has expired. Please use a valid passport.')
+      return
+    }
     submittingRef.current = true
     setError('')
     setMessage('')
@@ -634,7 +652,9 @@ export function PassportAttendanceFormPage() {
     setOcrNote('')
     setOcrSource(source)
     setOcrStatus('pending verification')
+    ocrSnapshotRef.current = null
     setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
+    setQualityPopupMessage('')
   }
 
   function choosePassportImage(event) {
@@ -662,14 +682,40 @@ export function PassportAttendanceFormPage() {
   function capturePassportImage() {
     const video = cameraVideoRef.current
     const canvas = cameraCanvasRef.current
+    const guide = cameraGuideRef.current
     if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
       setCameraError('Camera is still loading. Please try again.')
       return
     }
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    const viewRect = video.getBoundingClientRect()
+    const guideRect = guide?.getBoundingClientRect()
+    const videoAspect = video.videoWidth / video.videoHeight
+    const viewAspect = viewRect.width / viewRect.height
+    let renderedWidth = viewRect.width
+    let renderedHeight = viewRect.height
+    let offsetX = 0
+    let offsetY = 0
+    if (videoAspect > viewAspect) {
+      renderedWidth = viewRect.height * videoAspect
+      offsetX = (viewRect.width - renderedWidth) / 2
+    } else {
+      renderedHeight = viewRect.width / videoAspect
+      offsetY = (viewRect.height - renderedHeight) / 2
+    }
+    const cropRect = guideRect ? {
+      left: guideRect.left - viewRect.left - offsetX,
+      top: guideRect.top - viewRect.top - offsetY,
+      width: guideRect.width,
+      height: guideRect.height,
+    } : { left: 0, top: 0, width: renderedWidth, height: renderedHeight }
+    const sourceX = Math.max(0, Math.round((cropRect.left / renderedWidth) * video.videoWidth))
+    const sourceY = Math.max(0, Math.round((cropRect.top / renderedHeight) * video.videoHeight))
+    const sourceWidth = Math.min(video.videoWidth - sourceX, Math.round((cropRect.width / renderedWidth) * video.videoWidth))
+    const sourceHeight = Math.min(video.videoHeight - sourceY, Math.round((cropRect.height / renderedHeight) * video.videoHeight))
+    canvas.width = sourceWidth || video.videoWidth
+    canvas.height = sourceHeight || video.videoHeight
     const context = canvas.getContext('2d')
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    context.drawImage(video, sourceX, sourceY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height)
     canvas.toBlob((blob) => {
       if (!blob) {
         setCameraError('Unable to capture passport image. Please try again.')
@@ -693,7 +739,7 @@ export function PassportAttendanceFormPage() {
       const data = await apiRequest('/passport-visitors/ocr-preview/', { method: 'POST', body })
       setForm((current) => {
         const passportCountry = findPassportCountryByCode(data.country_code) || findPassportCountryByNationality(data.nationality)
-        return {
+        const nextForm = {
           ...current,
           passport_type: data.type || current.passport_type,
           country_code: data.country_code || passportCountry?.code || current.country_code,
@@ -707,6 +753,19 @@ export function PassportAttendanceFormPage() {
           date_of_expiry: data.date_of_expiry || current.date_of_expiry,
           ocr_raw_text: data.raw_text || current.ocr_raw_text,
         }
+        ocrSnapshotRef.current = {
+          passport_type: nextForm.passport_type,
+          country_code: nextForm.country_code,
+          passport_number: nextForm.passport_number,
+          nationality: nextForm.nationality,
+          first_name: nextForm.first_name,
+          last_name: nextForm.last_name,
+          date_of_birth: nextForm.date_of_birth,
+          sex: nextForm.sex,
+          date_of_issue: nextForm.date_of_issue,
+          date_of_expiry: nextForm.date_of_expiry,
+        }
+        return nextForm
       })
       setOcrStatus(data.status || 'auto-extracted')
       setPassportImageMeta({
@@ -714,6 +773,7 @@ export function PassportAttendanceFormPage() {
         processed: data.processed_image_name || '',
         qualityNote: data.image_quality_note || '',
       })
+      if (data.image_quality_note) setQualityPopupMessage(data.image_quality_note)
       setOcrNote(data.image_quality_note || 'Passport scanned. Please verify the extracted fields before submitting.')
     } catch (err) {
       setOcrNote('')
@@ -729,8 +789,10 @@ export function PassportAttendanceFormPage() {
     })
     setOcrSource('-')
     setOcrStatus('pending verification')
+    ocrSnapshotRef.current = null
     setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
     setOcrNote('')
+    setQualityPopupMessage('')
   }
 
   function resetForm() {
@@ -887,7 +949,7 @@ export function PassportAttendanceFormPage() {
             </div>
             <div className="passport-camera-view">
               <video ref={cameraVideoRef} autoPlay playsInline muted />
-              <div className="passport-camera-guide">
+              <div className="passport-camera-guide" ref={cameraGuideRef}>
                 <span>Fit full passport page inside frame</span>
               </div>
             </div>
@@ -897,6 +959,16 @@ export function PassportAttendanceFormPage() {
               <button type="button" className="passport-camera-capture" onClick={capturePassportImage}>Capture Passport</button>
             </div>
             <canvas ref={cameraCanvasRef} hidden />
+          </div>
+        </div>
+      )}
+      {qualityPopupMessage && (
+        <div className="passport-quality-overlay" role="alertdialog" aria-modal="true" aria-label="Passport image quality">
+          <div className="passport-quality-dialog">
+            <div className="passport-quality-icon"><ImageIcon size={24} /></div>
+            <h2>Passport Image Quality</h2>
+            <p>{qualityPopupMessage}</p>
+            <button type="button" className="btn btn-green" onClick={() => setQualityPopupMessage('')}>OK</button>
           </div>
         </div>
       )}

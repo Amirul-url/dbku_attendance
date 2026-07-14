@@ -72,6 +72,16 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(PassportAttendance.objects.count(), 1)
 
+    def test_expired_passport_attendance_is_rejected(self):
+        payload = self.payload(self.event)
+        payload["date_of_expiry"] = "2024-01-01"
+
+        response = self.client.post("/api/passport-attendance/submit/", payload, format="json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("date_of_expiry", response.json())
+        self.assertEqual(PassportAttendance.objects.count(), 0)
+
     @patch("apps.passports.views.process_passport_upload")
     def test_ocr_preview_returns_json_error_when_processing_fails(self, mocked_process):
         mocked_process.side_effect = ValueError("OpenCV is not installed.")

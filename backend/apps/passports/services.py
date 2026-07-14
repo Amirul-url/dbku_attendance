@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.geo import validate_event_geofence
@@ -48,6 +49,13 @@ def _clean_text(value):
 
 def _normalise_passport_number(value):
     return re.sub(r"[^A-Z0-9]", "", _clean_text(value).upper())
+
+
+def _parse_iso_date(value):
+    try:
+        return date.fromisoformat(_clean_text(value))
+    except ValueError:
+        return None
 
 
 def _repair_passport_number(value, country_code=""):
@@ -169,6 +177,12 @@ def submit_passport_attendance(data, request):
     }
     if missing_fields:
         raise serializers.ValidationError(missing_fields)
+
+    parsed_expiry_date = _parse_iso_date(date_of_expiry)
+    if not parsed_expiry_date:
+        raise serializers.ValidationError({"date_of_expiry": "Please enter a valid passport expiry date."})
+    if parsed_expiry_date < timezone.localdate():
+        raise serializers.ValidationError({"date_of_expiry": "Passport has expired. Please use a valid passport."})
 
     additional_fields_text = _normalise_additional_fields_text(data.get("additional_fields_text"))
     additional_fields = data.get("additional_fields")
