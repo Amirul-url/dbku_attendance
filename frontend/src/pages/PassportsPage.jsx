@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
 
 export function PassportsPage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { confirm, confirmDialog } = useConfirmDialog()
 
   async function load() {
     setLoading(true)
@@ -25,7 +27,11 @@ export function PassportsPage() {
   }, [])
 
   async function deletePassport(row) {
-    if (!window.confirm(`Delete passport record for ${row.full_name || row.passport_number}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Passport Record',
+      message: `Delete passport record for ${row.full_name || row.passport_number}? This action cannot be undone.`,
+    })
+    if (!shouldDelete) return
     setError('')
     try {
       await apiRequest(`/passport-visitors/${row.id}/`, { method: 'DELETE' })
@@ -62,6 +68,7 @@ export function PassportsPage() {
           ]}
         />
       )}
+      {confirmDialog}
     </>
   )
 }

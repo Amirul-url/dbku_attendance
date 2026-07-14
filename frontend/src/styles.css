@@ -684,6 +684,47 @@ h1 {
   color: #1a2e35;
 }
 
+.confirm-dialog-overlay {
+  z-index: 90;
+  align-items: center;
+}
+
+.confirm-dialog-box {
+  width: min(430px, calc(100vw - 32px));
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+}
+
+.confirm-dialog-icon {
+  display: inline-grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff0f0;
+  color: #c62828;
+}
+
+.confirm-dialog-content h2 {
+  margin: 16px 0 8px;
+  color: #172a34;
+  font-size: 19px;
+}
+
+.confirm-dialog-content p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
 .event-modal-header {
   align-items: flex-start;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Edit, Plus, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
 import { formatDateTime12Hour } from '../utils/dateTime.js'
@@ -208,6 +209,7 @@ export function StaffPage() {
   const [modalError, setModalError] = useState('')
   const [form, setForm] = useState(emptyStaff)
   const [page, setPage] = useState(1)
+  const { confirm, confirmDialog } = useConfirmDialog()
   const isSuperadmin = Boolean(user?.is_superuser || user?.staff_profile?.role === 'superadmin')
   const canViewStaff = Boolean(isSuperadmin || user?.staff_profile?.role === 'admin')
   const canManageStaff = isSuperadmin
@@ -310,7 +312,11 @@ export function StaffPage() {
 
   async function deleteStaff(row) {
     if (!canManageStaff) return
-    if (!window.confirm(`Delete ${row.full_name}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Staff',
+      message: `Delete ${row.full_name || 'this staff'}? This action cannot be undone.`,
+    })
+    if (!shouldDelete) return
     try {
       await apiRequest(`/staff/${row.id}/`, { method: 'DELETE' })
       await load()
@@ -451,6 +457,7 @@ export function StaffPage() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

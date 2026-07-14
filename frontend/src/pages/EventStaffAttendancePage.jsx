@@ -4,6 +4,7 @@ import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 const countryNameFormatter = new Intl.DisplayNames(['en'], { type: 'region' })
@@ -177,6 +178,7 @@ function renderTimestamp(row) {
 
 export function EventStaffAttendancePage() {
   const { id } = useParams()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [department, setDepartment] = useState('')
@@ -207,7 +209,11 @@ export function EventStaffAttendancePage() {
 
   async function deleteAttendance(row) {
     const staffName = row.full_name || 'this attendance record'
-    if (!window.confirm(`Delete attendance for ${staffName}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Staff Attendance',
+      message: `Delete attendance for ${staffName}?`,
+    })
+    if (!shouldDelete) return
     setError('')
     try {
       await apiRequest(`/staff-attendance/${row.id}/`, { method: 'DELETE' })
@@ -413,6 +419,7 @@ export function EventStaffAttendancePage() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

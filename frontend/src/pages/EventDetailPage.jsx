@@ -21,6 +21,7 @@ import {
 import { Link, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, downloadApiFile, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -176,6 +177,7 @@ function getQrDownloadUrl(qrUrl) {
 
 export function EventDetailPage() {
   const { id } = useParams()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [event, setEvent] = useState(null)
   const [staffAttendance, setStaffAttendance] = useState([])
   const [visitorAttendance, setVisitorAttendance] = useState([])
@@ -345,7 +347,11 @@ export function EventDetailPage() {
   }
 
   async function deleteAssignment(row) {
-    if (!window.confirm(`Delete assignment "${row.task_title}"?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Assignment',
+      message: `Delete assignment "${row.task_title}"?`,
+    })
+    if (!shouldDelete) return
     setError('')
     try {
       await apiRequest(`/event-assignments/${row.id}/`, { method: 'DELETE' })
@@ -628,6 +634,7 @@ export function EventDetailPage() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

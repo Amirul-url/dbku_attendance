@@ -4,6 +4,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Box, CalendarDays, CalendarPlus, Crosshair, Edit, Eye, Map, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
@@ -263,6 +264,7 @@ export function EventsPage() {
   const [mapMessage, setMapMessage] = useState('')
   const [mapView, setMapView] = useState('2d')
   const [mapStyleKey, setMapStyleKey] = useState('streets')
+  const { confirm, confirmDialog } = useConfirmDialog()
   const dateInputRef = useRef(null)
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
@@ -557,7 +559,11 @@ export function EventsPage() {
   }
 
   async function deleteEvent(row) {
-    if (!window.confirm(`Delete ${row.name}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Event',
+      message: `Delete ${row.name || 'this event'}? This action cannot be undone.`,
+    })
+    if (!shouldDelete) return
     try {
       await apiRequest(`/events/${row.id}/`, { method: 'DELETE' })
       await fetchEvents()
@@ -835,6 +841,7 @@ export function EventsPage() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

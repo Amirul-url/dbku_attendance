@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Edit, Plus, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
 import { formatDateTime12Hour } from '../utils/dateTime.js'
@@ -146,6 +147,7 @@ export function SuperadminPage() {
   const [modalError, setModalError] = useState('')
   const [form, setForm] = useState(emptySuperadmin)
   const [page, setPage] = useState(1)
+  const { confirm, confirmDialog } = useConfirmDialog()
 
   const canManageSuperadmins = Boolean(user?.is_superuser || user?.staff_profile?.role === 'superadmin')
 
@@ -245,7 +247,11 @@ export function SuperadminPage() {
   }
 
   async function deleteSuperadmin(row) {
-    if (!window.confirm(`Delete superadmin ${row.full_name}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Superadmin',
+      message: `Delete superadmin ${row.full_name || 'this account'}? This action cannot be undone.`,
+    })
+    if (!shouldDelete) return
     try {
       await apiRequest(`/staff/${row.id}/`, { method: 'DELETE' })
       await load()
@@ -382,6 +388,7 @@ export function SuperadminPage() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

@@ -3,6 +3,7 @@ import { ArrowLeft, Download, Eye, Pencil, Search, Trash2, Users } from 'lucide-
 import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 function toNumber(value) {
@@ -129,6 +130,7 @@ function renderTimestamp(row) {
 
 export function EventPassportAttendancePage() {
   const { id } = useParams()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [country, setCountry] = useState('')
@@ -159,7 +161,11 @@ export function EventPassportAttendancePage() {
 
   async function deleteAttendance(row) {
     const visitorName = row.visitor_detail?.full_name || 'this attendance record'
-    if (!window.confirm(`Delete attendance for ${visitorName}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Non-Malaysian Visitor Attendance',
+      message: `Delete attendance for ${visitorName}?`,
+    })
+    if (!shouldDelete) return
     setError('')
     try {
       await apiRequest(`/passport-attendance/${row.id}/`, { method: 'DELETE' })
@@ -224,6 +230,15 @@ export function EventPassportAttendancePage() {
       ...current,
       additional_fields: (current.additional_fields || []).filter((item) => item.id !== fieldId || item.locked),
     }))
+  }
+
+  async function confirmRemoveEditExtraField(item) {
+    if (item.locked) return
+    const shouldDelete = await confirm({
+      title: 'Delete Additional Field',
+      message: `Delete additional field "${item.label || 'Untitled'}"?`,
+    })
+    if (shouldDelete) removeEditExtraField(item.id)
   }
 
   async function saveEdit(event) {
@@ -460,7 +475,7 @@ export function EventPassportAttendancePage() {
                     <div className="passport-extra-edit-row" key={item.id}>
                       <input value={item.label} onChange={(event) => updateEditExtraField(item.id, 'label', event.target.value)} placeholder="Field label" disabled={item.locked} />
                       <input value={item.value} onChange={(event) => updateEditExtraField(item.id, 'value', event.target.value)} placeholder="Value" />
-                      <button type="button" className="passport-extra-delete" onClick={() => removeEditExtraField(item.id)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
+                      <button type="button" className="passport-extra-delete" onClick={() => confirmRemoveEditExtraField(item)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                     </div>
                   ))}
                 </div>
@@ -480,6 +495,7 @@ export function EventPassportAttendancePage() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

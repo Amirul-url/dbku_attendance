@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
@@ -8,6 +9,7 @@ export function AttendancePage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { confirm, confirmDialog } = useConfirmDialog()
 
   async function load() {
     setLoading(true)
@@ -26,7 +28,11 @@ export function AttendancePage() {
   }, [])
 
   async function deleteAttendance(row) {
-    if (!window.confirm(`Delete attendance for ${row.full_name || 'this staff'}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Attendance',
+      message: `Delete attendance for ${row.full_name || 'this staff'}? This action cannot be undone.`,
+    })
+    if (!shouldDelete) return
     setError('')
     try {
       await apiRequest(`/staff-attendance/${row.id}/`, { method: 'DELETE' })
@@ -63,6 +69,7 @@ export function AttendancePage() {
           ]}
         />
       )}
+      {confirmDialog}
     </>
   )
 }

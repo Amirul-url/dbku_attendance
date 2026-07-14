@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
 
 export function VisitorsPage() {
@@ -8,6 +9,7 @@ export function VisitorsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const { confirm, confirmDialog } = useConfirmDialog()
 
   const filteredRows = useMemo(() => rows.filter((row) => {
     const query = search.toLowerCase()
@@ -35,7 +37,11 @@ export function VisitorsPage() {
   }, [])
 
   async function deleteVisitor(row) {
-    if (!window.confirm(`Delete ${row.full_name}?`)) return
+    const shouldDelete = await confirm({
+      title: 'Delete Visitor',
+      message: `Delete ${row.full_name || 'this visitor'}? This action cannot be undone.`,
+    })
+    if (!shouldDelete) return
     try {
       await apiRequest(`/visitors/${row.id}/`, { method: 'DELETE' })
       await load()
@@ -86,6 +92,7 @@ export function VisitorsPage() {
           />
         </div>
       )}
+      {confirmDialog}
     </>
   )
 }

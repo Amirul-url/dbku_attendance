@@ -3,6 +3,7 @@ import { Building2, CalendarDays, Camera, Check, CheckCircle2, ChevronDown, Clip
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
+import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 const departmentOptions = [
@@ -517,6 +518,7 @@ export function VisitorAttendanceFormPage() {
 export function PassportAttendanceFormPage() {
   const { eventId } = useParams()
   const { event, error: loadError } = useEvent(eventId)
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [form, setForm] = useState({
     passport_type: '',
     country_code: '',
@@ -876,6 +878,15 @@ export function PassportAttendanceFormPage() {
     setExtraFields((current) => current.filter((item) => item.id !== id || item.locked))
   }
 
+  async function confirmRemoveExtraField(item) {
+    if (item.locked) return
+    const shouldDelete = await confirm({
+      title: 'Delete Additional Field',
+      message: `Delete additional field "${item.label || 'Untitled'}"?`,
+    })
+    if (shouldDelete) removeExtraField(item.id)
+  }
+
   const hasCustomCountryCode = form.country_code && !findPassportCountryByCode(form.country_code)
   const hasCustomNationality = form.nationality && !findPassportCountryByNationality(form.nationality)
 
@@ -971,7 +982,7 @@ export function PassportAttendanceFormPage() {
                 <div className="passport-extra-row" key={item.id}>
                   <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" disabled={item.locked} />
                   <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder="Value" />
-                  <button type="button" className="passport-extra-delete" onClick={() => removeExtraField(item.id)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
+                  <button type="button" className="passport-extra-delete" onClick={() => confirmRemoveExtraField(item)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                 </div>
               ))}
             </div>
@@ -1021,6 +1032,7 @@ export function PassportAttendanceFormPage() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </PublicFormShell>
   )
 }
