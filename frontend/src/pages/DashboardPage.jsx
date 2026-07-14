@@ -12,7 +12,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
 import { useAuth } from '../state/AuthContext.jsx'
@@ -59,10 +59,80 @@ function activityBadge(type) {
   return 'Visitor (Malaysian)'
 }
 
+function paginateItems(items, page, pageSize = 5) {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const safePage = Math.min(Math.max(page, 1), totalPages)
+  const startIndex = (safePage - 1) * pageSize
+  return {
+    items: items.slice(startIndex, startIndex + pageSize),
+    page: safePage,
+    totalPages,
+    start: items.length ? startIndex + 1 : 0,
+    end: Math.min(startIndex + pageSize, items.length),
+  }
+}
+
+function MiniPagination({ page, totalPages, start, end, total, onPrevious, onNext }) {
+  return (
+    <div className="dashboard-mini-pagination">
+      <span>{start}-{end} of {total}</span>
+      <div className="pagination-buttons">
+        <button type="button" onClick={onPrevious} disabled={page <= 1} aria-label="Previous page">&lt;</button>
+        <button type="button" onClick={onNext} disabled={page >= totalPages} aria-label="Next page">&gt;</button>
+      </div>
+    </div>
+  )
+}
+
+function AttendanceDonutChart({ segments, total }) {
+  const [hoveredSegment, setHoveredSegment] = useState(null)
+  const radius = 78
+  const circumference = 2 * Math.PI * radius
+  const hasData = total > 0
+  let offset = 0
+  const activeSegment = hoveredSegment || { label: 'Total Attendance', value: total }
+
+  return (
+    <div className="dashboard-donut" onMouseLeave={() => setHoveredSegment(null)}>
+      <svg className="dashboard-donut-svg" viewBox="0 0 220 220" role="img" aria-label="Attendance overview chart">
+        <circle className="dashboard-donut-track" cx="110" cy="110" r={radius} />
+        {hasData ? segments.map((segment) => {
+          const dash = (segment.value / total) * circumference
+          const dashOffset = -offset
+          offset += dash
+          return (
+            <circle
+              key={segment.label}
+              className={`dashboard-donut-segment ${segment.className}`}
+              cx="110"
+              cy="110"
+              r={radius}
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={dashOffset}
+              onMouseEnter={() => setHoveredSegment(segment)}
+              onFocus={() => setHoveredSegment(segment)}
+              tabIndex={0}
+            >
+              <title>{segment.label}: {segment.value}</title>
+            </circle>
+          )
+        }) : null}
+      </svg>
+      <div className="dashboard-donut-center">
+        <strong>{activeSegment.value}</strong>
+        <span>{activeSegment.label}</span>
+      </div>
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const { user } = useAuth()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [recentDate, setRecentDate] = useState('')
+  const [recentPage, setRecentPage] = useState(1)
+  const [eventPage, setEventPage] = useState(1)
 
   useEffect(() => {
     apiRequest('/reports/dashboard/').then(setData).catch((err) => setError(err.message))
@@ -78,9 +148,32 @@ export function DashboardPage() {
   const staffAttendance = data?.total_staff_attendance ?? 0
   const visitorAttendance = data?.total_visitor_attendance ?? 0
   const passportAttendance = data?.total_passport_attendance ?? 0
-  const chartTotal = totalAttendance || 1
-  const staffAngle = (staffAttendance / chartTotal) * 360
-  const visitorAngle = staffAngle + (visitorAttendance / chartTotal) * 360
+  const chartSegments = [
+    { label: 'Staff', value: staffAttendance, className: 'dashboard-donut-staff' },
+    { label: 'Malaysian Visitors', value: visitorAttendance, className: 'dashboard-donut-visitor' },
+    { label: 'Non-Malaysian Visitors', value: passportAttendance, className: 'dashboard-donut-passport' },
+  ]
+  const recentActivities = data?.recent_activities || []
+  const filteredRecentActivities = useMemo(() => (
+    recentActivities.filter((item) => !recentDate || item.date === recentDate)
+  ), [recentActivities, recentDate])
+  const recentPagination = paginateItems(filteredRecentActivities, recentPage)
+  const eventSummaryItems = useMemo(() => [
+    ...(data?.active_events_list || []).map((event) => ({ ...event, statusLabel: 'Ongoing', sortGroup: 0 })),
+    ...(data?.upcoming_events || []).map((event) => ({ ...event, statusLabel: 'Upcoming', sortGroup: 1 })),
+  ].sort((a, b) => {
+    if (a.sortGroup !== b.sortGroup) return a.sortGroup - b.sortGroup
+    return String(a.start_date || '').localeCompare(String(b.start_date || '')) || Number(a.id) - Number(b.id)
+  }), [data?.active_events_list, data?.upcoming_events])
+  const eventPagination = paginateItems(eventSummaryItems, eventPage)
+
+  useEffect(() => {
+    setRecentPage(1)
+  }, [recentDate, recentActivities.length])
+
+  useEffect(() => {
+    setEventPage(1)
+  }, [eventSummaryItems.length])
 
   const overviewCards = [
     { label: 'Today Attendance', value: todayAttendance, detail: todayLabel, icon: Activity, tone: 'blue' },
@@ -98,7 +191,6 @@ export function DashboardPage() {
       value: totalAttendance,
       icon: ClipboardCheck,
       tone: 'teal',
-      featured: true,
     },
   ]
 
@@ -153,7 +245,7 @@ export function DashboardPage() {
         {breakdownCards.map((card) => {
           const Icon = card.icon
           return (
-            <div className={`dashboard-stat-card ${card.featured ? 'dashboard-stat-featured' : ''}`} key={card.label}>
+            <div className="dashboard-stat-card" key={card.label}>
               <div>
                 <span>{card.label}</span>
                 <strong>{card.value}</strong>
@@ -182,18 +274,11 @@ export function DashboardPage() {
             <span className="dashboard-total-pill">Total: {totalAttendance}</span>
           </div>
           <div className="dashboard-donut-wrap">
-            <div
-              className="dashboard-donut"
-              style={{
-                '--staff-angle': `${staffAngle}deg`,
-                '--visitor-angle': `${visitorAngle}deg`,
-              }}
-              aria-label="Attendance overview chart"
-            />
+            <AttendanceDonutChart segments={chartSegments} total={totalAttendance} />
             <div className="dashboard-chart-legend">
-              <span><i className="legend-dot legend-staff" /> Staff</span>
-              <span><i className="legend-dot legend-visitor" /> Malaysian</span>
-              <span><i className="legend-dot legend-passport" /> Non-Malaysian</span>
+              <span><i className="legend-dot legend-staff" /> Staff <strong>{staffAttendance}</strong></span>
+              <span><i className="legend-dot legend-visitor" /> Malaysian <strong>{visitorAttendance}</strong></span>
+              <span><i className="legend-dot legend-passport" /> Non-Malaysian <strong>{passportAttendance}</strong></span>
             </div>
           </div>
         </section>
@@ -249,12 +334,25 @@ export function DashboardPage() {
                 <p>Latest attendance records</p>
               </div>
             </div>
+            <div className="dashboard-panel-tools">
+              <input type="date" value={recentDate} onChange={(event) => setRecentDate(event.target.value)} aria-label="Filter recent activity by date" />
+              {recentDate && <button type="button" className="dashboard-clear-filter" onClick={() => setRecentDate('')}>Reset</button>}
+              <MiniPagination
+                page={recentPagination.page}
+                totalPages={recentPagination.totalPages}
+                start={recentPagination.start}
+                end={recentPagination.end}
+                total={filteredRecentActivities.length}
+                onPrevious={() => setRecentPage((current) => Math.max(1, current - 1))}
+                onNext={() => setRecentPage((current) => Math.min(recentPagination.totalPages, current + 1))}
+              />
+            </div>
           </div>
           <div className="activity-list">
-            {(data?.recent_activities || []).length === 0 ? (
+            {filteredRecentActivities.length === 0 ? (
               <div className="dashboard-empty">No recent attendance records.</div>
             ) : (
-              data.recent_activities.map((item, index) => (
+              recentPagination.items.map((item, index) => (
                 <div className="activity-row" key={`${item.type}-${item.name}-${index}`}>
                   <span className="activity-avatar">{initials(item.name)}</span>
                   <div className="activity-main">
@@ -285,31 +383,26 @@ export function DashboardPage() {
                 <p>Day-to-day operations</p>
               </div>
             </div>
+            <MiniPagination
+              page={eventPagination.page}
+              totalPages={eventPagination.totalPages}
+              start={eventPagination.start}
+              end={eventPagination.end}
+              total={eventSummaryItems.length}
+              onPrevious={() => setEventPage((current) => Math.max(1, current - 1))}
+              onNext={() => setEventPage((current) => Math.min(eventPagination.totalPages, current + 1))}
+            />
           </div>
           <div className="event-summary-list">
-            <span className="event-summary-heading">Ongoing</span>
-            {(data?.active_events_list || []).length === 0 ? (
-              <div className="dashboard-empty dashboard-empty-dashed">No active events today.</div>
+            {eventSummaryItems.length === 0 ? (
+              <div className="dashboard-empty dashboard-empty-dashed">No ongoing or upcoming events.</div>
             ) : (
-              data.active_events_list.map((event) => (
-                <Link to={`/events/${event.id}`} className="event-summary-card" key={`active-${event.id}`}>
+              eventPagination.items.map((event) => (
+                <Link to={`/events/${event.id}`} className="event-summary-card" key={`${event.statusLabel}-${event.id}`}>
                   <strong>{event.name}</strong>
                   <p>{event.location || '-'}</p>
                   <span>{formatEventDateRange(event.start_date, event.end_date)}</span>
-                  <em>Ongoing</em>
-                </Link>
-              ))
-            )}
-            <span className="event-summary-heading">Upcoming</span>
-            {(data?.upcoming_events || []).length === 0 ? (
-              <div className="dashboard-empty dashboard-empty-dashed">No upcoming events.</div>
-            ) : (
-              data.upcoming_events.map((event) => (
-                <Link to={`/events/${event.id}`} className="event-summary-card" key={`upcoming-${event.id}`}>
-                  <strong>{event.name}</strong>
-                  <p>{event.location || '-'}</p>
-                  <span>{formatEventDateRange(event.start_date, event.end_date)}</span>
-                  <em>Upcoming</em>
+                  <em className={event.statusLabel === 'Ongoing' ? 'event-status-ongoing' : ''}>{event.statusLabel}</em>
                 </Link>
               ))
             )}

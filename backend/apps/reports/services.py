@@ -103,7 +103,9 @@ def build_event_summary_report(event_id=None):
 def build_dashboard_report(today=None):
     today = today or datetime.date.today()
     active_events_qs = active_events_for_date(today)
-    upcoming_events_qs = upcoming_events_after_date(today, limit=5)
+    dashboard_list_limit = 25
+    recent_activity_limit = 20
+    upcoming_events_qs = upcoming_events_after_date(today, limit=dashboard_list_limit)
 
     recent_staff = [
         {
@@ -113,7 +115,7 @@ def build_dashboard_report(today=None):
             "date": item.date,
             "time": item.time,
         }
-        for item in recent_staff_attendance(limit=5)
+        for item in recent_staff_attendance(limit=recent_activity_limit)
     ]
     recent_visitors = [
         {
@@ -123,7 +125,7 @@ def build_dashboard_report(today=None):
             "date": item.date,
             "time": item.time,
         }
-        for item in recent_visitor_attendance(limit=5)
+        for item in recent_visitor_attendance(limit=recent_activity_limit)
     ]
     recent_passports = [
         {
@@ -133,13 +135,13 @@ def build_dashboard_report(today=None):
             "date": item.date,
             "time": item.time,
         }
-        for item in recent_passport_attendance(limit=5)
+        for item in recent_passport_attendance(limit=recent_activity_limit)
     ]
     recent_activities = sorted(
         recent_staff + recent_visitors + recent_passports,
         key=lambda row: (row["date"], row["time"]),
         reverse=True,
-    )[:8]
+    )[:dashboard_list_limit]
 
     return {
         "today_date": today,
@@ -156,7 +158,7 @@ def build_dashboard_report(today=None):
         "today_passport_attendance": passport_attendance_count(date=today),
         "active_events_list": [
             {"id": item.id, "name": item.name, "location": item.location, "start_date": item.start_date, "end_date": item.end_date}
-            for item in active_events_qs[:5]
+            for item in active_events_qs[:dashboard_list_limit]
         ],
         "upcoming_events": [
             {"id": item.id, "name": item.name, "location": item.location, "start_date": item.start_date, "end_date": item.end_date}

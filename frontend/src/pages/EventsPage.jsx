@@ -264,6 +264,7 @@ export function EventsPage() {
   const [mapMessage, setMapMessage] = useState('')
   const [mapView, setMapView] = useState('2d')
   const [mapStyleKey, setMapStyleKey] = useState('streets')
+  const [page, setPage] = useState(1)
   const { confirm, confirmDialog } = useConfirmDialog()
   const dateInputRef = useRef(null)
   const mapContainerRef = useRef(null)
@@ -427,8 +428,21 @@ export function EventsPage() {
       const matchesTerm = !term || row.name?.toLowerCase().includes(term) || row.location?.toLowerCase().includes(term)
       const matchesDate = !dateSearch || row.start_date === dateSearch || row.end_date === dateSearch
       return matchesTerm && matchesDate
+    }).sort((a, b) => {
+      const createdComparison = String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      if (createdComparison) return createdComparison
+      return Number(b.id) - Number(a.id)
     })
   }, [dateSearch, events, search])
+  const pageSize = 5
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize))
+  const pageEvents = filteredEvents.slice((page - 1) * pageSize, page * pageSize)
+  const pageStart = filteredEvents.length ? (page - 1) * pageSize + 1 : 0
+  const pageEnd = Math.min(page * pageSize, filteredEvents.length)
+
+  useEffect(() => {
+    setPage(1)
+  }, [dateSearch, events.length, search])
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -744,11 +758,18 @@ export function EventsPage() {
         <div className="table-card-header">
           <div>
             <div className="table-card-title">Events List</div>
-            <div className="table-card-sub">{loading ? 'Loading events...' : 'All available events in the system'}</div>
+            <div className="table-card-sub">{loading ? 'Loading events...' : 'Latest 5 events per page'}</div>
+          </div>
+          <div className="table-pagination table-pagination-header">
+            <span>{pageStart}-{pageEnd} of {filteredEvents.length}</span>
+            <div className="pagination-buttons">
+              <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} aria-label="Previous page">&lt;</button>
+              <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages} aria-label="Next page">&gt;</button>
+            </div>
           </div>
         </div>
         <DataTable
-          rows={filteredEvents}
+          rows={pageEvents}
           columns={[
             { key: 'name', label: 'Event Name' },
             { key: 'location', label: 'Location', render: (row) => <span className="event-location-cell" title={formatAddress(row.location)}>{formatAddress(row.location) || '-'}</span> },

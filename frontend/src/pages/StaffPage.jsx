@@ -224,6 +224,10 @@ export function StaffPage() {
       || row.phone_number?.includes(query)
     const matchesDepartment = !department || row.department === department
     return matchesSearch && matchesDepartment
+  }).sort((a, b) => {
+    const createdComparison = String(b.created_at || '').localeCompare(String(a.created_at || ''))
+    if (createdComparison) return createdComparison
+    return Number(b.id) - Number(a.id)
   }), [rows, search, department])
   const pageSize = 5
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
@@ -360,7 +364,7 @@ export function StaffPage() {
           <div className="table-card-header">
             <div>
               <div className="table-card-title">Staff List</div>
-              <div className="table-card-sub">All staff members registered in the system</div>
+              <div className="table-card-sub">Latest 5 staff members per page</div>
             </div>
             <div className="table-pagination table-pagination-header">
               <span>{pageStart}-{pageEnd} of {filteredRows.length}</span>
