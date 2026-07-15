@@ -5,9 +5,6 @@ import {
   Clock3,
   Contact,
   IdCard,
-  KeyRound,
-  LayoutDashboard,
-  PieChart,
   ShieldCheck,
   UserPlus,
   Users,
@@ -84,48 +81,6 @@ function MiniPagination({ page, totalPages, start, end, total, onPrevious, onNex
   )
 }
 
-function AttendanceDonutChart({ segments, total }) {
-  const [hoveredSegment, setHoveredSegment] = useState(null)
-  const radius = 78
-  const circumference = 2 * Math.PI * radius
-  const hasData = total > 0
-  let offset = 0
-  const activeSegment = hoveredSegment || { label: 'Total Attendance', value: total }
-
-  return (
-    <div className="dashboard-donut" onMouseLeave={() => setHoveredSegment(null)}>
-      <svg className="dashboard-donut-svg" viewBox="0 0 220 220" role="img" aria-label="Attendance overview chart">
-        <circle className="dashboard-donut-track" cx="110" cy="110" r={radius} />
-        {hasData ? segments.map((segment) => {
-          const dash = (segment.value / total) * circumference
-          const dashOffset = -offset
-          offset += dash
-          return (
-            <circle
-              key={segment.label}
-              className={`dashboard-donut-segment ${segment.className}`}
-              cx="110"
-              cy="110"
-              r={radius}
-              strokeDasharray={`${dash} ${circumference - dash}`}
-              strokeDashoffset={dashOffset}
-              onMouseEnter={() => setHoveredSegment(segment)}
-              onFocus={() => setHoveredSegment(segment)}
-              tabIndex={0}
-            >
-              <title>{segment.label}: {segment.value}</title>
-            </circle>
-          )
-        }) : null}
-      </svg>
-      <div className="dashboard-donut-center">
-        <strong>{activeSegment.value}</strong>
-        <span>{activeSegment.label}</span>
-      </div>
-    </div>
-  )
-}
-
 export function DashboardPage() {
   const { user } = useAuth()
   const [data, setData] = useState(null)
@@ -148,11 +103,6 @@ export function DashboardPage() {
   const staffAttendance = data?.total_staff_attendance ?? 0
   const visitorAttendance = data?.total_visitor_attendance ?? 0
   const passportAttendance = data?.total_passport_attendance ?? 0
-  const chartSegments = [
-    { label: 'Staff', value: staffAttendance, className: 'dashboard-donut-staff' },
-    { label: 'Malaysian Visitors', value: visitorAttendance, className: 'dashboard-donut-visitor' },
-    { label: 'Non-Malaysian Visitors', value: passportAttendance, className: 'dashboard-donut-passport' },
-  ]
   const recentActivities = data?.recent_activities || []
   const filteredRecentActivities = useMemo(() => (
     recentActivities.filter((item) => !recentDate || item.date === recentDate)
@@ -256,69 +206,6 @@ export function DashboardPage() {
             </div>
           )
         })}
-      </div>
-
-      <div className="dashboard-section-label">Insights</div>
-      <div className="dashboard-insights-grid">
-        <section className="dashboard-panel dashboard-chart-panel">
-          <div className="dashboard-panel-header">
-            <div className="dashboard-panel-title-row">
-              <div className="dashboard-panel-icon dashboard-stat-blue">
-                <PieChart size={18} />
-              </div>
-              <div>
-                <h2>Attendance Overview</h2>
-                <p>Staff, Malaysian visitors, Non-Malaysian visitors</p>
-              </div>
-            </div>
-            <span className="dashboard-total-pill">Total: {totalAttendance}</span>
-          </div>
-          <div className="dashboard-donut-wrap">
-            <AttendanceDonutChart segments={chartSegments} total={totalAttendance} />
-            <div className="dashboard-chart-legend">
-              <span><i className="legend-dot legend-staff" /> Staff <strong>{staffAttendance}</strong></span>
-              <span><i className="legend-dot legend-visitor" /> Malaysian <strong>{visitorAttendance}</strong></span>
-              <span><i className="legend-dot legend-passport" /> Non-Malaysian <strong>{passportAttendance}</strong></span>
-            </div>
-          </div>
-        </section>
-
-        <section className="dashboard-panel">
-          <div className="dashboard-panel-header">
-            <div className="dashboard-panel-title-row">
-              <div className="dashboard-panel-icon dashboard-stat-purple">
-                <ShieldCheck size={18} />
-              </div>
-              <div>
-                <h2>Access Summary</h2>
-                <p>Your permissions</p>
-              </div>
-            </div>
-          </div>
-          <div className="access-summary-list">
-            <div className="access-summary-item">
-              <Users size={15} />
-              <div>
-                <strong>Your Role</strong>
-                <span className="role-chip">{role}</span>
-              </div>
-            </div>
-            <div className="access-summary-item">
-              <LayoutDashboard size={15} />
-              <div>
-                <strong>Dashboard Access</strong>
-                <p>All logged-in staff can view dashboard information.</p>
-              </div>
-            </div>
-            <div className="access-summary-item">
-              <KeyRound size={15} />
-              <div>
-                <strong>Management Access</strong>
-                <p>{canManage ? 'Full access - staff, events, attendance, analytics export, create, update & delete.' : 'View-only access for dashboard and assigned records.'}</p>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
 
       <div className="dashboard-section-label">Activity & Events</div>
