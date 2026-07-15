@@ -5496,10 +5496,18 @@ input:focus {
   padding: 18px;
 }
 
+.assignment-detail-qr-top div {
+  min-height: 220px;
+}
+
 .assignment-detail-qr img {
   width: min(260px, 100%);
   aspect-ratio: 1;
   object-fit: contain;
+}
+
+.assignment-detail-qr-top img {
+  width: min(220px, 100%);
 }
 
 .assignment-detail-qr p {

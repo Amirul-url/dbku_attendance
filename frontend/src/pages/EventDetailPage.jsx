@@ -798,6 +798,13 @@ export function EventDetailPage() {
             </div>
             <div className="modal-body assignment-detail-body">
               <div className="assignment-detail-grid">
+                <div className="assignment-detail-qr assignment-detail-qr-top">
+                  <span>QR Code</span>
+                  <div>
+                    {assignmentDetailModal.qr_url ? <img src={assignmentDetailModal.qr_url} alt="Assignment QR Code" /> : <QrCode size={120} />}
+                  </div>
+                  <p>This assignment QR is separate from the normal staff attendance QR.</p>
+                </div>
                 <ReadOnlyField label="Staff Name" value={assignmentDetailModal.staff_name || selectedAssignmentStaffForDetail?.full_name} />
                 <ReadOnlyField label="Employee ID" value={selectedAssignmentStaffForDetail?.staff_id} />
                 <ReadOnlyField label="Staff Email" value={selectedAssignmentStaffForDetail?.email} />
@@ -815,16 +822,10 @@ export function EventDetailPage() {
                 <ReadOnlyField label="Date" value={selectedAssignmentAttendance?.date ? formatNumericDate(selectedAssignmentAttendance.date) : '-'} />
                 <ReadOnlyField label="Time" value={selectedAssignmentAttendance?.time ? formatTime12Hour(selectedAssignmentAttendance.time) : '-'} />
                 <ReadOnlyField label="Notes" value={selectedAssignmentAttendance?.notes || '-'} wide />
-                <div className="assignment-detail-qr">
-                  <span>QR Code</span>
-                  <div>
-                    {assignmentDetailModal.qr_url ? <img src={assignmentDetailModal.qr_url} alt="Assignment QR Code" /> : <QrCode size={120} />}
-                  </div>
-                  <p>This assignment QR is separate from the normal staff attendance QR.</p>
-                </div>
               </div>
             </div>
             <div className="modal-footer">
+              <button type="button" className="btn btn-blue" onClick={() => openQrForm(`/assignment-attendance/${assignmentDetailModal.id}`)}><ExternalLink size={15} /> Open Form</button>
               {assignmentDetailModal.qr_url && <button type="button" className="btn btn-ocean" onClick={() => downloadQr(assignmentDetailModal.qr_url, `${assignmentDetailModal.task_title || 'assignment'}-qr.png`)}><Download size={15} /> Download QR</button>}
               <button type="button" className="btn btn-ghost" onClick={() => setAssignmentDetailModal(null)}>Close</button>
             </div>
