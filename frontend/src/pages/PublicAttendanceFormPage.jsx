@@ -1017,7 +1017,7 @@ export function PassportAttendanceFormPage() {
 
         <section className="passport-step-card">
           <div className="passport-step-title passport-step-title-row">
-            <span><b>3</b> Additional Passport Fields <em>Required</em><i>{visibleExtraFields.length}</i></span>
+            <span><b>3</b> Additional Passport Fields <em>Optional</em><i>{visibleExtraFields.length}</i></span>
             <button type="button" className="btn btn-ghost passport-add-field" onClick={addExtraField}><Plus size={16} /> Add Field</button>
           </div>
           {visibleExtraFields.length === 0 ? (
