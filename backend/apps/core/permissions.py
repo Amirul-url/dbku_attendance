@@ -23,7 +23,7 @@ class IsAdminOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return is_admin(request.user)
-        return is_superadmin(request.user)
+        return is_admin(request.user)
 
 
 class CanManageEvents(BasePermission):

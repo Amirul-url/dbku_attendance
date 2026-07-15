@@ -212,7 +212,7 @@ export function StaffPage() {
   const { confirm, confirmDialog } = useConfirmDialog()
   const isSuperadmin = Boolean(user?.is_superuser || user?.staff_profile?.role === 'superadmin')
   const canViewStaff = Boolean(isSuperadmin || user?.staff_profile?.role === 'admin')
-  const canManageStaff = isSuperadmin
+  const canManageStaff = canViewStaff
 
   const filteredRows = useMemo(() => rows.filter((row) => {
     if (row.is_superuser || row.role === 'superadmin') return false

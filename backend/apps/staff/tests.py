@@ -30,6 +30,23 @@ class StaffMemberApiTests(APITestCase):
         }
         return self.client.patch(f"/api/staff/{self.profile.id}/", payload, format="json")
 
+    def create_admin_user(self):
+        user = User.objects.create_user(
+            username="ADM900",
+            email="admin900@example.com",
+            password="pass12345",
+        )
+        StaffMember.objects.create(
+            user=user,
+            full_name="Admin Staff",
+            staff_id="ADM900",
+            email="admin900@example.com",
+            phone_number="60129990001",
+            department="ICT",
+            role=StaffMember.ROLE_ADMIN,
+        )
+        return user
+
     def test_superadmin_contact_fields_can_be_cleared_with_null(self):
         response = self.patch_profile(email=None, phone_number=None)
 
@@ -85,3 +102,52 @@ class StaffMemberApiTests(APITestCase):
         )
 
         self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
+
+    def test_admin_can_manage_regular_staff_accounts(self):
+        admin = self.create_admin_user()
+        self.client.force_authenticate(admin)
+
+        create_response = self.client.post(
+            "/api/staff/",
+            {
+                "full_name": "Managed Staff",
+                "staff_id": "EMP901",
+                "email": "managed@example.com",
+                "phone_number": "60129990002",
+                "department": "ICT",
+                "registration_method": StaffMember.REGISTRATION_MANUAL,
+                "role": StaffMember.ROLE_VIEWER,
+                "password": "strongpass123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        staff_id = create_response.data["id"]
+
+        update_response = self.client.patch(
+            f"/api/staff/{staff_id}/",
+            {"department": "Administration (ADM)"},
+            format="json",
+        )
+
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(update_response.data["department"], "Administration (ADM)")
+
+        delete_response = self.client.delete(f"/api/staff/{staff_id}/")
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(User.objects.filter(username="EMP901").exists())
+
+    def test_admin_cannot_access_superadmin_records_in_staff_api(self):
+        admin = self.create_admin_user()
+        self.client.force_authenticate(admin)
+
+        list_response = self.client.get("/api/staff/")
+        detail_response = self.client.get(f"/api/staff/{self.profile.id}/")
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        items = list_response.data.get("results", list_response.data)
+        staff_ids = [item["staff_id"] for item in items]
+        self.assertNotIn("ROOT001", staff_ids)
+        self.assertEqual(detail_response.status_code, status.HTTP_404_NOT_FOUND)
