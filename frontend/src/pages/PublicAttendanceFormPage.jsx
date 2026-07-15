@@ -100,10 +100,10 @@ const passportStatusMeta = {
 }
 
 const defaultPassportExtraFields = [
-  { id: 'default-phone-number', label: 'Phone Number', value: '', locked: true },
-  { id: 'default-email', label: 'Email', value: '', locked: true },
+  { id: 'default-phone-number', label: 'Phone Number *', requiredLabel: 'Phone Number', value: '', placeholder: 'e.g. +60123456789', locked: true },
+  { id: 'default-email', label: 'Email *', requiredLabel: 'Email', value: '', placeholder: 'e.g. john@gmail.com', locked: true },
 ]
-const requiredPassportExtraLabels = defaultPassportExtraFields.map((item) => item.label)
+const requiredPassportExtraLabels = defaultPassportExtraFields.map((item) => item.requiredLabel)
 
 function getPassportStatusMeta(status) {
   return passportStatusMeta[status] || passportStatusMeta['pending verification']
@@ -114,7 +114,7 @@ function createDefaultPassportExtraFields() {
 }
 
 function normalizePassportExtraLabel(value) {
-  return String(value || '').trim().toLowerCase()
+  return String(value || '').replace(/\s*\*+$/, '').trim().toLowerCase()
 }
 
 function ensureDefaultPassportExtraFields(fields = []) {
@@ -122,7 +122,7 @@ function ensureDefaultPassportExtraFields(fields = []) {
   const defaults = defaultPassportExtraFields.map((defaultField) => {
     const existing = safeFields.find((item) => normalizePassportExtraLabel(item.label) === normalizePassportExtraLabel(defaultField.label))
     return existing
-      ? { ...existing, id: defaultField.id, label: defaultField.label, locked: true }
+      ? { ...existing, id: defaultField.id, label: defaultField.label, requiredLabel: defaultField.requiredLabel, placeholder: defaultField.placeholder, locked: true }
       : { ...defaultField }
   })
   const customFields = safeFields.filter((item) => (
@@ -1027,7 +1027,7 @@ export function PassportAttendanceFormPage() {
               {visibleExtraFields.map((item) => (
                 <div className="passport-extra-row" key={item.id}>
                   <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" disabled={item.locked} />
-                  <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder={item.locked ? 'Required, or - if unavailable' : 'Value'} required={item.locked} />
+                  <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder={item.placeholder || 'Value'} required={item.locked} />
                   <button type="button" className="passport-extra-delete" onClick={() => confirmRemoveExtraField(item)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                 </div>
               ))}

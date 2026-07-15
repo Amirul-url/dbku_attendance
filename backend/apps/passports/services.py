@@ -49,6 +49,10 @@ def _clean_text(value):
     return str(value or "").strip()
 
 
+def _normalise_additional_field_label(value):
+    return re.sub(r"\s*\*+$", "", _clean_text(value)).lower()
+
+
 def _normalise_passport_number(value):
     return re.sub(r"[^A-Z0-9]", "", _clean_text(value).upper())
 
@@ -114,7 +118,7 @@ def _additional_fields_from_text(value):
 
 def _validate_required_additional_fields(fields):
     lookup = {
-        _clean_text(item.get("label")).lower(): _clean_text(item.get("value"))
+        _normalise_additional_field_label(item.get("label")): _clean_text(item.get("value"))
         for item in fields
         if isinstance(item, dict)
     }

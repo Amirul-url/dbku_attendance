@@ -64,8 +64,8 @@ class PassportAttendanceSubmitApiTests(APITestCase):
     def test_dash_is_allowed_for_required_passport_contact_fields(self):
         payload = self.payload(self.event)
         payload["additional_fields"] = [
-            {"label": "Phone Number", "value": "-"},
-            {"label": "Email", "value": "-"},
+            {"label": "Phone Number *", "value": "-"},
+            {"label": "Email *", "value": "-"},
         ]
 
         response = self.client.post("/api/passport-attendance/submit/", payload, format="json")
