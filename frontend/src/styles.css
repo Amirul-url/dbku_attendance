@@ -4740,6 +4740,22 @@ input:focus {
   font-size: 12px;
 }
 
+.event-qr-heading {
+  margin-bottom: 20px;
+}
+
+.event-qr-heading h2 {
+  margin: 0;
+  color: #071d26;
+  font-size: 20px;
+}
+
+.event-qr-heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .event-qr-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5243,29 +5259,29 @@ input:focus {
 
 .assignment-table .data-table th:nth-child(1),
 .assignment-table .data-table td:nth-child(1) {
-  width: 7%;
+  width: 8%;
 }
 
 .assignment-table .data-table th:nth-child(2),
 .assignment-table .data-table td:nth-child(2) {
-  width: 9%;
+  width: 10%;
 }
 
 .assignment-table .data-table th:nth-child(3),
 .assignment-table .data-table td:nth-child(3) {
-  width: 14%;
+  width: 16%;
 }
 
 .assignment-table .data-table th:nth-child(4),
 .assignment-table .data-table td:nth-child(4) {
-  width: 34%;
+  width: 25.5%;
 }
 
 .assignment-table .data-table th:nth-child(5),
 .assignment-table .data-table td:nth-child(5),
 .assignment-table .data-table th:nth-child(6),
 .assignment-table .data-table td:nth-child(6) {
-  width: 10%;
+  width: 11%;
 }
 
 .assignment-table .data-table th:nth-child(7),
@@ -5275,7 +5291,7 @@ input:focus {
 
 .assignment-table .data-table th:nth-child(8),
 .assignment-table .data-table td:nth-child(8) {
-  width: 8%;
+  width: 10.5%;
 }
 
 .assignment-table .data-table td {

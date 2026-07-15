@@ -190,9 +190,6 @@ export function EventDetailPage() {
   const { confirm, confirmDialog } = useConfirmDialog()
   const { user } = useAuth()
   const [event, setEvent] = useState(null)
-  const [staffAttendance, setStaffAttendance] = useState([])
-  const [visitorAttendance, setVisitorAttendance] = useState([])
-  const [passportAttendance, setPassportAttendance] = useState([])
   const [assignments, setAssignments] = useState([])
   const [assignmentAttendance, setAssignmentAttendance] = useState([])
   const [staff, setStaff] = useState([])
@@ -218,11 +215,8 @@ export function EventDetailPage() {
     let mounted = true
     async function load() {
       try {
-        const [eventData, staffAttendanceData, visitorData, passportData, assignmentData, staffData] = await Promise.all([
+        const [eventData, assignmentData, staffData] = await Promise.all([
           apiRequest(`/events/${id}/`),
-          apiRequest(`/staff-attendance/?event=${id}`),
-          apiRequest(`/visitor-attendance/?event=${id}`),
-          apiRequest(`/passport-attendance/?event=${id}`),
           apiRequest(`/event-assignments/?event=${id}`),
           apiRequest('/staff/'),
         ])
@@ -233,9 +227,6 @@ export function EventDetailPage() {
         if (!mounted) return
 
         setEvent(eventData)
-        setStaffAttendance(listFromResponse(staffAttendanceData))
-        setVisitorAttendance(listFromResponse(visitorData))
-        setPassportAttendance(listFromResponse(passportData))
         setAssignments(assignmentRows)
         setAssignmentAttendance(assignmentAttendanceRows)
         setStaff(listFromResponse(staffData))
@@ -556,7 +547,6 @@ export function EventDetailPage() {
     { title: 'Staff QR', caption: 'For Staff', qr: event.staff_qr_url, filename: 'staff-qr.png', url: `/staff-attendance/${id}`, attendancePath: `/events/${id}/staff-attendance` },
     { title: 'Visitor QR (Non-Malaysian)', caption: 'For non-Malaysian visitors', qr: event.passport_qr_url, filename: 'visitor-non-malaysian-qr.png', url: `/passport-attendance/${id}`, attendancePath: `/events/${id}/non-malaysian-visitors` },
   ]
-  const totalAttendance = staffAttendance.length + visitorAttendance.length + passportAttendance.length + assignmentAttendance.length
   const displayLocation = formatAddress(event.location)
   const selectedAssignmentAttendance = assignmentDetailModal
     ? assignmentAttendanceByAssignmentId.get(Number(assignmentDetailModal.id))
@@ -626,7 +616,10 @@ export function EventDetailPage() {
         <div className="event-view-divider" />
 
         <section>
-          <div className="event-view-section-label">QR Codes</div>
+          <div className="event-qr-heading">
+            <h2>Attendance Records</h2>
+            <p>Staff and visitor attendance for this event</p>
+          </div>
           <div className="event-qr-grid">
             {publicLinks.map((item) => (
               <div className="event-qr-card" key={item.title}>
@@ -645,14 +638,6 @@ export function EventDetailPage() {
           </div>
         </section>
       </section>
-
-      <div className="attendance-records-header">
-        <div>
-          <h2>Attendance Records</h2>
-          <p>Staff and visitor attendance for this event</p>
-        </div>
-        <div className="attendance-total-pill"><Users size={16} /> Total: {totalAttendance}</div>
-      </div>
 
       <AttendanceSection
         title="Staff Assignment"
