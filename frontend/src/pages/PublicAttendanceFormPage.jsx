@@ -1209,7 +1209,7 @@ export function PassportAttendanceFormPage() {
 export function AssignmentAttendanceFormPage() {
   const { assignmentId } = useParams()
   const [assignment, setAssignment] = useState(null)
-  const [form, setForm] = useState({ full_name: '', staff_id: '', phone_number: '', email: '', notes: '' })
+  const [form, setForm] = useState({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', notes: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
@@ -1217,13 +1217,32 @@ export function AssignmentAttendanceFormPage() {
   const submittingRef = useRef(false)
 
   useEffect(() => {
-    apiRequest(`/event-assignments/${assignmentId}/`).then(setAssignment).catch((err) => setError(err.message))
+    apiRequest(`/event-assignments/${assignmentId}/`)
+      .then((data) => {
+        setAssignment(data)
+        setForm((current) => ({
+          ...current,
+          full_name: current.full_name || data.staff_name || '',
+          staff_id: current.staff_id || data.staff_id || '',
+          phone_number: current.phone_number || data.staff_phone_number || '',
+          email: current.email || data.staff_email || '',
+          department: current.department || data.staff_department || '',
+        }))
+      })
+      .catch((err) => setError(err.message))
   }, [assignmentId])
 
   const event = useMemo(() => ({
     name: assignment?.event_name || 'Assigned Task',
-    location: '-',
-    radius_meter: '-',
+    location: assignment?.event_location || '-',
+    start_date: assignment?.event_start_date || '',
+    end_date: assignment?.event_end_date || '',
+    start_time: assignment?.event_start_time || '',
+    end_time: assignment?.event_end_time || '',
+    description: assignment?.event_description || '',
+    latitude: assignment?.event_latitude || '',
+    longitude: assignment?.event_longitude || '',
+    radius_meter: assignment?.event_radius_meter || '-',
   }), [assignment])
 
   function update(field, value) {
@@ -1241,7 +1260,15 @@ export function AssignmentAttendanceFormPage() {
     try {
       await withLocation((coords) => apiRequest('/assignment-attendance/', {
         method: 'POST',
-        body: JSON.stringify({ ...form, assignment: assignmentId, ...coords }),
+        body: JSON.stringify({
+          full_name: form.full_name,
+          staff_id: form.staff_id,
+          phone_number: form.phone_number,
+          email: form.email,
+          notes: form.notes,
+          assignment: assignmentId,
+          ...coords,
+        }),
       }))
       setMessage('Assignment attendance submitted successfully.')
     } catch (err) {
@@ -1256,9 +1283,9 @@ export function AssignmentAttendanceFormPage() {
 
   return (
     <PublicFormShell
-      type="Assignment"
-      title={assignment?.task_title || 'Assignment Attendance'}
-      subtitle={assignment?.staff_name || 'Register assigned task attendance'}
+      type="Staff Assignment"
+      title="Staff Assignment"
+      subtitle="Check your details attendance for this event."
       event={event}
       error={error}
       message={message}
@@ -1267,11 +1294,27 @@ export function AssignmentAttendanceFormPage() {
       onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
     >
       <form className="stack-form public-entry-form" onSubmit={submit}>
+        <section className="public-assignment-task-card">
+          <div>
+            <span>Task Title</span>
+            <strong>{assignment?.task_title || '-'}</strong>
+          </div>
+          <div>
+            <span>Task Description</span>
+            <p>{assignment?.task_description || '-'}</p>
+          </div>
+        </section>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>
         <PublicField index="2" label="Staff ID" icon={ClipboardCheck}><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} required /></PublicField>
         <PublicField index="3" label="Phone Number" icon={Phone}><PhoneNumberSelectInput value={form.phone_number} onChange={(value) => update('phone_number', value)} required /></PublicField>
         <PublicField index="4" label="Email Address" icon={Mail}><input type="email" autoComplete="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></PublicField>
-        <PublicField index="5" label="Notes"><textarea value={form.notes} onChange={(e) => update('notes', e.target.value)} rows={4} /></PublicField>
+        <PublicField index="5" label="Department" icon={Building2}>
+          <select value={form.department} onChange={(e) => update('department', e.target.value)} required>
+            <option value="">-- Please Select --</option>
+            {departmentOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </PublicField>
+        <PublicField index="6" label="Notes"><textarea value={form.notes} onChange={(e) => update('notes', e.target.value)} rows={4} /></PublicField>
         <SubmitButton isSubmitting={isSubmitting}><CheckCircle2 size={20} /> Submit</SubmitButton>
       </form>
     </PublicFormShell>

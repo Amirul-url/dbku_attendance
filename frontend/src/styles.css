@@ -3698,6 +3698,42 @@ input:focus {
   gap: 22px;
 }
 
+.public-assignment-task-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #d7e7e9;
+  border-radius: 12px;
+  background: #f8fbfc;
+  padding: 18px;
+}
+
+.public-assignment-task-card div {
+  display: grid;
+  gap: 8px;
+}
+
+.public-assignment-task-card span {
+  color: #63818b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.public-assignment-task-card strong {
+  color: #071d26;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.public-assignment-task-card p {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .public-field {
   gap: 10px;
 }

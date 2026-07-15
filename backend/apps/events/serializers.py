@@ -62,7 +62,20 @@ class EventSerializer(serializers.ModelSerializer):
 
 class EventAssignmentSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(source="staff_member.full_name", read_only=True)
+    staff_id = serializers.CharField(source="staff_member.staff_id", read_only=True)
+    staff_email = serializers.EmailField(source="staff_member.email", read_only=True)
+    staff_phone_number = serializers.CharField(source="staff_member.phone_number", read_only=True)
+    staff_department = serializers.CharField(source="staff_member.department", read_only=True)
     event_name = serializers.CharField(source="event.name", read_only=True)
+    event_location = serializers.CharField(source="event.location", read_only=True)
+    event_start_date = serializers.DateField(source="event.start_date", read_only=True)
+    event_end_date = serializers.DateField(source="event.end_date", read_only=True)
+    event_start_time = serializers.TimeField(source="event.start_time", read_only=True)
+    event_end_time = serializers.TimeField(source="event.end_time", read_only=True)
+    event_description = serializers.CharField(source="event.description", read_only=True)
+    event_latitude = serializers.DecimalField(source="event.latitude", max_digits=9, decimal_places=6, read_only=True)
+    event_longitude = serializers.DecimalField(source="event.longitude", max_digits=9, decimal_places=6, read_only=True)
+    event_radius_meter = serializers.IntegerField(source="event.radius_meter", read_only=True)
     qr_url = serializers.SerializerMethodField()
 
     class Meta:
