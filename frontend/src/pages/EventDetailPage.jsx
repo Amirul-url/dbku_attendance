@@ -556,6 +556,9 @@ export function EventDetailPage() {
   const selectedAssignmentStaffForDetail = assignmentDetailModal
     ? staffById.get(Number(assignmentDetailModal.staff_member))
     : null
+  const selectedAssignmentStatus = selectedAssignmentAttendance && assignmentDetailModal?.assignment_status === 'assigned'
+    ? 'in_progress'
+    : assignmentDetailModal?.assignment_status
 
   return (
     <>
@@ -669,7 +672,15 @@ export function EventDetailPage() {
               { key: 'employee_id', label: 'Employee ID', render: (row) => staffById.get(Number(row.staff_member))?.staff_id || '-' },
               { key: 'department', label: 'Department', render: (row) => staffById.get(Number(row.staff_member))?.department || '-' },
               { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><span>{row.task_description || '-'}</span></span> },
-              { key: 'assignment_status', label: 'Status', render: (row) => <span className={`status-pill status-${row.assignment_status}`}>{formatStatus(row.assignment_status)}</span> },
+              {
+                key: 'assignment_status',
+                label: 'Status',
+                render: (row) => {
+                  const attendance = assignmentAttendanceByAssignmentId.get(Number(row.id))
+                  const status = attendance && row.assignment_status === 'assigned' ? 'in_progress' : row.assignment_status
+                  return <span className={`status-pill status-${status}`}>{formatStatus(status)}</span>
+                },
+              },
               { key: 'attendance', label: 'Attendance', render: (row) => assignmentAttendanceByAssignmentId.get(Number(row.id)) ? <span className="status-pill status-submitted">Submitted</span> : <span className="status-pill status-pending">Pending</span> },
               { key: 'qr_url', label: 'QR', render: (row) => row.qr_url ? <img className="table-qr-thumb" src={row.qr_url} alt="" /> : '-' },
               {
@@ -816,12 +827,10 @@ export function EventDetailPage() {
                 <ReadOnlyField label="Department" value={selectedAssignmentStaffForDetail?.department} />
                 <ReadOnlyField label="Task Title" value={assignmentDetailModal.task_title} wide />
                 <ReadOnlyField label="Task Description" value={assignmentDetailModal.task_description || '-'} wide />
-                <ReadOnlyField label="Status" value={formatStatus(assignmentDetailModal.assignment_status)} />
+                <ReadOnlyField label="Status" value={formatStatus(selectedAssignmentStatus)} />
                 <ReadOnlyField label="Attendance Status" value={selectedAssignmentAttendance ? 'Submitted' : 'Pending'} />
                 {selectedAssignmentAttendance && (
                   <>
-                    <ReadOnlyField label="Submitted Phone Number" value={selectedAssignmentAttendance.phone_number || '-'} />
-                    <ReadOnlyField label="Submitted Email" value={selectedAssignmentAttendance.email || '-'} />
                     <ReadOnlyField label="IPv4" value={selectedAssignmentAttendance.ipv4_address || '-'} />
                     <ReadOnlyField label="IPv6" value={selectedAssignmentAttendance.ipv6_address || '-'} />
                     <ReadOnlyField label="Latitude" value={selectedAssignmentAttendance.latitude ? formatCoordinate(selectedAssignmentAttendance.latitude) : '-'} />

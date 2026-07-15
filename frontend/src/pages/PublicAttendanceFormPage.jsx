@@ -1270,6 +1270,7 @@ export function AssignmentAttendanceFormPage() {
           ...coords,
         }),
       }))
+      setForm({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', notes: '' })
       setMessage('Assignment attendance submitted successfully.')
     } catch (err) {
       handlePublicSubmitError(err, setError, setLocationRadiusAlert)

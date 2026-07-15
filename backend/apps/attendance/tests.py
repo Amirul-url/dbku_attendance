@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.events.models import Event
+from apps.events.models import Event, EventAssignment
 from apps.staff.models import StaffMember
 
 from .models import StaffAttendance, Visitor, VisitorAttendance
@@ -87,6 +87,33 @@ class StaffAttendanceApiTests(APITestCase):
         self.assertEqual(data["longitude"][0], "111.000000")
         self.assertIn("distance_meter", data)
         self.assertEqual(StaffAttendance.objects.count(), 0)
+
+    def test_assignment_attendance_marks_assignment_in_progress(self):
+        staff = self.create_staff_member()
+        event = self.create_event()
+        assignment = EventAssignment.objects.create(
+            event=event,
+            staff_member=staff,
+            task_title="Registration Counter",
+        )
+
+        response = self.client.post(
+            "/api/assignment-attendance/",
+            {
+                "assignment": assignment.id,
+                "full_name": staff.full_name,
+                "staff_id": staff.staff_id,
+                "phone_number": staff.phone_number,
+                "email": staff.email,
+                "latitude": "1.000000",
+                "longitude": "110.000000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        assignment.refresh_from_db()
+        self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_IN_PROGRESS)
 
     def test_staff_attendance_audit_fields_cannot_be_edited(self):
         admin = self.create_admin_user()
