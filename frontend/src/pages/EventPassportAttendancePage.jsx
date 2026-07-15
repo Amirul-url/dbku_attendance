@@ -4,7 +4,9 @@ import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
+import { PassportCountryCombobox } from '../components/PassportCountryCombobox.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
+import { findPassportCountryByCode, findPassportCountryByNationality } from '../utils/passportCountries.js'
 
 function toNumber(value) {
   const number = Number(value)
@@ -22,37 +24,10 @@ function formatShortDate(value) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
-const passportCountryOptions = [
-  { code: 'AUS', nationality: 'Australia' },
-  { code: 'BRN', nationality: 'Brunei' },
-  { code: 'CAN', nationality: 'Canada' },
-  { code: 'CHN', nationality: 'China' },
-  { code: 'GBR', nationality: 'United Kingdom' },
-  { code: 'IDN', nationality: 'Indonesia' },
-  { code: 'IND', nationality: 'India' },
-  { code: 'JPN', nationality: 'Japan' },
-  { code: 'KOR', nationality: 'South Korea' },
-  { code: 'MYS', nationality: 'Malaysia' },
-  { code: 'PHL', nationality: 'Philippines' },
-  { code: 'SGP', nationality: 'Singapore' },
-  { code: 'THA', nationality: 'Thailand' },
-  { code: 'USA', nationality: 'United States' },
-].sort((a, b) => a.nationality.localeCompare(b.nationality))
-
 const defaultPassportExtraFields = [
   { id: 'default-phone-number', label: 'Phone Number', value: '', locked: true },
   { id: 'default-email', label: 'Email', value: '', locked: true },
 ]
-
-function findPassportCountryByCode(value) {
-  const code = String(value || '').trim().toUpperCase()
-  return passportCountryOptions.find((option) => option.code === code)
-}
-
-function findPassportCountryByNationality(value) {
-  const nationality = String(value || '').trim().toLowerCase()
-  return passportCountryOptions.find((option) => option.nationality.toLowerCase() === nationality)
-}
 
 function toDateInputValue(value) {
   if (!value) return ''
@@ -311,9 +286,6 @@ export function EventPassportAttendancePage() {
     })
   }, [country, rows, search])
 
-  const editHasCustomCountryCode = editForm?.country_code && !findPassportCountryByCode(editForm.country_code)
-  const editHasCustomNationality = editForm?.nationality && !findPassportCountryByNationality(editForm.nationality)
-
   return (
     <>
       <Link className="back-link" to={`/events/${id}`}><ArrowLeft size={15} /> Back to Event</Link>
@@ -445,19 +417,21 @@ export function EventPassportAttendancePage() {
                 <label className="compact-field"><span>Passport Number</span><input value={editForm.passport_number} onChange={(event) => updateEdit('passport_number', event.target.value)} required /></label>
                 <label className="compact-field">
                   <span>Country Code</span>
-                  <select value={editForm.country_code} onChange={(event) => updateEditCountryCode(event.target.value)}>
-                    <option value="">-- Please Select --</option>
-                    {editHasCustomCountryCode && <option value={editForm.country_code}>{editForm.country_code}</option>}
-                    {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
-                  </select>
+                  <PassportCountryCombobox
+                    kind="code"
+                    value={editForm.country_code}
+                    onChange={updateEditCountryCode}
+                    onSelectCountry={(option) => setEditForm((current) => ({ ...current, country_code: option.code, nationality: option.nationality }))}
+                  />
                 </label>
                 <label className="compact-field">
                   <span>Nationality</span>
-                  <select value={editForm.nationality} onChange={(event) => updateEditNationality(event.target.value)}>
-                    <option value="">-- Please Select --</option>
-                    {editHasCustomNationality && <option value={editForm.nationality}>{editForm.nationality}</option>}
-                    {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
-                  </select>
+                  <PassportCountryCombobox
+                    kind="nationality"
+                    value={editForm.nationality}
+                    onChange={updateEditNationality}
+                    onSelectCountry={(option) => setEditForm((current) => ({ ...current, country_code: option.code, nationality: option.nationality }))}
+                  />
                 </label>
                 <label className="compact-field"><span>First Name</span><input value={editForm.first_name} onChange={(event) => updateEdit('first_name', event.target.value)} /></label>
                 <label className="compact-field"><span>Last Name</span><input value={editForm.last_name} onChange={(event) => updateEdit('last_name', event.target.value)} /></label>

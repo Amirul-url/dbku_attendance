@@ -12,6 +12,7 @@ from apps.core.geo import validate_event_geofence
 from apps.core.utils import split_client_ips
 from apps.events.models import Event
 
+from .country_codes import COUNTRY_CODE_MAP, COUNTRY_NAME_CODE_MAP
 from .models import PassportAttendance, PassportVisitor
 
 REQUIRED_ADDITIONAL_FIELD_LABELS = ("Phone Number", "Email")
@@ -20,23 +21,6 @@ TESSERACT_CANDIDATE_PATHS = (
     Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
     Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
 )
-
-COUNTRY_CODE_MAP = {
-    "MYS": "Malaysia",
-    "IDN": "Indonesia",
-    "BRN": "Brunei",
-    "SGP": "Singapore",
-    "PHL": "Philippines",
-    "THA": "Thailand",
-    "CHN": "China",
-    "JPN": "Japan",
-    "KOR": "South Korea",
-    "IND": "India",
-    "USA": "United States",
-    "GBR": "United Kingdom",
-    "AUS": "Australia",
-}
-
 
 def _configure_tesseract(pytesseract_module):
     for candidate in TESSERACT_CANDIDATE_PATHS:
@@ -495,6 +479,26 @@ def _repair_country_code(value):
     return common_repairs.get(code, code)
 
 
+def _find_visible_country(upper_text):
+    passport_header_match = re.search(r"\bPASSPORT\s+[A-Z]\s+([A-Z0-9]{3})\b", upper_text)
+    if passport_header_match:
+        code = _repair_country_code(passport_header_match.group(1))
+        if code in COUNTRY_CODE_MAP:
+            return code
+
+    country_code_match = re.search(r"\b(?:COUNTRY\s+CODE|KOD\s+NEGARA)\b[^\nA-Z0-9]*([A-Z0-9]{3})\b", upper_text)
+    if country_code_match:
+        code = _repair_country_code(country_code_match.group(1))
+        if code in COUNTRY_CODE_MAP:
+            return code
+
+    for country_name, code in COUNTRY_NAME_CODE_MAP.items():
+        if re.search(rf"(?<![A-Z0-9]){re.escape(country_name)}(?![A-Z0-9])", upper_text):
+            return code
+
+    return ""
+
+
 def _title_name(value):
     cleaned_parts = [
         part
@@ -565,13 +569,10 @@ def extract_visible_passport_fields(text):
         if len(partial_issue_candidates) == 1:
             fields["date_of_issue"] = partial_issue_candidates[0]
 
-    if re.search(r"\bJAPAN\b", upper_text):
-        fields["nationality"] = "Japan"
-        fields["country_code"] = "JPN"
-
-    if re.search(r"\bMALAYSIA\b|\bMYS\b", upper_text):
-        fields["nationality"] = "Malaysia"
-        fields["country_code"] = "MYS"
+    visible_country_code = _find_visible_country(upper_text)
+    if visible_country_code:
+        fields["nationality"] = COUNTRY_CODE_MAP.get(visible_country_code, visible_country_code)
+        fields["country_code"] = visible_country_code
 
     name_match = re.search(r"\bNAMA\b[^\n]*\n\s*([^\n]+)", upper_text)
     if name_match:

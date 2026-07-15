@@ -4,7 +4,9 @@ import { getCountries, getCountryCallingCode } from 'libphonenumber-js'
 import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
+import { PassportCountryCombobox } from '../components/PassportCountryCombobox.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
+import { findPassportCountryByCode, findPassportCountryByNationality } from '../utils/passportCountries.js'
 
 const departmentOptions = [
   'Administration (ADM)',
@@ -65,33 +67,6 @@ const countryCodeOptions = getCountries()
     }
     return a.country.localeCompare(b.country)
   })
-
-const passportCountryOptions = [
-  { code: 'AUS', nationality: 'Australia' },
-  { code: 'BRN', nationality: 'Brunei' },
-  { code: 'CAN', nationality: 'Canada' },
-  { code: 'CHN', nationality: 'China' },
-  { code: 'GBR', nationality: 'United Kingdom' },
-  { code: 'IDN', nationality: 'Indonesia' },
-  { code: 'IND', nationality: 'India' },
-  { code: 'JPN', nationality: 'Japan' },
-  { code: 'KOR', nationality: 'South Korea' },
-  { code: 'MYS', nationality: 'Malaysia' },
-  { code: 'PHL', nationality: 'Philippines' },
-  { code: 'SGP', nationality: 'Singapore' },
-  { code: 'THA', nationality: 'Thailand' },
-  { code: 'USA', nationality: 'United States' },
-].sort((a, b) => a.nationality.localeCompare(b.nationality))
-
-function findPassportCountryByCode(value) {
-  const code = String(value || '').trim().toUpperCase()
-  return passportCountryOptions.find((option) => option.code === code)
-}
-
-function findPassportCountryByNationality(value) {
-  const nationality = String(value || '').trim().toLowerCase()
-  return passportCountryOptions.find((option) => option.nationality.toLowerCase() === nationality)
-}
 
 const passportStatusMeta = {
   'auto-extracted': { label: 'Auto Extracted', className: 'is-ok', chipClassName: 'passport-ok-chip' },
@@ -933,9 +908,6 @@ export function PassportAttendanceFormPage() {
     if (shouldDelete) removeExtraField(item.id)
   }
 
-  const hasCustomCountryCode = form.country_code && !findPassportCountryByCode(form.country_code)
-  const hasCustomNationality = form.nationality && !findPassportCountryByNationality(form.nationality)
-
   if (loadError) return <div className="screen-center"><div className="alert-error">{loadError}</div></div>
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
@@ -988,19 +960,23 @@ export function PassportAttendanceFormPage() {
             <label className="compact-field"><span>Passport Number <span className="required-star">*</span></span><input value={form.passport_number} onChange={(e) => update('passport_number', e.target.value)} placeholder="e.g. AB1234567" required /></label>
             <label className="compact-field">
               <span>Country Code <span className="required-star">*</span></span>
-              <select value={form.country_code} onChange={(e) => updateCountryCode(e.target.value)} required>
-                <option value="">-- Please Select --</option>
-                {hasCustomCountryCode && <option value={form.country_code}>{form.country_code}</option>}
-                {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
-              </select>
+              <PassportCountryCombobox
+                kind="code"
+                value={form.country_code}
+                onChange={updateCountryCode}
+                onSelectCountry={(option) => setForm((current) => ({ ...current, country_code: option.code, nationality: option.nationality }))}
+                required
+              />
             </label>
             <label className="compact-field">
               <span>Nationality <span className="required-star">*</span></span>
-              <select value={form.nationality} onChange={(e) => updateNationality(e.target.value)} required>
-                <option value="">-- Please Select --</option>
-                {hasCustomNationality && <option value={form.nationality}>{form.nationality}</option>}
-                {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
-              </select>
+              <PassportCountryCombobox
+                kind="nationality"
+                value={form.nationality}
+                onChange={updateNationality}
+                onSelectCountry={(option) => setForm((current) => ({ ...current, country_code: option.code, nationality: option.nationality }))}
+                required
+              />
             </label>
           </div>
           <div className="passport-form-grid">

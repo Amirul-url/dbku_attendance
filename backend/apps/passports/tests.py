@@ -230,6 +230,23 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertIn("Sex\nF", clean_raw_text)
         self.assertIn("MJ45648787JPN7406184F0410276", clean_raw_text)
 
+    def test_visible_country_extraction_supports_full_country_map(self):
+        raw_text = """
+        PASSPORT P FRA 12AB34567
+        Surname
+        DUPONT
+        Given Name
+        CAMILLE
+        FRANCE 14 JUL 1990
+        01 JAN 2020
+        01 JAN 2030
+        """
+
+        fields = extract_passport_fields(raw_text)
+
+        self.assertEqual(fields["country_code"], "FRA")
+        self.assertEqual(fields["nationality"], "France")
+
     def test_noisy_malaysian_passport_ocr_is_repaired(self):
         raw_text = """
         Paspert /
