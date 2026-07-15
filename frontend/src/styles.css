@@ -5898,7 +5898,7 @@ input:focus {
   }
 
   .public-event-title-row h2 {
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.25;
   }
 
@@ -5907,7 +5907,7 @@ input:focus {
     flex-shrink: 0;
     border-radius: 8px;
     padding: 7px 8px;
-    font-size: 10px;
+    font-size: 13px;
   }
 
   .public-event-summary-grid {
@@ -5918,7 +5918,7 @@ input:focus {
 
   .public-event-section-label {
     margin-bottom: 9px;
-    font-size: 8px;
+    font-size: 13px;
     letter-spacing: 1px;
   }
 
@@ -5928,11 +5928,11 @@ input:focus {
   }
 
   .public-event-info-item span {
-    font-size: 9px;
+    font-size: 13px;
   }
 
   .public-event-info-item strong {
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.4;
   }
 
@@ -5964,13 +5964,13 @@ input:focus {
 
   .passport-step-title {
     gap: 9px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .passport-step-title b {
     width: 22px;
     height: 22px;
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .passport-step-title-row span {
@@ -5980,7 +5980,7 @@ input:focus {
   .passport-step-title-row em,
   .passport-step-title-row i {
     padding: 2px 7px;
-    font-size: 10px;
+    font-size: 13px;
   }
 
   .passport-preview-box {
@@ -5998,12 +5998,12 @@ input:focus {
   .passport-upload-box p,
   .passport-helper-text,
   .passport-extra-help {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .passport-chip {
     padding: 6px 9px;
-    font-size: 10px;
+    font-size: 13px;
   }
 
   .passport-review-status {
@@ -6016,7 +6016,7 @@ input:focus {
   }
 
   .passport-step-card .compact-field span {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .passport-step-card .compact-field input,
@@ -6026,7 +6026,7 @@ input:focus {
     min-height: 48px;
     border-radius: 10px;
     padding-inline: 10px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .passport-extra-delete {
@@ -6037,13 +6037,37 @@ input:focus {
   .passport-add-field {
     min-height: 40px;
     padding-inline: 10px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .public-field input,
   .public-field select,
   .public-field textarea {
     min-height: 58px;
+    font-size: 13px;
+  }
+
+  .public-field .public-phone-input input,
+  .passport-extra-help code,
+  .passport-step-actions:not(.passport-submit-actions) .btn {
+    font-size: 13px;
+  }
+
+  .public-field > span,
+  .public-field > span b,
+  .public-country-trigger span,
+  .public-country-trigger strong,
+  .public-country-menu input,
+  .public-country-list span,
+  .public-country-list strong,
+  .public-country-empty,
+  .public-assignment-task-card span,
+  .public-assignment-task-card strong,
+  .public-assignment-task-card p,
+  .passport-extra-label-display,
+  .passport-review-status,
+  .passport-preview-box span {
+    font-size: 13px;
   }
 
   .public-phone-input {
