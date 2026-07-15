@@ -159,3 +159,45 @@ class EventPermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data["available"])
         self.assertEqual(response.data["conflicts"][0]["event"], "Morning Event")
+
+    def test_same_staff_cannot_be_assigned_twice_to_same_event(self):
+        staff_user = User.objects.create_user(username="ASSIGN002", email="assigned2@example.com")
+        staff = StaffMember.objects.create(
+            user=staff_user,
+            full_name="Assigned Staff Two",
+            staff_id="ASSIGN002",
+            email="assigned2@example.com",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        event = Event.objects.create(
+            name="Same Event",
+            location="DBKU",
+            latitude="1.000000",
+            longitude="110.000000",
+            radius_meter=100,
+        )
+        EventAssignment.objects.create(event=event, staff_member=staff, task_title="Registration")
+
+        self.client.force_authenticate(self.admin_user)
+        conflict_response = self.client.get(
+            "/api/event-assignments/conflict-check/",
+            {"staff": staff.id, "event": event.id},
+        )
+        create_response = self.client.post(
+            "/api/event-assignments/",
+            {
+                "event": event.id,
+                "staff_member": staff.id,
+                "task_title": "PA System",
+                "task_description": "Handle audio setup.",
+                "assignment_status": EventAssignment.STATUS_ASSIGNED,
+            },
+            format="json",
+        )
+
+        self.assertEqual(conflict_response.status_code, status.HTTP_200_OK)
+        self.assertFalse(conflict_response.data["available"])
+        self.assertEqual(conflict_response.data["message"], "This staff is already assigned to this event.")
+        self.assertEqual(create_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already assigned", str(create_response.data))

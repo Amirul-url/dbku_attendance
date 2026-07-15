@@ -374,6 +374,10 @@ export function EventDetailPage() {
   async function saveAssignment(submitEvent) {
     submitEvent.preventDefault()
     setAssignmentFormError('')
+    if (assignmentConflict.state === 'conflict') {
+      setAssignmentFormError(assignmentConflict.message || 'Please resolve the assignment conflict before saving.')
+      return
+    }
     try {
       const payload = { ...assignmentForm, event: id }
       if (assignmentModal.mode === 'create') {

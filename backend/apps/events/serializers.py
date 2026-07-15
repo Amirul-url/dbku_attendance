@@ -89,6 +89,16 @@ class EventAssignmentSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         staff_member = attrs.get("staff_member", getattr(self.instance, "staff_member", None))
+        event = attrs.get("event", getattr(self.instance, "event", None))
         if staff_member and (staff_member.role == StaffMember.ROLE_SUPERADMIN or staff_member.user.is_superuser):
             raise serializers.ValidationError({"staff_member": "Superadmin cannot be assigned to manage an event."})
+        if staff_member and event:
+            queryset = EventAssignment.objects.filter(
+                event=event,
+                staff_member=staff_member,
+            ).exclude(assignment_status=EventAssignment.STATUS_CANCELLED)
+            if self.instance:
+                queryset = queryset.exclude(id=self.instance.id)
+            if queryset.exists():
+                raise serializers.ValidationError({"staff_member": "This staff is already assigned to this event."})
         return attrs

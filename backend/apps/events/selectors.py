@@ -25,6 +25,17 @@ def assignment_conflicts(staff_id=None, event_id=None, task_title="", assignment
     if not staff_id or not event_id:
         return EventAssignment.objects.none()
 
+    same_event_queryset = (
+        EventAssignment.objects
+        .select_related("event", "staff_member")
+        .filter(staff_member_id=staff_id, event_id=event_id)
+        .exclude(assignment_status=EventAssignment.STATUS_CANCELLED)
+    )
+    if assignment_id:
+        same_event_queryset = same_event_queryset.exclude(id=assignment_id)
+    if same_event_queryset.exists():
+        return same_event_queryset
+
     current_event = Event.objects.filter(id=event_id).first()
     if current_event is None or current_event.start_date is None:
         return EventAssignment.objects.none()

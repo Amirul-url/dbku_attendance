@@ -55,4 +55,4 @@ class EventAssignmentViewSet(ModelViewSet):
             task_title=request.query_params.get("task_title", "").strip(),
             assignment_id=request.query_params.get("assignment"),
         )
-        return Response(serialize_assignment_conflicts(conflicts))
+        return Response(serialize_assignment_conflicts(conflicts, event_id=request.query_params.get("event")))
