@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -135,6 +136,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 FRONTEND_URL = os.environ.get("FRONTEND_URL", os.environ.get("BASE_APP_URL", "http://localhost:5173")).rstrip("/")
 BASE_APP_URL = FRONTEND_URL
 MAPTILER_API_KEY = os.environ.get("MAPTILER_API_KEY", "")
+RUNNING_TESTS = "test" in sys.argv
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
@@ -146,7 +148,7 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "15"))
 
-NOTIFICATION_EMAIL_ENABLED = os.environ.get("NOTIFICATION_EMAIL_ENABLED", "True") == "True"
+NOTIFICATION_EMAIL_ENABLED = os.environ.get("NOTIFICATION_EMAIL_ENABLED", "True") == "True" and not RUNNING_TESTS
 NOTIFICATION_EMAIL_PROVIDER = os.environ.get("NOTIFICATION_EMAIL_PROVIDER", "brevo")
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 BREVO_FROM_EMAIL = os.environ.get("BREVO_FROM_EMAIL", DEFAULT_FROM_EMAIL)
@@ -158,11 +160,11 @@ NOTIFICATION_ADMIN_EMAILS = [
 ]
 NOTIFICATION_EMAIL_REDIRECT_TO = os.environ.get("NOTIFICATION_EMAIL_REDIRECT_TO", "")
 
-WHATSAPP_ENABLED = os.environ.get("WHATSAPP_ENABLED", "True") == "True"
+WHATSAPP_ENABLED = os.environ.get("WHATSAPP_ENABLED", "True") == "True" and not RUNNING_TESTS
 WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "evolution")
-EVOLUTION_API_URL = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
+EVOLUTION_API_URL = os.environ.get("EVOLUTION_API_URL", os.environ.get("EVOLUTION_API_BASE_URL", "")).rstrip("/")
 EVOLUTION_API_KEY = os.environ.get("EVOLUTION_API_KEY", "")
-EVOLUTION_INSTANCE_NAME = os.environ.get("EVOLUTION_INSTANCE_NAME", "")
+EVOLUTION_INSTANCE_NAME = os.environ.get("EVOLUTION_INSTANCE_NAME", "AMS")
 EVOLUTION_API_TIMEOUT = int(os.environ.get("EVOLUTION_API_TIMEOUT", "15"))
 NOTIFICATION_ADMIN_WHATSAPP_NUMBERS = [
     phone.strip()

@@ -2,6 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny
 
 from apps.core.permissions import CanManageEvents
+from apps.core.notifications import notify_attendance_success
 from apps.events.models import EventAssignment
 
 from .models import Visitor
@@ -39,7 +40,8 @@ class StaffAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        save_attendance_with_client_ips(serializer, self.request)
+        attendance = save_attendance_with_client_ips(serializer, self.request)
+        notify_attendance_success(attendance)
 
 
 class VisitorAttendanceViewSet(ModelViewSet):
@@ -55,7 +57,8 @@ class VisitorAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        save_attendance_with_client_ips(serializer, self.request)
+        attendance = save_attendance_with_client_ips(serializer, self.request)
+        notify_attendance_success(attendance)
 
 
 class AssignmentAttendanceViewSet(ModelViewSet):
@@ -76,3 +79,4 @@ class AssignmentAttendanceViewSet(ModelViewSet):
         if assignment.assignment_status == EventAssignment.STATUS_ASSIGNED:
             assignment.assignment_status = EventAssignment.STATUS_IN_PROGRESS
             assignment.save(update_fields=["assignment_status", "updated_at"])
+        notify_attendance_success(attendance)

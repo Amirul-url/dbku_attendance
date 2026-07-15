@@ -7,6 +7,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from apps.core.notifications import notify_staff_registration_success
+
 from .otp_delivery import (
     OTPDeliveryError,
     send_password_reset_email,
@@ -41,6 +43,7 @@ class ManualRegistrationView(APIView):
         serializer = ManualRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         staff = serializer.save()
+        notify_staff_registration_success(staff)
         return Response(
             {
                 "message": "Registration successful.",

@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
 from apps.core.permissions import CanManageEvents
+from apps.core.notifications import notify_attendance_success
 from apps.core.request_meta import save_serializer_with_client_ips
 
 from .models import PassportVisitor
@@ -47,10 +48,12 @@ class PassportAttendanceViewSet(ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        save_serializer_with_client_ips(serializer, self.request)
+        attendance = save_serializer_with_client_ips(serializer, self.request)
+        notify_attendance_success(attendance)
 
     @action(detail=False, methods=["post"], url_path="submit")
     def submit(self, request):
         attendance = submit_passport_attendance(request.data, request)
+        notify_attendance_success(attendance)
         serializer = self.get_serializer(attendance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

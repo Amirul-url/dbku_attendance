@@ -155,12 +155,19 @@ SEED_ADMIN_DEPARTMENT=Administration (ADM)
 Optional notification variables:
 
 ```text
-NOTIFICATION_EMAIL_ENABLED=False
-WHATSAPP_ENABLED=False
-BREVO_API_KEY=
-EVOLUTION_API_URL=
-EVOLUTION_API_KEY=
-EVOLUTION_INSTANCE_NAME=
+NOTIFICATION_EMAIL_ENABLED=True
+NOTIFICATION_EMAIL_PROVIDER=brevo
+BREVO_FROM_EMAIL=<verified-brevo-sender-email>
+BREVO_FROM_NAME=AMS
+BREVO_API_KEY=<brevo-api-key>
+WHATSAPP_ENABLED=True
+WHATSAPP_PROVIDER=evolution
+EVOLUTION_API_URL=<evolution-api-base-url>
+EVOLUTION_API_BASE_URL=<optional-alias-for-evolution-api-url>
+EVOLUTION_INSTANCE_NAME=AMS
+EVOLUTION_API_KEY=<evolution-api-key>
+EVOLUTION_API_TIMEOUT=15
+NOTIFICATION_EMAIL_REDIRECT_TO=
 ```
 
 The backend container runs `migrate` and `collectstatic` on startup. If `SEED_ADMIN_PASSWORD` is set, it also runs `seed_admin`.

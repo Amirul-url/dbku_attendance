@@ -1,0 +1,279 @@
+import json
+import logging
+import re
+import threading
+from urllib import error, request
+from urllib.parse import quote
+
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+
+def _clean(value, fallback="-"):
+    text = str(value or "").strip()
+    return text or fallback
+
+
+def _format_date(value):
+    if not value:
+        return "-"
+    try:
+        return value.strftime("%d %b %Y")
+    except AttributeError:
+        return _clean(value)
+
+
+def _format_time(value):
+    if not value:
+        return "-"
+    try:
+        return value.strftime("%I:%M %p").lstrip("0")
+    except AttributeError:
+        return _clean(value)
+
+
+def _normalise_whatsapp_number(value):
+    digits = re.sub(r"\D", "", value or "")
+    if not digits:
+        return ""
+    if digits.startswith("0"):
+        return f"6{digits}"
+    return digits
+
+
+def _event_lines(event):
+    return [
+        "",
+        "Event Details",
+        f"Event: {_clean(getattr(event, 'name', None))}",
+        f"Radius: {_clean(getattr(event, 'radius_meter', None))}m",
+        f"Start Date: {_format_date(getattr(event, 'start_date', None))}",
+        f"End Date: {_format_date(getattr(event, 'end_date', None))}",
+        f"Start Time: {_format_time(getattr(event, 'start_time', None))}",
+        f"End Time: {_format_time(getattr(event, 'end_time', None))}",
+        f"Venue: {_clean(getattr(event, 'location', None))}",
+        f"Latitude: {_clean(getattr(event, 'latitude', None))}",
+        f"Longitude: {_clean(getattr(event, 'longitude', None))}",
+        f"Description: {_clean(getattr(event, 'description', None))}",
+    ]
+
+
+def _attendance_audit_lines(attendance):
+    return [
+        f"Attendance Date: {_format_date(getattr(attendance, 'date', None))}",
+        f"Attendance Time: {_format_time(getattr(attendance, 'time', None))}",
+        f"Scan Latitude: {_clean(getattr(attendance, 'latitude', None))}",
+        f"Scan Longitude: {_clean(getattr(attendance, 'longitude', None))}",
+    ]
+
+
+def _passport_extra_lookup(visitor):
+    extra_data = getattr(visitor, "extra_data", None) or {}
+    additional_fields = extra_data.get("additional_fields") or []
+    lookup = {}
+    for item in additional_fields:
+        if not isinstance(item, dict):
+            continue
+        label = re.sub(r"\s*\*+$", "", _clean(item.get("label"), "")).strip().lower()
+        if label:
+            lookup[label] = _clean(item.get("value"), "")
+    return lookup
+
+
+def _send_email(recipient, subject, text):
+    if not getattr(settings, "NOTIFICATION_EMAIL_ENABLED", True):
+        return
+
+    api_key = getattr(settings, "BREVO_API_KEY", "")
+    from_email = getattr(settings, "BREVO_FROM_EMAIL", "") or getattr(settings, "DEFAULT_FROM_EMAIL", "")
+    from_name = getattr(settings, "BREVO_FROM_NAME", "DBKU Attendance")
+    redirect_to = getattr(settings, "NOTIFICATION_EMAIL_REDIRECT_TO", "")
+
+    if not api_key or not from_email:
+        logger.info("Brevo notification skipped because email settings are incomplete.")
+        return
+
+    to_email = redirect_to or recipient
+    text_content = text if not redirect_to else f"Original recipient: {recipient}\n\n{text}"
+    payload = json.dumps({
+        "sender": {"name": from_name, "email": from_email},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "textContent": text_content,
+    }).encode("utf-8")
+
+    api_request = request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "api-key": api_key,
+        },
+        method="POST",
+    )
+    with request.urlopen(api_request, timeout=getattr(settings, "EMAIL_TIMEOUT", 15)) as response:
+        if response.status >= 400:
+            raise RuntimeError("Brevo rejected the notification email request.")
+
+
+def _send_whatsapp(phone_number, text):
+    if not getattr(settings, "WHATSAPP_ENABLED", True):
+        return
+    if getattr(settings, "WHATSAPP_PROVIDER", "evolution") != "evolution":
+        logger.info("WhatsApp notification skipped because provider is not supported.")
+        return
+
+    base_url = getattr(settings, "EVOLUTION_API_URL", "").rstrip("/")
+    api_key = getattr(settings, "EVOLUTION_API_KEY", "")
+    instance = getattr(settings, "EVOLUTION_INSTANCE_NAME", "")
+    number = _normalise_whatsapp_number(phone_number)
+
+    if not base_url or not api_key or not instance or not number:
+        logger.info("Evolution API notification skipped because WhatsApp settings are incomplete.")
+        return
+
+    payload = json.dumps({
+        "number": number,
+        "text": text,
+    }).encode("utf-8")
+
+    api_request = request.Request(
+        f"{base_url}/message/sendText/{quote(instance, safe='')}",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": api_key,
+        },
+        method="POST",
+    )
+    with request.urlopen(api_request, timeout=getattr(settings, "EVOLUTION_API_TIMEOUT", 15)) as response:
+        if response.status >= 400:
+            raise RuntimeError("Evolution API rejected the WhatsApp notification request.")
+
+
+def _dispatch_message(email, phone_number, subject, text):
+    def worker():
+        if email:
+            try:
+                _send_email(email, subject, text)
+            except (RuntimeError, TimeoutError, error.HTTPError, error.URLError, OSError) as exc:
+                logger.warning("Attendance email notification failed: %s", exc)
+        if phone_number:
+            try:
+                _send_whatsapp(phone_number, text)
+            except (RuntimeError, TimeoutError, error.HTTPError, error.URLError, OSError) as exc:
+                logger.warning("Attendance WhatsApp notification failed: %s", exc)
+
+    threading.Thread(target=worker, daemon=True).start()
+
+
+def notify_attendance_success(attendance):
+    class_name = attendance.__class__.__name__
+    event = getattr(attendance, "event", None)
+    email = ""
+    phone_number = ""
+    recipient_name = ""
+
+    lines = ["Attendance successfully recorded.", ""]
+
+    if class_name == "StaffAttendance":
+        recipient_name = attendance.full_name
+        email = attendance.email
+        phone_number = attendance.phone_number
+        lines.extend([
+            "Attendance Details",
+            "Type: Staff",
+            f"Name: {_clean(attendance.full_name)}",
+            f"Employee ID: {_clean(attendance.staff_id)}",
+            f"Department: {_clean(attendance.department)}",
+            f"Email: {_clean(attendance.email)}",
+            f"WhatsApp: {_clean(attendance.phone_number)}",
+        ])
+    elif class_name == "VisitorAttendance":
+        visitor = attendance.visitor
+        recipient_name = visitor.full_name
+        email = visitor.email
+        phone_number = visitor.phone_number
+        lines.extend([
+            "Attendance Details",
+            "Type: Visitor (Malaysian)",
+            f"Name: {_clean(visitor.full_name)}",
+            f"Organization: {_clean(visitor.organization)}",
+            f"Email: {_clean(visitor.email)}",
+            f"WhatsApp: {_clean(visitor.phone_number)}",
+        ])
+    elif class_name == "PassportAttendance":
+        visitor = attendance.passport_visitor
+        extra = _passport_extra_lookup(visitor)
+        recipient_name = visitor.full_name
+        email = extra.get("email", "")
+        phone_number = extra.get("phone number", "")
+        lines.extend([
+            "Attendance Details",
+            "Type: Visitor (Non-Malaysian)",
+            f"Name: {_clean(visitor.full_name)}",
+            f"Passport No.: {_clean(visitor.passport_number)}",
+            f"Country/Nationality: {_clean(visitor.country)}",
+            f"Email: {_clean(email)}",
+            f"WhatsApp: {_clean(phone_number)}",
+        ])
+    elif class_name == "AssignmentAttendance":
+        assignment = attendance.assignment
+        staff = assignment.staff_member
+        event = assignment.event
+        recipient_name = staff.full_name
+        email = attendance.email or staff.email
+        phone_number = attendance.phone_number or staff.phone_number
+        lines.extend([
+            "Attendance Details",
+            "Type: Staff Assignment",
+            f"Name: {_clean(staff.full_name)}",
+            f"Employee ID: {_clean(staff.staff_id)}",
+            f"Department: {_clean(staff.department)}",
+            f"Email: {_clean(email)}",
+            f"WhatsApp: {_clean(phone_number)}",
+            "",
+            "Assignment Details",
+            f"Task: {_clean(assignment.task_title)}",
+            f"Description: {_clean(assignment.task_description)}",
+        ])
+    else:
+        return
+
+    lines.extend(_attendance_audit_lines(attendance))
+    lines.extend(_event_lines(event))
+    lines.extend(["", "Thank you.", "DBKU Attendance Management System"])
+
+    greeting = f"Hi {_clean(recipient_name, 'there')},"
+    subject = f"Attendance Recorded - {_clean(getattr(event, 'name', None))}"
+    _dispatch_message(email, phone_number, subject, "\n".join([greeting, "", *lines]))
+
+
+def notify_staff_registration_success(staff):
+    email = staff.email or ""
+    phone_number = staff.phone_number or ""
+    if not email and not phone_number:
+        return
+
+    subject = "Staff Account Registered - DBKU Attendance"
+    text = "\n".join([
+        f"Hi {_clean(staff.full_name, 'there')},",
+        "",
+        "Your staff account has been registered successfully.",
+        "",
+        "Account Details",
+        f"Name: {_clean(staff.full_name)}",
+        f"Employee ID: {_clean(staff.staff_id)}",
+        f"Department: {_clean(staff.department)}",
+        f"Role: {_clean(staff.role).title()}",
+        f"Email: {_clean(staff.email)}",
+        f"WhatsApp: {_clean(staff.phone_number)}",
+        f"Login URL: {_clean(getattr(settings, 'FRONTEND_URL', ''))}/login",
+        "",
+        "Please use the password created during registration to log in.",
+        "",
+        "Thank you.",
+        "DBKU Attendance Management System",
+    ])
+    _dispatch_message(email, phone_number, subject, text)
