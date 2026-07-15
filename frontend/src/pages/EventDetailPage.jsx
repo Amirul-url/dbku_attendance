@@ -725,8 +725,12 @@ export function EventDetailPage() {
                     <span>Staff Email</span>
                     <input value={selectedAssignmentStaff?.email || ''} placeholder="Auto display after staff selection" readOnly />
                   </label>
+                  <label className="compact-field">
+                    <span>Staff Phone Number</span>
+                    <input value={selectedAssignmentStaff?.phone_number || ''} placeholder="Auto display after staff selection" readOnly />
+                  </label>
                 </div>
-                <p>Choose department first, then choose staff name. Staff ID and email will display automatically.</p>
+                <p>Choose department first, then choose staff name. Staff ID, email, and phone number will display automatically.</p>
               </section>
 
               <section className="assignment-form-section">
@@ -808,20 +812,25 @@ export function EventDetailPage() {
                 <ReadOnlyField label="Staff Name" value={assignmentDetailModal.staff_name || selectedAssignmentStaffForDetail?.full_name} />
                 <ReadOnlyField label="Employee ID" value={selectedAssignmentStaffForDetail?.staff_id} />
                 <ReadOnlyField label="Staff Email" value={selectedAssignmentStaffForDetail?.email} />
+                <ReadOnlyField label="Staff Phone Number" value={selectedAssignmentStaffForDetail?.phone_number || assignmentDetailModal.staff_phone_number} />
                 <ReadOnlyField label="Department" value={selectedAssignmentStaffForDetail?.department} />
                 <ReadOnlyField label="Task Title" value={assignmentDetailModal.task_title} wide />
                 <ReadOnlyField label="Task Description" value={assignmentDetailModal.task_description || '-'} wide />
                 <ReadOnlyField label="Status" value={formatStatus(assignmentDetailModal.assignment_status)} />
                 <ReadOnlyField label="Attendance Status" value={selectedAssignmentAttendance ? 'Submitted' : 'Pending'} />
-                <ReadOnlyField label="Phone Number" value={selectedAssignmentAttendance?.phone_number || '-'} />
-                <ReadOnlyField label="Attendance Email" value={selectedAssignmentAttendance?.email || '-'} />
-                <ReadOnlyField label="IPv4" value={selectedAssignmentAttendance?.ipv4_address || '-'} />
-                <ReadOnlyField label="IPv6" value={selectedAssignmentAttendance?.ipv6_address || '-'} />
-                <ReadOnlyField label="Latitude" value={selectedAssignmentAttendance?.latitude ? formatCoordinate(selectedAssignmentAttendance.latitude) : '-'} />
-                <ReadOnlyField label="Longitude" value={selectedAssignmentAttendance?.longitude ? formatCoordinate(selectedAssignmentAttendance.longitude) : '-'} />
-                <ReadOnlyField label="Date" value={selectedAssignmentAttendance?.date ? formatNumericDate(selectedAssignmentAttendance.date) : '-'} />
-                <ReadOnlyField label="Time" value={selectedAssignmentAttendance?.time ? formatTime12Hour(selectedAssignmentAttendance.time) : '-'} />
-                <ReadOnlyField label="Notes" value={selectedAssignmentAttendance?.notes || '-'} wide />
+                {selectedAssignmentAttendance && (
+                  <>
+                    <ReadOnlyField label="Submitted Phone Number" value={selectedAssignmentAttendance.phone_number || '-'} />
+                    <ReadOnlyField label="Submitted Email" value={selectedAssignmentAttendance.email || '-'} />
+                    <ReadOnlyField label="IPv4" value={selectedAssignmentAttendance.ipv4_address || '-'} />
+                    <ReadOnlyField label="IPv6" value={selectedAssignmentAttendance.ipv6_address || '-'} />
+                    <ReadOnlyField label="Latitude" value={selectedAssignmentAttendance.latitude ? formatCoordinate(selectedAssignmentAttendance.latitude) : '-'} />
+                    <ReadOnlyField label="Longitude" value={selectedAssignmentAttendance.longitude ? formatCoordinate(selectedAssignmentAttendance.longitude) : '-'} />
+                    <ReadOnlyField label="Date" value={selectedAssignmentAttendance.date ? formatNumericDate(selectedAssignmentAttendance.date) : '-'} />
+                    <ReadOnlyField label="Time" value={selectedAssignmentAttendance.time ? formatTime12Hour(selectedAssignmentAttendance.time) : '-'} />
+                    <ReadOnlyField label="Notes" value={selectedAssignmentAttendance.notes || '-'} wide />
+                  </>
+                )}
               </div>
             </div>
             <div className="modal-footer">
