@@ -22,16 +22,55 @@ def assignment_list(event_id=None, staff_id=None, status=None):
 
 
 def assignment_conflicts(staff_id=None, event_id=None, task_title="", assignment_id=None):
-    queryset = EventAssignment.objects.select_related("event", "staff_member")
-    if staff_id:
-        queryset = queryset.filter(staff_member_id=staff_id)
-    if event_id:
-        queryset = queryset.filter(event_id=event_id)
-    if task_title:
-        queryset = queryset.filter(task_title__iexact=task_title)
+    if not staff_id or not event_id:
+        return EventAssignment.objects.none()
+
+    current_event = Event.objects.filter(id=event_id).first()
+    if current_event is None or current_event.start_date is None:
+        return EventAssignment.objects.none()
+
+    current_start_date = current_event.start_date
+    current_end_date = current_event.end_date or current_event.start_date
+    current_start_time = current_event.start_time
+    current_end_time = current_event.end_time or current_event.start_time
+    current_has_time_range = bool(current_event.start_time and current_event.end_time)
+
+    queryset = (
+        EventAssignment.objects
+        .select_related("event", "staff_member")
+        .filter(staff_member_id=staff_id)
+        .exclude(event_id=event_id)
+        .exclude(assignment_status=EventAssignment.STATUS_CANCELLED)
+    )
     if assignment_id:
         queryset = queryset.exclude(id=assignment_id)
-    return queryset
+
+    conflict_ids = []
+    for assignment in queryset:
+        event = assignment.event
+        if event.start_date is None:
+            continue
+
+        event_start_date = event.start_date
+        event_end_date = event.end_date or event.start_date
+        if event_start_date > current_end_date or event_end_date < current_start_date:
+            continue
+
+        event_start_time = event.start_time
+        event_end_time = event.end_time or event.start_time
+        event_has_time_range = bool(event.start_time and event.end_time)
+        if not current_start_time or not event_start_time:
+            continue
+
+        if current_has_time_range and event_has_time_range:
+            has_time_conflict = event_start_time < current_end_time and current_start_time < event_end_time
+        else:
+            has_time_conflict = event_start_time == current_start_time
+
+        if has_time_conflict:
+            conflict_ids.append(assignment.id)
+
+    return EventAssignment.objects.select_related("event", "staff_member").filter(id__in=conflict_ids)
 
 
 def event_by_id(event_id):

@@ -68,8 +68,17 @@ function formatDisplayDate(value) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function formatNumericDate(value) {
+  if (!value) return '-'
+  const [year, month, day] = String(value).split('-')
+  if (!year || !month || !day) return value
+  return `${day}/${month}/${year}`
+}
+
 function formatStatus(value) {
-  return String(value || '-').replaceAll('_', ' ')
+  return String(value || '-')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 function makeCircleFeature(longitude, latitude, radiusMeter) {
@@ -188,6 +197,7 @@ export function EventDetailPage() {
   const [assignmentAttendance, setAssignmentAttendance] = useState([])
   const [staff, setStaff] = useState([])
   const [assignmentModal, setAssignmentModal] = useState(null)
+  const [assignmentDetailModal, setAssignmentDetailModal] = useState(null)
   const [qrModal, setQrModal] = useState(null)
   const [assignmentDepartment, setAssignmentDepartment] = useState('')
   const [assignmentForm, setAssignmentForm] = useState({ staff_member: '', task_title: '', task_description: '', assignment_status: 'assigned' })
@@ -340,6 +350,10 @@ export function EventDetailPage() {
     setAssignmentFormError('')
     setAssignmentConflict({ state: 'checking', message: 'Checking assignment availability...', conflicts: [] })
     setAssignmentModal({ mode: 'edit', id: row.id })
+  }
+
+  function openAssignmentDetail(row) {
+    setAssignmentDetailModal(row)
   }
 
   function updateAssignmentDepartment(value) {
@@ -536,6 +550,12 @@ export function EventDetailPage() {
   ]
   const totalAttendance = staffAttendance.length + visitorAttendance.length + passportAttendance.length + assignmentAttendance.length
   const displayLocation = formatAddress(event.location)
+  const selectedAssignmentAttendance = assignmentDetailModal
+    ? assignmentAttendanceByAssignmentId.get(Number(assignmentDetailModal.id))
+    : null
+  const selectedAssignmentStaffForDetail = assignmentDetailModal
+    ? staffById.get(Number(assignmentDetailModal.staff_member))
+    : null
 
   return (
     <>
@@ -657,7 +677,7 @@ export function EventDetailPage() {
               render: (row) => (
                 canManageAssignments ? (
                   <div className="button-row event-action-row">
-                    <button type="button" className="btn btn-small btn-blue" onClick={() => openQr({ title: `${row.staff_name || 'Staff'} QR`, qr: row.qr_url, filename: `${row.task_title || 'assignment'}-qr.png` })}><Eye size={14} /></button>
+                    <button type="button" className="btn btn-small btn-green" onClick={() => openAssignmentDetail(row)}><Eye size={14} /></button>
                     <button type="button" className="btn btn-small btn-blue" onClick={() => openAssignmentEdit(row)}><Edit size={14} /></button>
                     <button type="button" className="btn btn-small btn-red" onClick={() => deleteAssignment(row)}><Trash2 size={14} /></button>
                   </div>
@@ -767,6 +787,49 @@ export function EventDetailPage() {
         </div>
       )}
 
+      {assignmentDetailModal && (
+        <div className="modal-overlay open">
+          <div className="modal-box assignment-detail-modal">
+            <div className="modal-header">
+              <div className="modal-title">Assignment Details</div>
+              <button type="button" className="modal-close" onClick={() => setAssignmentDetailModal(null)}>x</button>
+            </div>
+            <div className="modal-body assignment-detail-body">
+              <div className="assignment-detail-grid">
+                <ReadOnlyField label="Staff Name" value={assignmentDetailModal.staff_name || selectedAssignmentStaffForDetail?.full_name} />
+                <ReadOnlyField label="Employee ID" value={selectedAssignmentStaffForDetail?.staff_id} />
+                <ReadOnlyField label="Staff Email" value={selectedAssignmentStaffForDetail?.email} />
+                <ReadOnlyField label="Department" value={selectedAssignmentStaffForDetail?.department} />
+                <ReadOnlyField label="Task Title" value={assignmentDetailModal.task_title} wide />
+                <ReadOnlyField label="Task Description" value={assignmentDetailModal.task_description || '-'} wide />
+                <ReadOnlyField label="Status" value={formatStatus(assignmentDetailModal.assignment_status)} />
+                <ReadOnlyField label="Attendance Status" value={selectedAssignmentAttendance ? 'Submitted' : 'Pending'} />
+                <ReadOnlyField label="Phone Number" value={selectedAssignmentAttendance?.phone_number || '-'} />
+                <ReadOnlyField label="Attendance Email" value={selectedAssignmentAttendance?.email || '-'} />
+                <ReadOnlyField label="IPv4" value={selectedAssignmentAttendance?.ipv4_address || '-'} />
+                <ReadOnlyField label="IPv6" value={selectedAssignmentAttendance?.ipv6_address || '-'} />
+                <ReadOnlyField label="Latitude" value={selectedAssignmentAttendance?.latitude ? formatCoordinate(selectedAssignmentAttendance.latitude) : '-'} />
+                <ReadOnlyField label="Longitude" value={selectedAssignmentAttendance?.longitude ? formatCoordinate(selectedAssignmentAttendance.longitude) : '-'} />
+                <ReadOnlyField label="Date" value={selectedAssignmentAttendance?.date ? formatNumericDate(selectedAssignmentAttendance.date) : '-'} />
+                <ReadOnlyField label="Time" value={selectedAssignmentAttendance?.time ? formatTime12Hour(selectedAssignmentAttendance.time) : '-'} />
+                <ReadOnlyField label="Notes" value={selectedAssignmentAttendance?.notes || '-'} wide />
+                <div className="assignment-detail-qr">
+                  <span>QR Code</span>
+                  <div>
+                    {assignmentDetailModal.qr_url ? <img src={assignmentDetailModal.qr_url} alt="Assignment QR Code" /> : <QrCode size={120} />}
+                  </div>
+                  <p>This assignment QR is separate from the normal staff attendance QR.</p>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              {assignmentDetailModal.qr_url && <button type="button" className="btn btn-ocean" onClick={() => downloadQr(assignmentDetailModal.qr_url, `${assignmentDetailModal.task_title || 'assignment'}-qr.png`)}><Download size={15} /> Download QR</button>}
+              <button type="button" className="btn btn-ghost" onClick={() => setAssignmentDetailModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {qrModal && (
         <div className="modal-overlay open">
           <div className="modal-box qr-preview-modal">
@@ -797,6 +860,15 @@ function InfoBlock({ label, value, strong = false }) {
     <div className="event-info-block">
       <span>{label}</span>
       <strong className={strong ? 'event-info-strong' : ''}>{value}</strong>
+    </div>
+  )
+}
+
+function ReadOnlyField({ label, value, wide = false }) {
+  return (
+    <div className={`assignment-readonly-field ${wide ? 'assignment-readonly-wide' : ''}`}>
+      <span>{label}</span>
+      <p>{value || '-'}</p>
     </div>
   )
 }

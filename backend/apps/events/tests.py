@@ -1,13 +1,14 @@
 import os
 import shutil
 import tempfile
+from datetime import date, time
 
 from django.contrib.auth.models import User
 from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.events.models import Event
+from apps.events.models import Event, EventAssignment
 from apps.staff.models import StaffMember
 from apps.attendance.models import Visitor
 
@@ -27,7 +28,7 @@ class EventPermissionTests(APITestCase):
         )
 
         self.admin_user = User.objects.create_user(username="ADM001", email="admin@example.com")
-        StaffMember.objects.create(
+        self.admin_staff = StaffMember.objects.create(
             user=self.admin_user,
             full_name="Admin User",
             staff_id="ADM001",
@@ -114,3 +115,47 @@ class EventPermissionTests(APITestCase):
         duplicate_response = self.client.post("/api/visitor-attendance/", payload, format="json")
         self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("Attendance already registered", str(duplicate_response.data))
+
+    def test_assignment_conflict_checks_overlapping_event_schedule(self):
+        staff_user = User.objects.create_user(username="ASSIGN001", email="assigned@example.com")
+        staff = StaffMember.objects.create(
+            user=staff_user,
+            full_name="Assigned Staff",
+            staff_id="ASSIGN001",
+            email="assigned@example.com",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        first_event = Event.objects.create(
+            name="Morning Event",
+            location="DBKU",
+            start_date=date(2026, 7, 15),
+            end_date=date(2026, 7, 15),
+            start_time=time(9, 0),
+            end_time=time(11, 0),
+            latitude="1.000000",
+            longitude="110.000000",
+            radius_meter=100,
+        )
+        second_event = Event.objects.create(
+            name="Overlapping Event",
+            location="DBKU",
+            start_date=date(2026, 7, 15),
+            end_date=date(2026, 7, 15),
+            start_time=time(10, 0),
+            end_time=time(12, 0),
+            latitude="1.000000",
+            longitude="110.000000",
+            radius_meter=100,
+        )
+        EventAssignment.objects.create(event=first_event, staff_member=staff, task_title="Registration")
+
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.get(
+            "/api/event-assignments/conflict-check/",
+            {"staff": staff.id, "event": second_event.id},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["available"])
+        self.assertEqual(response.data["conflicts"][0]["event"], "Morning Event")

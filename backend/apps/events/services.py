@@ -15,5 +15,9 @@ def serialize_assignment_conflicts(conflicts):
     return {
         "available": len(rows) == 0,
         "conflicts": rows,
-        "message": "No assignment conflict found." if len(rows) == 0 else "Potential assignment conflict found.",
+        "message": (
+            "No overlapping event assignment found for this staff."
+            if len(rows) == 0
+            else "This staff is already assigned to another event at the same date/time."
+        ),
     }
