@@ -5247,6 +5247,10 @@ input:focus {
   font-size: 12px;
 }
 
+.assignment-form-section > .compact-field + .compact-field {
+  margin-top: 18px;
+}
+
 .assignment-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

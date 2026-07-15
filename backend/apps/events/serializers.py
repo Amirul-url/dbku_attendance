@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.core.qr import ensure_assignment_qr_code, ensure_event_qr_codes, generate_event_qr_codes
+from apps.staff.models import StaffMember
 
 from .models import Event, EventAssignment
 
@@ -72,3 +73,9 @@ class EventAssignmentSerializer(serializers.ModelSerializer):
         ensure_assignment_qr_code(obj)
         request = self.context.get("request")
         return request.build_absolute_uri(obj.qr_code.url) if request and obj.qr_code else ""
+
+    def validate(self, attrs):
+        staff_member = attrs.get("staff_member", getattr(self.instance, "staff_member", None))
+        if staff_member and (staff_member.role == StaffMember.ROLE_SUPERADMIN or staff_member.user.is_superuser):
+            raise serializers.ValidationError({"staff_member": "Superadmin cannot be assigned to manage an event."})
+        return attrs

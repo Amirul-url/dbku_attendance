@@ -452,19 +452,23 @@ export function EventDetailPage() {
     return map
   }, [assignmentAttendance])
 
+  const assignableStaff = useMemo(() => (
+    staff.filter((item) => !item.is_superuser && item.role !== 'superadmin')
+  ), [staff])
+
   const assignmentDepartmentOptions = useMemo(() => {
-    const departments = staff
+    const departments = assignableStaff
       .map((item) => item.department)
       .filter(Boolean)
       .filter((item, index, rows) => rows.findIndex((row) => row.toLowerCase() === item.toLowerCase()) === index)
     return departments.sort((a, b) => a.localeCompare(b))
-  }, [staff])
+  }, [assignableStaff])
 
   const assignmentStaffOptions = useMemo(() => (
-    staff
+    assignableStaff
       .filter((item) => !assignmentDepartment || item.department === assignmentDepartment)
       .sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')))
-  ), [assignmentDepartment, staff])
+  ), [assignableStaff, assignmentDepartment])
 
   const selectedAssignmentStaff = useMemo(
     () => staffById.get(Number(assignmentForm.staff_member)),
