@@ -42,32 +42,6 @@ def _normalise_whatsapp_number(value):
     return digits
 
 
-def _event_lines(event):
-    return [
-        "",
-        "Event Details",
-        f"Event: {_clean(getattr(event, 'name', None))}",
-        f"Radius: {_clean(getattr(event, 'radius_meter', None))}m",
-        f"Start Date: {_format_date(getattr(event, 'start_date', None))}",
-        f"End Date: {_format_date(getattr(event, 'end_date', None))}",
-        f"Start Time: {_format_time(getattr(event, 'start_time', None))}",
-        f"End Time: {_format_time(getattr(event, 'end_time', None))}",
-        f"Venue: {_clean(getattr(event, 'location', None))}",
-        f"Latitude: {_clean(getattr(event, 'latitude', None))}",
-        f"Longitude: {_clean(getattr(event, 'longitude', None))}",
-        f"Description: {_clean(getattr(event, 'description', None))}",
-    ]
-
-
-def _attendance_audit_lines(attendance):
-    return [
-        f"Attendance Date: {_format_date(getattr(attendance, 'date', None))}",
-        f"Attendance Time: {_format_time(getattr(attendance, 'time', None))}",
-        f"Scan Latitude: {_clean(getattr(attendance, 'latitude', None))}",
-        f"Scan Longitude: {_clean(getattr(attendance, 'longitude', None))}",
-    ]
-
-
 def _passport_extra_lookup(visitor):
     extra_data = getattr(visitor, "extra_data", None) or {}
     additional_fields = extra_data.get("additional_fields") or []
@@ -174,35 +148,18 @@ def notify_attendance_success(attendance):
     email = ""
     phone_number = ""
     recipient_name = ""
-
-    lines = ["Attendance successfully recorded.", ""]
+    assignment_login_url = ""
+    lines = ["Your attendance has been recorded successfully.", ""]
 
     if class_name == "StaffAttendance":
         recipient_name = attendance.full_name
         email = attendance.email
         phone_number = attendance.phone_number
-        lines.extend([
-            "Attendance Details",
-            "Type: Staff",
-            f"Name: {_clean(attendance.full_name)}",
-            f"Employee ID: {_clean(attendance.staff_id)}",
-            f"Department: {_clean(attendance.department)}",
-            f"Email: {_clean(attendance.email)}",
-            f"WhatsApp: {_clean(attendance.phone_number)}",
-        ])
     elif class_name == "VisitorAttendance":
         visitor = attendance.visitor
         recipient_name = visitor.full_name
         email = visitor.email
         phone_number = visitor.phone_number
-        lines.extend([
-            "Attendance Details",
-            "Type: Visitor (Malaysian)",
-            f"Name: {_clean(visitor.full_name)}",
-            f"Organization: {_clean(visitor.organization)}",
-            f"Email: {_clean(visitor.email)}",
-            f"WhatsApp: {_clean(visitor.phone_number)}",
-        ])
     elif class_name == "PassportAttendance":
         visitor = attendance.passport_visitor
         extra = _passport_extra_lookup(visitor)
@@ -210,13 +167,7 @@ def notify_attendance_success(attendance):
         email = extra.get("email", "")
         phone_number = extra.get("phone number", "")
         lines.extend([
-            "Attendance Details",
-            "Type: Visitor (Non-Malaysian)",
-            f"Name: {_clean(visitor.full_name)}",
             f"Passport No.: {_clean(visitor.passport_number)}",
-            f"Country/Nationality: {_clean(visitor.country)}",
-            f"Email: {_clean(email)}",
-            f"WhatsApp: {_clean(phone_number)}",
         ])
     elif class_name == "AssignmentAttendance":
         assignment = attendance.assignment
@@ -225,24 +176,25 @@ def notify_attendance_success(attendance):
         recipient_name = staff.full_name
         email = attendance.email or staff.email
         phone_number = attendance.phone_number or staff.phone_number
+        assignment_login_url = _clean(getattr(settings, "NOTIFICATION_LOGIN_URL", ""), "")
+        lines = ["Your assignment attendance has been recorded successfully.", ""]
         lines.extend([
-            "Attendance Details",
-            "Type: Staff Assignment",
-            f"Name: {_clean(staff.full_name)}",
-            f"Employee ID: {_clean(staff.staff_id)}",
-            f"Department: {_clean(staff.department)}",
-            f"Email: {_clean(email)}",
-            f"WhatsApp: {_clean(phone_number)}",
-            "",
-            "Assignment Details",
             f"Task: {_clean(assignment.task_title)}",
-            f"Description: {_clean(assignment.task_description)}",
         ])
     else:
         return
 
-    lines.extend(_attendance_audit_lines(attendance))
-    lines.extend(_event_lines(event))
+    lines.extend([
+        f"Event: {_clean(getattr(event, 'name', None))}",
+        f"Date: {_format_date(getattr(attendance, 'date', None))}",
+        f"Time: {_format_time(getattr(attendance, 'time', None))}",
+        f"Venue: {_clean(getattr(event, 'location', None))}",
+    ])
+    if assignment_login_url:
+        lines.extend([
+            "",
+            f"For more details about your assignment, please log in here: {assignment_login_url}",
+        ])
     lines.extend(["", "Thank you.", "DBKU Attendance Management System"])
 
     greeting = f"Hi {_clean(recipient_name, 'there')},"
@@ -260,16 +212,10 @@ def notify_staff_registration_success(staff):
     text = "\n".join([
         f"Hi {_clean(staff.full_name, 'there')},",
         "",
-        "Your staff account has been registered successfully.",
+        "Your DBKU Attendance account has been registered successfully.",
         "",
-        "Account Details",
-        f"Name: {_clean(staff.full_name)}",
         f"Employee ID: {_clean(staff.staff_id)}",
-        f"Department: {_clean(staff.department)}",
-        f"Role: {_clean(staff.role).title()}",
-        f"Email: {_clean(staff.email)}",
-        f"WhatsApp: {_clean(staff.phone_number)}",
-        f"Login URL: {_clean(getattr(settings, 'FRONTEND_URL', ''))}/login",
+        f"Login: {_clean(getattr(settings, 'NOTIFICATION_LOGIN_URL', ''))}",
         "",
         "Please use the password created during registration to log in.",
         "",

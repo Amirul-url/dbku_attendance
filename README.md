@@ -157,6 +157,7 @@ Optional notification variables:
 ```text
 NOTIFICATION_EMAIL_ENABLED=True
 NOTIFICATION_EMAIL_PROVIDER=brevo
+NOTIFICATION_LOGIN_URL=https://attendance.petradigital.my/login
 BREVO_FROM_EMAIL=<verified-brevo-sender-email>
 BREVO_FROM_NAME=AMS
 BREVO_API_KEY=<brevo-api-key>

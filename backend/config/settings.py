@@ -135,6 +135,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", os.environ.get("BASE_APP_URL", "http://localhost:5173")).rstrip("/")
 BASE_APP_URL = FRONTEND_URL
+NOTIFICATION_LOGIN_URL = os.environ.get("NOTIFICATION_LOGIN_URL") or f"{FRONTEND_URL}/login"
 MAPTILER_API_KEY = os.environ.get("MAPTILER_API_KEY", "")
 RUNNING_TESTS = "test" in sys.argv
 
