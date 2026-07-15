@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import StaffMember
@@ -46,3 +47,41 @@ class StaffMemberApiTests(APITestCase):
         self.profile.refresh_from_db()
         self.assertIsNone(self.profile.email)
         self.assertIsNone(self.profile.phone_number)
+
+    def test_delete_staff_removes_linked_user_so_account_can_register_again(self):
+        user = User.objects.create_user(
+            username="EMP900",
+            email="deleted@example.com",
+            password="pass12345",
+        )
+        staff = StaffMember.objects.create(
+            user=user,
+            full_name="Deleted Staff",
+            staff_id="EMP900",
+            email="deleted@example.com",
+            phone_number="60129990000",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+
+        delete_response = self.client.delete(f"/api/staff/{staff.id}/")
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(StaffMember.objects.filter(staff_id="EMP900").exists())
+        self.assertFalse(User.objects.filter(username="EMP900").exists())
+
+        register_response = self.client.post(
+            "/api/auth/register/manual/",
+            {
+                "full_name": "Deleted Staff",
+                "staff_id": "EMP900",
+                "email": "deleted@example.com",
+                "phone_number": "60129990000",
+                "department": "ICT",
+                "password": "strongpass123",
+                "confirm_password": "strongpass123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)

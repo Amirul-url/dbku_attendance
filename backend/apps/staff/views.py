@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework.viewsets import ModelViewSet
 
 from apps.core.notifications import notify_staff_registration_success
@@ -20,3 +21,8 @@ class StaffMemberViewSet(ModelViewSet):
     def perform_create(self, serializer):
         staff = serializer.save()
         notify_staff_registration_success(staff)
+
+    def perform_destroy(self, instance):
+        user = instance.user
+        with transaction.atomic():
+            user.delete()
