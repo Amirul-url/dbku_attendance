@@ -5194,9 +5194,64 @@ input:focus {
   padding: 18px 16px 0;
 }
 
+.assignment-table .data-table {
+  min-width: 1420px;
+  table-layout: fixed;
+}
+
+.assignment-table .data-table th,
+.assignment-table .data-table td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.assignment-table .data-table th:nth-child(1),
+.assignment-table .data-table td:nth-child(1) {
+  width: 7%;
+}
+
+.assignment-table .data-table th:nth-child(2),
+.assignment-table .data-table td:nth-child(2) {
+  width: 9%;
+}
+
+.assignment-table .data-table th:nth-child(3),
+.assignment-table .data-table td:nth-child(3) {
+  width: 14%;
+}
+
+.assignment-table .data-table th:nth-child(4),
+.assignment-table .data-table td:nth-child(4) {
+  width: 34%;
+}
+
+.assignment-table .data-table th:nth-child(5),
+.assignment-table .data-table td:nth-child(5),
+.assignment-table .data-table th:nth-child(6),
+.assignment-table .data-table td:nth-child(6) {
+  width: 10%;
+}
+
+.assignment-table .data-table th:nth-child(7),
+.assignment-table .data-table td:nth-child(7) {
+  width: 8%;
+}
+
+.assignment-table .data-table th:nth-child(8),
+.assignment-table .data-table td:nth-child(8) {
+  width: 8%;
+}
+
+.assignment-table .data-table td {
+  height: auto;
+  min-height: 82px;
+}
+
 .event-assignment-task {
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  max-width: 100%;
+  line-height: 1.45;
 }
 
 .event-assignment-task strong {
@@ -5205,8 +5260,13 @@ input:focus {
 }
 
 .event-assignment-task span {
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--muted);
   font-size: 12px;
+  white-space: pre-line;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .assignment-modal {
@@ -5272,6 +5332,12 @@ input:focus {
 .assignment-modal .compact-field textarea {
   min-height: 46px;
   border-radius: 10px;
+}
+
+.assignment-modal .compact-field textarea {
+  min-height: 180px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .assignment-modal .compact-field input[readonly] {
@@ -5403,6 +5469,7 @@ input:focus {
   color: #172a34;
   font-size: 14px;
   line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .assignment-readonly-wide,
