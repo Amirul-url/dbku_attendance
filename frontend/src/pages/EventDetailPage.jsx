@@ -22,6 +22,7 @@ import { Link, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, downloadApiFile, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
+import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -178,6 +179,7 @@ function getQrDownloadUrl(qrUrl) {
 export function EventDetailPage() {
   const { id } = useParams()
   const { confirm, confirmDialog } = useConfirmDialog()
+  const { user } = useAuth()
   const [event, setEvent] = useState(null)
   const [staffAttendance, setStaffAttendance] = useState([])
   const [visitorAttendance, setVisitorAttendance] = useState([])
@@ -187,7 +189,10 @@ export function EventDetailPage() {
   const [staff, setStaff] = useState([])
   const [assignmentModal, setAssignmentModal] = useState(null)
   const [qrModal, setQrModal] = useState(null)
+  const [assignmentDepartment, setAssignmentDepartment] = useState('')
   const [assignmentForm, setAssignmentForm] = useState({ staff_member: '', task_title: '', task_description: '', assignment_status: 'assigned' })
+  const [assignmentFormError, setAssignmentFormError] = useState('')
+  const [assignmentConflict, setAssignmentConflict] = useState({ state: 'idle', message: 'Select staff first', conflicts: [] })
   const [error, setError] = useState('')
   const [mapMode, setMapMode] = useState('2d')
   const [mapStyleKey, setMapStyleKey] = useState('streets')
@@ -197,6 +202,7 @@ export function EventDetailPage() {
   const mapRef = useRef(null)
   const markerRef = useRef(null)
   const mapModeRef = useRef('2d')
+  const canManageAssignments = Boolean(user?.is_superuser || ['admin', 'superadmin'].includes(user?.staff_profile?.role))
 
   useEffect(() => {
     let mounted = true
@@ -315,23 +321,45 @@ export function EventDetailPage() {
   }
 
   function openAssignmentCreate() {
+    setAssignmentDepartment('')
     setAssignmentForm({ staff_member: '', task_title: '', task_description: '', assignment_status: 'assigned' })
+    setAssignmentFormError('')
+    setAssignmentConflict({ state: 'idle', message: 'Select staff first', conflicts: [] })
     setAssignmentModal({ mode: 'create' })
   }
 
   function openAssignmentEdit(row) {
+    const staffMember = staffById.get(Number(row.staff_member))
+    setAssignmentDepartment(staffMember?.department || '')
     setAssignmentForm({
       staff_member: row.staff_member || '',
       task_title: row.task_title || '',
       task_description: row.task_description || '',
       assignment_status: row.assignment_status || 'assigned',
     })
+    setAssignmentFormError('')
+    setAssignmentConflict({ state: 'checking', message: 'Checking assignment availability...', conflicts: [] })
     setAssignmentModal({ mode: 'edit', id: row.id })
+  }
+
+  function updateAssignmentDepartment(value) {
+    setAssignmentDepartment(value)
+    setAssignmentForm((current) => ({ ...current, staff_member: '' }))
+  }
+
+  function updateAssignmentStaff(staffId) {
+    const staffMember = staffById.get(Number(staffId))
+    setAssignmentForm((current) => ({ ...current, staff_member: staffId }))
+    if (staffMember?.department) setAssignmentDepartment(staffMember.department)
+  }
+
+  function updateAssignmentField(field, value) {
+    setAssignmentForm((current) => ({ ...current, [field]: value }))
   }
 
   async function saveAssignment(submitEvent) {
     submitEvent.preventDefault()
-    setError('')
+    setAssignmentFormError('')
     try {
       const payload = { ...assignmentForm, event: id }
       if (assignmentModal.mode === 'create') {
@@ -342,7 +370,7 @@ export function EventDetailPage() {
       setAssignmentModal(null)
       await reloadAssignments()
     } catch (err) {
-      setError(err.message)
+      setAssignmentFormError(err.message)
     }
   }
 
@@ -423,6 +451,61 @@ export function EventDetailPage() {
     assignmentAttendance.forEach((item) => map.set(Number(item.assignment_id || item.assignment), item))
     return map
   }, [assignmentAttendance])
+
+  const assignmentDepartmentOptions = useMemo(() => {
+    const departments = staff
+      .map((item) => item.department)
+      .filter(Boolean)
+      .filter((item, index, rows) => rows.findIndex((row) => row.toLowerCase() === item.toLowerCase()) === index)
+    return departments.sort((a, b) => a.localeCompare(b))
+  }, [staff])
+
+  const assignmentStaffOptions = useMemo(() => (
+    staff
+      .filter((item) => !assignmentDepartment || item.department === assignmentDepartment)
+      .sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')))
+  ), [assignmentDepartment, staff])
+
+  const selectedAssignmentStaff = useMemo(
+    () => staffById.get(Number(assignmentForm.staff_member)),
+    [assignmentForm.staff_member, staffById],
+  )
+
+  useEffect(() => {
+    if (!assignmentModal) return undefined
+    if (!assignmentForm.staff_member) {
+      setAssignmentConflict({ state: 'idle', message: 'Select staff first', conflicts: [] })
+      return undefined
+    }
+
+    let cancelled = false
+    async function checkConflict() {
+      setAssignmentConflict({ state: 'checking', message: 'Checking assignment availability...', conflicts: [] })
+      try {
+        const params = new URLSearchParams({
+          staff: assignmentForm.staff_member,
+          event: id,
+          task_title: assignmentForm.task_title,
+        })
+        if (assignmentModal.id) params.set('assignment', assignmentModal.id)
+        const data = await apiRequest(`/event-assignments/conflict-check/?${params.toString()}`)
+        if (cancelled) return
+        setAssignmentConflict({
+          state: data.available ? 'available' : 'conflict',
+          message: data.message,
+          conflicts: data.conflicts || [],
+        })
+      } catch (err) {
+        if (!cancelled) setAssignmentConflict({ state: 'error', message: err.message, conflicts: [] })
+      }
+    }
+
+    const timer = window.setTimeout(checkConflict, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [assignmentForm.staff_member, assignmentForm.task_title, assignmentModal, id])
 
   const filteredAssignments = useMemo(() => {
     const query = assignmentSearch.trim().toLowerCase()
@@ -552,7 +635,7 @@ export function EventDetailPage() {
           { value: 'pending', label: 'Pending Attendance' },
         ]}
         onExport={() => downloadApiFile(`/reports/events/${id}/export/assignment/`)}
-        extraAction={<button type="button" className="btn btn-blue" onClick={openAssignmentCreate}><UserPlus size={15} /> Add Assignment</button>}
+        extraAction={canManageAssignments ? <button type="button" className="btn btn-blue" onClick={openAssignmentCreate}><UserPlus size={15} /> Add Assignment</button> : null}
       >
         <DataTable
           rows={filteredAssignments}
@@ -568,11 +651,13 @@ export function EventDetailPage() {
               key: 'actions',
               label: 'Action',
               render: (row) => (
-                <div className="button-row event-action-row">
-                  <button type="button" className="btn btn-small btn-blue" onClick={() => openQr({ title: `${row.staff_name || 'Staff'} QR`, qr: row.qr_url, filename: `${row.task_title || 'assignment'}-qr.png` })}><Eye size={14} /></button>
-                  <button type="button" className="btn btn-small btn-blue" onClick={() => openAssignmentEdit(row)}><Edit size={14} /></button>
-                  <button type="button" className="btn btn-small btn-red" onClick={() => deleteAssignment(row)}><Trash2 size={14} /></button>
-                </div>
+                canManageAssignments ? (
+                  <div className="button-row event-action-row">
+                    <button type="button" className="btn btn-small btn-blue" onClick={() => openQr({ title: `${row.staff_name || 'Staff'} QR`, qr: row.qr_url, filename: `${row.task_title || 'assignment'}-qr.png` })}><Eye size={14} /></button>
+                    <button type="button" className="btn btn-small btn-blue" onClick={() => openAssignmentEdit(row)}><Edit size={14} /></button>
+                    <button type="button" className="btn btn-small btn-red" onClick={() => deleteAssignment(row)}><Trash2 size={14} /></button>
+                  </div>
+                ) : '-'
               ),
             },
           ]}
@@ -581,30 +666,94 @@ export function EventDetailPage() {
 
       {assignmentModal && (
         <div className="modal-overlay open">
-          <form className="modal-box" onSubmit={saveAssignment}>
+          <form className="modal-box assignment-modal" onSubmit={saveAssignment}>
             <div className="modal-header">
-              <div className="modal-title">{assignmentModal.mode === 'create' ? 'Add Assignment' : 'Edit Assignment'}</div>
+              <div className="modal-title">{assignmentModal.mode === 'create' ? 'Add Staff Assignment' : 'Edit Staff Assignment'}</div>
               <button type="button" className="modal-close" onClick={() => setAssignmentModal(null)}>x</button>
             </div>
-            <div className="modal-body stack-form">
-              <label className="compact-field">
-                <span>Staff</span>
-                <select value={assignmentForm.staff_member} onChange={(e) => setAssignmentForm((current) => ({ ...current, staff_member: e.target.value }))} required>
-                  <option value="">-- Please Select --</option>
-                  {staff.map((item) => <option key={item.id} value={item.id}>{item.full_name} - {item.staff_id}</option>)}
-                </select>
-              </label>
-              <label className="compact-field"><span>Task Title</span><input value={assignmentForm.task_title} onChange={(e) => setAssignmentForm((current) => ({ ...current, task_title: e.target.value }))} required /></label>
-              <label className="compact-field"><span>Task Description</span><textarea rows={4} value={assignmentForm.task_description} onChange={(e) => setAssignmentForm((current) => ({ ...current, task_description: e.target.value }))} /></label>
-              <label className="compact-field">
-                <span>Status</span>
-                <select value={assignmentForm.assignment_status} onChange={(e) => setAssignmentForm((current) => ({ ...current, assignment_status: e.target.value }))}>
-                  <option value="assigned">Assigned</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </label>
+            <div className="modal-body assignment-modal-body">
+              {assignmentFormError && <div className="alert-error">{assignmentFormError}</div>}
+
+              <section className="assignment-form-section">
+                <h3>1. Staff Selection</h3>
+                <div className="assignment-form-grid">
+                  <label className="compact-field">
+                    <span>Department</span>
+                    <select value={assignmentDepartment} onChange={(event) => updateAssignmentDepartment(event.target.value)}>
+                      <option value="">-- Please Select --</option>
+                      {assignmentDepartmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}
+                    </select>
+                  </label>
+                  <label className="compact-field">
+                    <span>Staff Name</span>
+                    <select value={assignmentForm.staff_member} onChange={(event) => updateAssignmentStaff(event.target.value)} required>
+                      <option value="">-- Please Select --</option>
+                      {assignmentStaffOptions.map((item) => <option key={item.id} value={item.id}>{item.full_name}</option>)}
+                    </select>
+                  </label>
+                  <label className="compact-field">
+                    <span>Staff ID</span>
+                    <input value={selectedAssignmentStaff?.staff_id || ''} placeholder="Auto display after staff selection" readOnly />
+                  </label>
+                  <label className="compact-field">
+                    <span>Staff Email</span>
+                    <input value={selectedAssignmentStaff?.email || ''} placeholder="Auto display after staff selection" readOnly />
+                  </label>
+                </div>
+                <p>Choose department first, then choose staff name. Staff ID and email will display automatically.</p>
+              </section>
+
+              <section className="assignment-form-section">
+                <h3>2. Assignment Details</h3>
+                <label className="compact-field">
+                  <span>Task Title</span>
+                  <input
+                    value={assignmentForm.task_title}
+                    onChange={(event) => updateAssignmentField('task_title', event.target.value)}
+                    placeholder="Example: PA System, Registration Counter, Technical Support"
+                    required
+                  />
+                </label>
+                <label className="compact-field">
+                  <span>Task Description</span>
+                  <textarea
+                    rows={5}
+                    value={assignmentForm.task_description}
+                    onChange={(event) => updateAssignmentField('task_description', event.target.value)}
+                    placeholder="Enter task description"
+                  />
+                </label>
+                <label className="compact-field assignment-status-field">
+                  <span>Assignment Status</span>
+                  <select value={assignmentForm.assignment_status} onChange={(event) => updateAssignmentField('assignment_status', event.target.value)}>
+                    <option value="assigned">Assigned</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </label>
+              </section>
+
+              <section className="assignment-form-section">
+                <h3>3. Conflict Check</h3>
+                <div className={`assignment-conflict-card is-${assignmentConflict.state}`}>
+                  <div>
+                    <strong>Assignment Availability</strong>
+                    <p>{assignmentConflict.message}</p>
+                  </div>
+                  <span>{assignmentConflict.state === 'idle' ? 'Select staff first' : formatStatus(assignmentConflict.state)}</span>
+                </div>
+                {assignmentConflict.conflicts.length > 0 && (
+                  <div className="assignment-conflict-list">
+                    {assignmentConflict.conflicts.map((item) => (
+                      <div key={item.id}>
+                        <strong>{item.staff}</strong>
+                        <span>{item.event} - {item.task_title} ({formatStatus(item.status)})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-ghost" onClick={() => setAssignmentModal(null)}>Cancel</button>
