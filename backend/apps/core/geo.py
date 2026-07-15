@@ -1,9 +1,11 @@
 from rest_framework import serializers
 
+from .event_state import validate_event_accepting_attendance
 from .utils import calculate_distance_meters
 
 
 def validate_event_geofence(event, latitude, longitude):
+    validate_event_accepting_attendance(event)
     if latitude in (None, "") or longitude in (None, ""):
         raise serializers.ValidationError("Please enable GPS/location first.")
     if event.latitude is None or event.longitude is None:

@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -88,6 +91,33 @@ class StaffAttendanceApiTests(APITestCase):
         self.assertIn("distance_meter", data)
         self.assertEqual(StaffAttendance.objects.count(), 0)
 
+    def test_public_staff_attendance_rejects_expired_event(self):
+        self.create_staff_member()
+        event = self.create_event()
+        event.start_date = timezone.localdate() - timedelta(days=2)
+        event.end_date = timezone.localdate() - timedelta(days=1)
+        event.save()
+
+        response = self.client.post(
+            "/api/staff-attendance/",
+            {
+                "event": event.id,
+                "full_name": "Attendance Staff",
+                "staff_id": "EMP010",
+                "phone_number": "0123000000",
+                "email": "staff@example.com",
+                "department": "Operations",
+                "latitude": "1.000000",
+                "longitude": "110.000000",
+            },
+            format="json",
+        )
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(data["code"][0], "event_expired")
+        self.assertEqual(StaffAttendance.objects.count(), 0)
+
     def test_assignment_attendance_marks_assignment_in_progress(self):
         staff = self.create_staff_member()
         event = self.create_event()
@@ -114,6 +144,38 @@ class StaffAttendanceApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         assignment.refresh_from_db()
         self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_IN_PROGRESS)
+
+    def test_assignment_attendance_rejects_expired_event(self):
+        staff = self.create_staff_member()
+        event = self.create_event()
+        event.start_date = timezone.localdate() - timedelta(days=2)
+        event.end_date = timezone.localdate() - timedelta(days=1)
+        event.save()
+        assignment = EventAssignment.objects.create(
+            event=event,
+            staff_member=staff,
+            task_title="Registration Counter",
+        )
+
+        response = self.client.post(
+            "/api/assignment-attendance/",
+            {
+                "assignment": assignment.id,
+                "full_name": staff.full_name,
+                "staff_id": staff.staff_id,
+                "phone_number": staff.phone_number,
+                "email": staff.email,
+                "latitude": "1.000000",
+                "longitude": "110.000000",
+            },
+            format="json",
+        )
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(data["code"][0], "event_expired")
+        assignment.refresh_from_db()
+        self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_ASSIGNED)
 
     def test_staff_attendance_audit_fields_cannot_be_edited(self):
         admin = self.create_admin_user()

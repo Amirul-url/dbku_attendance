@@ -1,10 +1,11 @@
 import os
 import shutil
 import tempfile
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from django.contrib.auth.models import User
 from django.test import override_settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -201,3 +202,36 @@ class EventPermissionTests(APITestCase):
         self.assertEqual(conflict_response.data["message"], "This staff is already assigned to this event.")
         self.assertEqual(create_response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("already assigned", str(create_response.data))
+
+    def test_assignment_list_marks_ended_event_assignments_completed(self):
+        staff_user = User.objects.create_user(username="ASSIGN003", email="assigned3@example.com")
+        staff = StaffMember.objects.create(
+            user=staff_user,
+            full_name="Assigned Staff Three",
+            staff_id="ASSIGN003",
+            email="assigned3@example.com",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        event = Event.objects.create(
+            name="Past Event",
+            location="DBKU",
+            start_date=timezone.localdate() - timedelta(days=2),
+            end_date=timezone.localdate() - timedelta(days=1),
+            latitude="1.000000",
+            longitude="110.000000",
+            radius_meter=100,
+        )
+        assignment = EventAssignment.objects.create(
+            event=event,
+            staff_member=staff,
+            task_title="Registration",
+            assignment_status=EventAssignment.STATUS_IN_PROGRESS,
+        )
+
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.get("/api/event-assignments/", {"event": event.id})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assignment.refresh_from_db()
+        self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_COMPLETED)

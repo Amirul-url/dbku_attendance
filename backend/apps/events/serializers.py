@@ -81,6 +81,7 @@ class EventAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventAssignment
         fields = "__all__"
+        read_only_fields = ("assignment_status",)
 
     def get_qr_url(self, obj):
         ensure_assignment_qr_code(obj)

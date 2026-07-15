@@ -5385,6 +5385,17 @@ input:focus {
   max-width: 470px;
 }
 
+.assignment-auto-status-note {
+  margin-top: 18px;
+  border: 1px solid #d7e7eb;
+  border-radius: 10px;
+  background: #f8fafb;
+  color: #607489;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 14px 16px;
+}
+
 .assignment-conflict-card {
   display: flex;
   align-items: center;

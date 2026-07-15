@@ -200,7 +200,7 @@ export function EventDetailPage() {
   const [assignmentDetailModal, setAssignmentDetailModal] = useState(null)
   const [qrModal, setQrModal] = useState(null)
   const [assignmentDepartment, setAssignmentDepartment] = useState('')
-  const [assignmentForm, setAssignmentForm] = useState({ staff_member: '', task_title: '', task_description: '', assignment_status: 'assigned' })
+  const [assignmentForm, setAssignmentForm] = useState({ staff_member: '', task_title: '', task_description: '' })
   const [assignmentFormError, setAssignmentFormError] = useState('')
   const [assignmentConflict, setAssignmentConflict] = useState({ state: 'idle', message: 'Select staff first', conflicts: [] })
   const [error, setError] = useState('')
@@ -332,7 +332,7 @@ export function EventDetailPage() {
 
   function openAssignmentCreate() {
     setAssignmentDepartment('')
-    setAssignmentForm({ staff_member: '', task_title: '', task_description: '', assignment_status: 'assigned' })
+    setAssignmentForm({ staff_member: '', task_title: '', task_description: '' })
     setAssignmentFormError('')
     setAssignmentConflict({ state: 'idle', message: 'Select staff first', conflicts: [] })
     setAssignmentModal({ mode: 'create' })
@@ -345,7 +345,6 @@ export function EventDetailPage() {
       staff_member: row.staff_member || '',
       task_title: row.task_title || '',
       task_description: row.task_description || '',
-      assignment_status: row.assignment_status || 'assigned',
     })
     setAssignmentFormError('')
     setAssignmentConflict({ state: 'checking', message: 'Checking assignment availability...', conflicts: [] })
@@ -379,7 +378,12 @@ export function EventDetailPage() {
       return
     }
     try {
-      const payload = { ...assignmentForm, event: id }
+      const payload = {
+        event: id,
+        staff_member: assignmentForm.staff_member,
+        task_title: assignmentForm.task_title,
+        task_description: assignmentForm.task_description,
+      }
       if (assignmentModal.mode === 'create') {
         await apiRequest('/event-assignments/', { method: 'POST', body: JSON.stringify(payload) })
       } else {
@@ -768,15 +772,9 @@ export function EventDetailPage() {
                     placeholder="Enter task description"
                   />
                 </label>
-                <label className="compact-field assignment-status-field">
-                  <span>Assignment Status</span>
-                  <select value={assignmentForm.assignment_status} onChange={(event) => updateAssignmentField('assignment_status', event.target.value)}>
-                    <option value="assigned">Assigned</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </label>
+                <div className="assignment-auto-status-note">
+                  Status is managed automatically: Assigned after saving, In Progress after staff submits attendance, and Completed after the event ends.
+                </div>
               </section>
 
               <section className="assignment-form-section">

@@ -357,6 +357,33 @@ function assertWithinEventRadius(event, coords) {
   throw error
 }
 
+function getEventEndDateTime(event) {
+  const endDate = event?.end_date || event?.start_date
+  if (!endDate) return null
+  const endTime = event?.end_time || '23:59:59'
+  const normalizedTime = String(endTime).split('.')[0]
+  const candidate = new Date(`${endDate}T${normalizedTime}`)
+  return Number.isNaN(candidate.getTime()) ? null : candidate
+}
+
+function buildEventExpiredDetails(event) {
+  const endDateTime = getEventEndDateTime(event)
+  if (!endDateTime || new Date() <= endDateTime) return null
+  return {
+    event: event?.name || 'This event',
+    end_date: event?.end_date || event?.start_date || '',
+    end_time: event?.end_time || '',
+  }
+}
+
+function assertEventAcceptingAttendance(event) {
+  const eventExpiredDetails = buildEventExpiredDetails(event)
+  if (!eventExpiredDetails) return
+  const error = new Error('event_expired')
+  error.eventExpiredDetails = eventExpiredDetails
+  throw error
+}
+
 function firstApiValue(value) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -373,7 +400,23 @@ function getOutsideRadiusErrorDetails(err) {
   }
 }
 
-function handlePublicSubmitError(err, setError, setLocationRadiusAlert) {
+function getEventExpiredErrorDetails(err) {
+  if (err?.eventExpiredDetails) return err.eventExpiredDetails
+  const data = err?.data
+  if (!data || firstApiValue(data.code) !== 'event_expired') return null
+  return {
+    event: firstApiValue(data.event),
+    detail: firstApiValue(data.detail),
+  }
+}
+
+function handlePublicSubmitError(err, setError, setLocationRadiusAlert, setEventExpiredAlert) {
+  const eventExpiredDetails = getEventExpiredErrorDetails(err)
+  if (eventExpiredDetails) {
+    setError('')
+    setEventExpiredAlert?.(eventExpiredDetails)
+    return
+  }
   const outsideRadiusDetails = getOutsideRadiusErrorDetails(err)
   if (outsideRadiusDetails) {
     setError('')
@@ -449,6 +492,21 @@ function LocationRadiusModal({ details, onClose }) {
   )
 }
 
+function EventExpiredModal({ details, onClose }) {
+  if (!details) return null
+  return (
+    <div className="passport-quality-overlay" role="alertdialog" aria-modal="true" aria-label="Event expired">
+      <div className="passport-quality-dialog passport-expired-dialog">
+        <div className="passport-quality-icon passport-expired-icon"><AlertTriangle size={24} /></div>
+        <h2>Event Expired</h2>
+        <p>{details.detail || 'This event has ended. Attendance submission is no longer allowed.'}</p>
+        {details.event && <p className="location-radius-note">{details.event}</p>}
+        <button type="button" className="btn btn-red" onClick={onClose}>OK</button>
+      </div>
+    </div>
+  )
+}
+
 function PassportExpiredModal({ message, onClose }) {
   if (!message) return null
 
@@ -475,6 +533,8 @@ function PublicFormShell({
   error,
   locationRadiusAlert,
   onDismissLocationRadiusAlert,
+  eventExpiredAlert,
+  onDismissEventExpiredAlert,
   showEvent = true,
   showGpsNote = true,
 }) {
@@ -498,6 +558,7 @@ function PublicFormShell({
       </main>
       <SuccessModal message={message} onClose={onDismissMessage} />
       <LocationRadiusModal details={locationRadiusAlert} onClose={onDismissLocationRadiusAlert} />
+      <EventExpiredModal details={eventExpiredAlert} onClose={onDismissEventExpiredAlert} />
     </div>
   )
 }
@@ -509,6 +570,7 @@ export function StaffAttendanceFormPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
+  const [eventExpiredAlert, setEventExpiredAlert] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const department = form.department === 'Others' ? form.other_department : form.department
@@ -523,9 +585,11 @@ export function StaffAttendanceFormPage() {
     submittingRef.current = true
     setError('')
     setLocationRadiusAlert(null)
+    setEventExpiredAlert(null)
     setMessage('')
     setIsSubmitting(true)
     try {
+      assertEventAcceptingAttendance(event)
       await withLocation((coords) => {
         assertWithinEventRadius(event, coords)
         return apiRequest('/staff-attendance/', {
@@ -536,7 +600,7 @@ export function StaffAttendanceFormPage() {
       setMessage('Staff attendance registered successfully.')
       setForm({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', other_department: '' })
     } catch (err) {
-      handlePublicSubmitError(err, setError, setLocationRadiusAlert)
+      handlePublicSubmitError(err, setError, setLocationRadiusAlert, setEventExpiredAlert)
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -557,6 +621,8 @@ export function StaffAttendanceFormPage() {
       onDismissMessage={() => setMessage('')}
       locationRadiusAlert={locationRadiusAlert}
       onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+      eventExpiredAlert={eventExpiredAlert}
+      onDismissEventExpiredAlert={() => setEventExpiredAlert(null)}
     >
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="e.g. John Doe" required /></PublicField>
@@ -583,6 +649,7 @@ export function VisitorAttendanceFormPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
+  const [eventExpiredAlert, setEventExpiredAlert] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const organization = form.organization === 'Others' ? form.other_organization : form.organization
@@ -597,9 +664,11 @@ export function VisitorAttendanceFormPage() {
     submittingRef.current = true
     setError('')
     setLocationRadiusAlert(null)
+    setEventExpiredAlert(null)
     setMessage('')
     setIsSubmitting(true)
     try {
+      assertEventAcceptingAttendance(event)
       await withLocation(async (coords) => {
         assertWithinEventRadius(event, coords)
         const visitor = await apiRequest('/visitors/', { method: 'POST', body: JSON.stringify({ ...form, organization }) })
@@ -611,7 +680,7 @@ export function VisitorAttendanceFormPage() {
       setMessage('Visitor attendance submitted successfully.')
       setForm({ full_name: '', phone_number: '', email: '', organization: '', other_organization: '' })
     } catch (err) {
-      handlePublicSubmitError(err, setError, setLocationRadiusAlert)
+      handlePublicSubmitError(err, setError, setLocationRadiusAlert, setEventExpiredAlert)
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -632,6 +701,8 @@ export function VisitorAttendanceFormPage() {
       onDismissMessage={() => setMessage('')}
       locationRadiusAlert={locationRadiusAlert}
       onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+      eventExpiredAlert={eventExpiredAlert}
+      onDismissEventExpiredAlert={() => setEventExpiredAlert(null)}
     >
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="e.g. John Doe" required /></PublicField>
@@ -676,6 +747,7 @@ export function PassportAttendanceFormPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
+  const [eventExpiredAlert, setEventExpiredAlert] = useState(null)
   const [ocrNote, setOcrNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCameraOpen, setIsCameraOpen] = useState(false)
@@ -789,6 +861,7 @@ export function PassportAttendanceFormPage() {
     submittingRef.current = true
     setError('')
     setLocationRadiusAlert(null)
+    setEventExpiredAlert(null)
     setMessage('')
     setIsSubmitting(true)
     const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim()
@@ -799,6 +872,7 @@ export function PassportAttendanceFormPage() {
       .map((item) => (item.label ? `${item.label}: ${item.value}` : item.value))
       .join('\n')
     try {
+      assertEventAcceptingAttendance(event)
       await withLocation((coords) => {
         assertWithinEventRadius(event, coords)
         return apiRequest('/passport-attendance/submit/', {
@@ -830,8 +904,8 @@ export function PassportAttendanceFormPage() {
       setMessage('Passport attendance submitted successfully.')
       resetForm()
     } catch (err) {
-      if (getOutsideRadiusErrorDetails(err)) {
-        handlePublicSubmitError(err, setError, setLocationRadiusAlert)
+      if (getEventExpiredErrorDetails(err) || getOutsideRadiusErrorDetails(err)) {
+        handlePublicSubmitError(err, setError, setLocationRadiusAlert, setEventExpiredAlert)
       } else if ((err.message || '').toLowerCase().includes('passport has expired')) {
         setError('')
         setExpiredPassportMessage(PASSPORT_EXPIRED_MESSAGE)
@@ -1060,6 +1134,8 @@ export function PassportAttendanceFormPage() {
       showGpsNote={false}
       locationRadiusAlert={locationRadiusAlert}
       onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+      eventExpiredAlert={eventExpiredAlert}
+      onDismissEventExpiredAlert={() => setEventExpiredAlert(null)}
     >
       <form className="passport-workflow-form" onSubmit={submit}>
         <section className="passport-step-card">
@@ -1213,6 +1289,7 @@ export function AssignmentAttendanceFormPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
+  const [eventExpiredAlert, setEventExpiredAlert] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
 
@@ -1255,25 +1332,30 @@ export function AssignmentAttendanceFormPage() {
     submittingRef.current = true
     setError('')
     setLocationRadiusAlert(null)
+    setEventExpiredAlert(null)
     setMessage('')
     setIsSubmitting(true)
     try {
-      await withLocation((coords) => apiRequest('/assignment-attendance/', {
-        method: 'POST',
-        body: JSON.stringify({
-          full_name: form.full_name,
-          staff_id: form.staff_id,
-          phone_number: form.phone_number,
-          email: form.email,
-          notes: form.notes,
-          assignment: assignmentId,
-          ...coords,
-        }),
-      }))
+      assertEventAcceptingAttendance(event)
+      await withLocation((coords) => {
+        assertWithinEventRadius(event, coords)
+        return apiRequest('/assignment-attendance/', {
+          method: 'POST',
+          body: JSON.stringify({
+            full_name: form.full_name,
+            staff_id: form.staff_id,
+            phone_number: form.phone_number,
+            email: form.email,
+            notes: form.notes,
+            assignment: assignmentId,
+            ...coords,
+          }),
+        })
+      })
       setForm({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', notes: '' })
       setMessage('Assignment attendance submitted successfully.')
     } catch (err) {
-      handlePublicSubmitError(err, setError, setLocationRadiusAlert)
+      handlePublicSubmitError(err, setError, setLocationRadiusAlert, setEventExpiredAlert)
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -1293,6 +1375,8 @@ export function AssignmentAttendanceFormPage() {
       onDismissMessage={() => setMessage('')}
       locationRadiusAlert={locationRadiusAlert}
       onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+      eventExpiredAlert={eventExpiredAlert}
+      onDismissEventExpiredAlert={() => setEventExpiredAlert(null)}
     >
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <section className="public-assignment-task-card">

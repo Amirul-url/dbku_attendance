@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 
+from apps.core.event_state import complete_ended_event_assignments
+
 from .models import Event, EventAssignment
 
 
@@ -11,6 +13,7 @@ def event_list(search=None):
 
 
 def assignment_list(event_id=None, staff_id=None, status=None):
+    complete_ended_event_assignments([event_id] if event_id else None)
     queryset = EventAssignment.objects.select_related("event", "staff_member", "assigned_by")
     if event_id:
         queryset = queryset.filter(event_id=event_id)
