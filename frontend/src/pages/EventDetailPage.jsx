@@ -590,7 +590,7 @@ export function EventDetailPage() {
               <label className="compact-field">
                 <span>Staff</span>
                 <select value={assignmentForm.staff_member} onChange={(e) => setAssignmentForm((current) => ({ ...current, staff_member: e.target.value }))} required>
-                  <option value="">-- Select staff --</option>
+                  <option value="">-- Please Select --</option>
                   {staff.map((item) => <option key={item.id} value={item.id}>{item.full_name} - {item.staff_id}</option>)}
                 </select>
               </label>

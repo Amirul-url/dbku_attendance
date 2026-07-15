@@ -4266,11 +4266,26 @@ input:focus {
 .passport-step-card .compact-field input,
 .passport-step-card .compact-field select,
 .passport-step-card .compact-field textarea,
-.passport-extra-row input {
+.passport-extra-row input,
+.passport-extra-label-display {
   min-height: 52px;
   border-radius: 12px;
   font-size: 15px;
   padding-inline: 16px;
+}
+
+.passport-extra-label-display {
+  align-items: center;
+  background: #f8fbfc;
+  border: 1px solid var(--line);
+  color: #5b7f95;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.passport-extra-label-display .required-star {
+  color: #d92d20;
+  font-weight: 800;
 }
 
 .passport-step-card .compact-field textarea {

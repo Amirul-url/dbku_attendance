@@ -399,7 +399,7 @@ export function EventStaffAttendancePage() {
                 <label className="compact-field modal-field-wide">
                   <span>Department</span>
                   <select value={editForm.department} onChange={(event) => updateEdit('department', event.target.value)} required>
-                    <option value="">-- Select department --</option>
+                    <option value="">-- Please Select --</option>
                     {editHasCustomDepartment && <option value={editForm.department}>{editForm.department}</option>}
                     {staffDepartmentChoices.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>

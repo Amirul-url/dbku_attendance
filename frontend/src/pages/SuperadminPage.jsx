@@ -352,7 +352,7 @@ export function SuperadminPage() {
               <label className="compact-field">
                 <span>Department</span>
                 <SelectWithIcon value={form.department} onChange={(event) => update('department', event.target.value)} required>
-                  <option value="">-- Select department --</option>
+                  <option value="">-- Please Select --</option>
                   {departments.map((item) => <option key={item} value={item}>{item}</option>)}
                 </SelectWithIcon>
               </label>

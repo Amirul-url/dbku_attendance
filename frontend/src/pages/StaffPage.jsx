@@ -420,7 +420,7 @@ export function StaffPage() {
               <label className="compact-field">
                 <span>Department</span>
                 <SelectWithIcon value={form.department} onChange={(e) => update('department', e.target.value)} required>
-                  <option value="">-- Select department --</option>
+                  <option value="">-- Please Select --</option>
                   {departments.map((item) => <option key={item} value={item}>{item}</option>)}
                 </SelectWithIcon>
               </label>

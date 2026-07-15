@@ -100,8 +100,8 @@ const passportStatusMeta = {
 }
 
 const defaultPassportExtraFields = [
-  { id: 'default-phone-number', label: 'Phone Number *', requiredLabel: 'Phone Number', value: '', placeholder: 'e.g. +60123456789', locked: true },
-  { id: 'default-email', label: 'Email *', requiredLabel: 'Email', value: '', placeholder: 'e.g. john@gmail.com', locked: true },
+  { id: 'default-phone-number', label: 'Phone Number', requiredLabel: 'Phone Number', value: '', placeholder: 'e.g. +60123456789', locked: true },
+  { id: 'default-email', label: 'Email', requiredLabel: 'Email', value: '', placeholder: 'e.g. john@gmail.com', locked: true },
 ]
 const requiredPassportExtraLabels = defaultPassportExtraFields.map((item) => item.requiredLabel)
 
@@ -473,7 +473,7 @@ export function StaffAttendanceFormPage() {
         <PublicField index="4" label="Email Address" icon={Mail}><input type="email" autoComplete="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="e.g. john@email.com" required /></PublicField>
         <PublicField index="5" label="Department" icon={Building2}>
           <select value={form.department} onChange={(e) => update('department', e.target.value)} required>
-            <option value="">-- Select department --</option>
+            <option value="">-- Please Select --</option>
             {departmentOptions.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </PublicField>
@@ -534,7 +534,7 @@ export function VisitorAttendanceFormPage() {
         <PublicField index="3" label="Email Address" icon={Mail}><input type="email" autoComplete="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="e.g. john@email.com" required /></PublicField>
         <PublicField index="4" label="Organization" icon={Building2}>
           <select value={form.organization} onChange={(e) => update('organization', e.target.value)} required>
-            <option value="">-- Select organization --</option>
+            <option value="">-- Please Select --</option>
             {organizationOptions.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </PublicField>
@@ -989,7 +989,7 @@ export function PassportAttendanceFormPage() {
             <label className="compact-field">
               <span>Country Code <span className="required-star">*</span></span>
               <select value={form.country_code} onChange={(e) => updateCountryCode(e.target.value)} required>
-                <option value="">-- Select country code --</option>
+                <option value="">-- Please Select --</option>
                 {hasCustomCountryCode && <option value={form.country_code}>{form.country_code}</option>}
                 {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
               </select>
@@ -997,7 +997,7 @@ export function PassportAttendanceFormPage() {
             <label className="compact-field">
               <span>Nationality <span className="required-star">*</span></span>
               <select value={form.nationality} onChange={(e) => updateNationality(e.target.value)} required>
-                <option value="">-- Select nationality --</option>
+                <option value="">-- Please Select --</option>
                 {hasCustomNationality && <option value={form.nationality}>{form.nationality}</option>}
                 {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
               </select>
@@ -1007,7 +1007,7 @@ export function PassportAttendanceFormPage() {
             <label className="compact-field"><span>First Name <span className="required-star">*</span></span><input value={form.first_name} onChange={(e) => update('first_name', e.target.value)} placeholder="Given name(s)" required /></label>
             <label className="compact-field"><span>Last Name <span className="required-star">*</span></span><input value={form.last_name} onChange={(e) => update('last_name', e.target.value)} placeholder="Family name" required /></label>
             <label className="compact-field"><span>Date of Birth <span className="required-star">*</span></span><input type="date" value={form.date_of_birth} onChange={(e) => update('date_of_birth', e.target.value)} required /></label>
-            <label className="compact-field"><span>Sex <span className="required-star">*</span></span><select value={form.sex} onChange={(e) => update('sex', e.target.value)} required><option value="">-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+            <label className="compact-field"><span>Sex <span className="required-star">*</span></span><select value={form.sex} onChange={(e) => update('sex', e.target.value)} required><option value="">-- Please Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
             <label className="compact-field"><span>Date of Issue <span className="required-star">*</span></span><input type="date" value={form.date_of_issue} onChange={(e) => update('date_of_issue', e.target.value)} required /></label>
             <label className="compact-field"><span>Date of Expiry <span className="required-star">*</span></span><input type="date" value={form.date_of_expiry} onChange={(e) => update('date_of_expiry', e.target.value)} required /></label>
           </div>
@@ -1026,7 +1026,14 @@ export function PassportAttendanceFormPage() {
             <div className="passport-extra-list">
               {visibleExtraFields.map((item) => (
                 <div className="passport-extra-row" key={item.id}>
-                  <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" disabled={item.locked} />
+                  {item.locked ? (
+                    <div className="passport-extra-label-display" aria-label={`${item.requiredLabel || item.label} required`}>
+                      <span>{item.requiredLabel || item.label}</span>
+                      <span className="required-star">*</span>
+                    </div>
+                  ) : (
+                    <input value={item.label} onChange={(e) => updateExtraField(item.id, 'label', e.target.value)} placeholder="Field label" />
+                  )}
                   <input value={item.value} onChange={(e) => updateExtraField(item.id, 'value', e.target.value)} placeholder={item.placeholder || 'Value'} required={item.locked} />
                   <button type="button" className="passport-extra-delete" onClick={() => confirmRemoveExtraField(item)} aria-label="Delete additional field" disabled={item.locked}><Trash2 size={18} /></button>
                 </div>

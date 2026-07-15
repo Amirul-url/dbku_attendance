@@ -446,7 +446,7 @@ export function EventPassportAttendancePage() {
                 <label className="compact-field">
                   <span>Country Code</span>
                   <select value={editForm.country_code} onChange={(event) => updateEditCountryCode(event.target.value)}>
-                    <option value="">-- Select country code --</option>
+                    <option value="">-- Please Select --</option>
                     {editHasCustomCountryCode && <option value={editForm.country_code}>{editForm.country_code}</option>}
                     {passportCountryOptions.map((option) => <option key={option.code} value={option.code}>{option.code}</option>)}
                   </select>
@@ -454,7 +454,7 @@ export function EventPassportAttendancePage() {
                 <label className="compact-field">
                   <span>Nationality</span>
                   <select value={editForm.nationality} onChange={(event) => updateEditNationality(event.target.value)}>
-                    <option value="">-- Select nationality --</option>
+                    <option value="">-- Please Select --</option>
                     {editHasCustomNationality && <option value={editForm.nationality}>{editForm.nationality}</option>}
                     {passportCountryOptions.map((option) => <option key={option.nationality} value={option.nationality}>{option.nationality}</option>)}
                   </select>
@@ -462,7 +462,7 @@ export function EventPassportAttendancePage() {
                 <label className="compact-field"><span>First Name</span><input value={editForm.first_name} onChange={(event) => updateEdit('first_name', event.target.value)} /></label>
                 <label className="compact-field"><span>Last Name</span><input value={editForm.last_name} onChange={(event) => updateEdit('last_name', event.target.value)} /></label>
                 <label className="compact-field"><span>Date of Birth</span><input type="date" value={editForm.date_of_birth} onChange={(event) => updateEdit('date_of_birth', event.target.value)} /></label>
-                <label className="compact-field"><span>Sex</span><select value={editForm.sex} onChange={(event) => updateEdit('sex', event.target.value)}><option value="">-</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+                <label className="compact-field"><span>Sex</span><select value={editForm.sex} onChange={(event) => updateEdit('sex', event.target.value)}><option value="">-- Please Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
                 <label className="compact-field"><span>Date of Issue</span><input type="date" value={editForm.date_of_issue} onChange={(event) => updateEdit('date_of_issue', event.target.value)} /></label>
                 <label className="compact-field"><span>Date of Expiry</span><input type="date" value={editForm.date_of_expiry} onChange={(event) => updateEdit('date_of_expiry', event.target.value)} /></label>
                 <label className="compact-field modal-field-wide"><span>OCR Raw Text</span><textarea rows={5} value={editForm.ocr_raw_text} onChange={(event) => updateEdit('ocr_raw_text', event.target.value)} /></label>

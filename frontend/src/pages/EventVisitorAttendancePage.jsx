@@ -379,7 +379,7 @@ export function EventVisitorAttendancePage() {
                 <label className="compact-field">
                   <span>Organization</span>
                   <select value={editForm.organization} onChange={(event) => updateEdit('organization', event.target.value)} required>
-                    <option value="">-- Select organization --</option>
+                    <option value="">-- Please Select --</option>
                     {editHasCustomOrganization && <option value={editForm.organization}>{editForm.organization}</option>}
                     {visitorOrganizationOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
