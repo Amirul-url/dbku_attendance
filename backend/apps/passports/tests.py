@@ -100,6 +100,21 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(PassportAttendance.objects.count(), 1)
 
+    def test_passport_attendance_outside_radius_returns_location_details(self):
+        payload = self.payload(self.event)
+        payload["latitude"] = "2.000000"
+        payload["longitude"] = "111.000000"
+
+        response = self.client.post("/api/passport-attendance/submit/", payload, format="json")
+
+        data = response.json()
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(data["code"], "outside_radius")
+        self.assertEqual(data["latitude"], "2.000000")
+        self.assertEqual(data["longitude"], "111.000000")
+        self.assertIn("distance_meter", data)
+        self.assertEqual(PassportAttendance.objects.count(), 0)
+
     def test_passport_attendance_audit_fields_cannot_be_edited(self):
         admin = User.objects.create_superuser(
             username="admin",

@@ -320,6 +320,69 @@ function normalizeCoordinate(value) {
   return Number(Number(value).toFixed(6))
 }
 
+function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+  const radius = 6371000
+  const toRadians = (value) => (Number(value) * Math.PI) / 180
+  const phi1 = toRadians(lat1)
+  const phi2 = toRadians(lat2)
+  const deltaPhi = toRadians(Number(lat2) - Number(lat1))
+  const deltaLambda = toRadians(Number(lon2) - Number(lon1))
+  const a = (
+    Math.sin(deltaPhi / 2) ** 2
+    + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2
+  )
+  return radius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+}
+
+function buildOutsideRadiusDetails(event, coords) {
+  if (!event || coords.latitude === undefined || coords.longitude === undefined) return null
+  if (event.latitude === null || event.latitude === undefined || event.longitude === null || event.longitude === undefined) return null
+  const radiusMeter = Number(event.radius_meter)
+  if (!Number.isFinite(radiusMeter)) return null
+  const distanceMeter = calculateDistanceMeters(coords.latitude, coords.longitude, event.latitude, event.longitude)
+  if (distanceMeter <= radiusMeter) return null
+  return {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    distance_meter: Number(distanceMeter.toFixed(2)),
+    radius_meter: radiusMeter,
+  }
+}
+
+function assertWithinEventRadius(event, coords) {
+  const outsideRadiusDetails = buildOutsideRadiusDetails(event, coords)
+  if (!outsideRadiusDetails) return
+  const error = new Error('outside_radius')
+  error.outsideRadiusDetails = outsideRadiusDetails
+  throw error
+}
+
+function firstApiValue(value) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function getOutsideRadiusErrorDetails(err) {
+  if (err?.outsideRadiusDetails) return err.outsideRadiusDetails
+  const data = err?.data
+  if (!data || firstApiValue(data.code) !== 'outside_radius') return null
+  return {
+    latitude: firstApiValue(data.latitude),
+    longitude: firstApiValue(data.longitude),
+    distance_meter: firstApiValue(data.distance_meter),
+    radius_meter: firstApiValue(data.radius_meter),
+  }
+}
+
+function handlePublicSubmitError(err, setError, setLocationRadiusAlert) {
+  const outsideRadiusDetails = getOutsideRadiusErrorDetails(err)
+  if (outsideRadiusDetails) {
+    setError('')
+    setLocationRadiusAlert(outsideRadiusDetails)
+    return
+  }
+  setError(err.message)
+}
+
 async function withLocation(callback) {
   if (!navigator.geolocation) {
     throw new Error('Please enable location/GPS and try again.')
@@ -361,6 +424,31 @@ function SuccessModal({ message, onClose }) {
   )
 }
 
+function LocationRadiusModal({ details, onClose }) {
+  if (!details) return null
+  return (
+    <div className="passport-quality-overlay" role="alertdialog" aria-modal="true" aria-label="Outside event radius">
+      <div className="passport-quality-dialog location-radius-dialog">
+        <div className="passport-quality-icon location-radius-icon"><MapPin size={24} /></div>
+        <h2>Outside Allowed Radius</h2>
+        <p>Attendance is only allowed within the event radius.</p>
+        <div className="location-radius-details">
+          <span>Current Latitude</span>
+          <strong>{formatCoordinate(details.latitude)}</strong>
+          <span>Current Longitude</span>
+          <strong>{formatCoordinate(details.longitude)}</strong>
+          <span>Distance From Event</span>
+          <strong>{Number(details.distance_meter || 0).toFixed(2)} m</strong>
+          <span>Allowed Radius</span>
+          <strong>{details.radius_meter || '-'} m</strong>
+        </div>
+        <p className="location-radius-note">Please move within the allowed radius and try submitting again.</p>
+        <button type="button" className="btn btn-red" onClick={onClose}>OK</button>
+      </div>
+    </div>
+  )
+}
+
 function PassportExpiredModal({ message, onClose }) {
   if (!message) return null
 
@@ -376,7 +464,20 @@ function PassportExpiredModal({ message, onClose }) {
   )
 }
 
-function PublicFormShell({ type, title, subtitle, event, children, message, onDismissMessage, error, showEvent = true, showGpsNote = true }) {
+function PublicFormShell({
+  type,
+  title,
+  subtitle,
+  event,
+  children,
+  message,
+  onDismissMessage,
+  error,
+  locationRadiusAlert,
+  onDismissLocationRadiusAlert,
+  showEvent = true,
+  showGpsNote = true,
+}) {
   return (
     <div className="public-attendance-screen">
       <main className="public-attendance-wrap">
@@ -396,6 +497,7 @@ function PublicFormShell({ type, title, subtitle, event, children, message, onDi
         </section>
       </main>
       <SuccessModal message={message} onClose={onDismissMessage} />
+      <LocationRadiusModal details={locationRadiusAlert} onClose={onDismissLocationRadiusAlert} />
     </div>
   )
 }
@@ -406,6 +508,7 @@ export function StaffAttendanceFormPage() {
   const [form, setForm] = useState({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', other_department: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const department = form.department === 'Others' ? form.other_department : form.department
@@ -419,17 +522,21 @@ export function StaffAttendanceFormPage() {
     if (submittingRef.current) return
     submittingRef.current = true
     setError('')
+    setLocationRadiusAlert(null)
     setMessage('')
     setIsSubmitting(true)
     try {
-      await withLocation((coords) => apiRequest('/staff-attendance/', {
-        method: 'POST',
-        body: JSON.stringify({ ...form, department, event: eventId, ...coords }),
-      }))
+      await withLocation((coords) => {
+        assertWithinEventRadius(event, coords)
+        return apiRequest('/staff-attendance/', {
+          method: 'POST',
+          body: JSON.stringify({ ...form, department, event: eventId, ...coords }),
+        })
+      })
       setMessage('Staff attendance registered successfully.')
       setForm({ full_name: '', staff_id: '', phone_number: '', email: '', department: '', other_department: '' })
     } catch (err) {
-      setError(err.message)
+      handlePublicSubmitError(err, setError, setLocationRadiusAlert)
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -440,7 +547,17 @@ export function StaffAttendanceFormPage() {
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
   return (
-    <PublicFormShell type="Staff" title="Attendance Registration" subtitle="Fill in your details to register attendance for this event" event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
+    <PublicFormShell
+      type="Staff"
+      title="Attendance Registration"
+      subtitle="Fill in your details to register attendance for this event"
+      event={event}
+      error={error}
+      message={message}
+      onDismissMessage={() => setMessage('')}
+      locationRadiusAlert={locationRadiusAlert}
+      onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+    >
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="e.g. John Doe" required /></PublicField>
         <PublicField index="2" label="Employee ID" icon={ClipboardCheck}><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} placeholder="e.g. DBKU0001" required /></PublicField>
@@ -465,6 +582,7 @@ export function VisitorAttendanceFormPage() {
   const [form, setForm] = useState({ full_name: '', phone_number: '', email: '', organization: '', other_organization: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const organization = form.organization === 'Others' ? form.other_organization : form.organization
@@ -478,10 +596,12 @@ export function VisitorAttendanceFormPage() {
     if (submittingRef.current) return
     submittingRef.current = true
     setError('')
+    setLocationRadiusAlert(null)
     setMessage('')
     setIsSubmitting(true)
     try {
       await withLocation(async (coords) => {
+        assertWithinEventRadius(event, coords)
         const visitor = await apiRequest('/visitors/', { method: 'POST', body: JSON.stringify({ ...form, organization }) })
         return apiRequest('/visitor-attendance/', {
           method: 'POST',
@@ -491,7 +611,7 @@ export function VisitorAttendanceFormPage() {
       setMessage('Visitor attendance submitted successfully.')
       setForm({ full_name: '', phone_number: '', email: '', organization: '', other_organization: '' })
     } catch (err) {
-      setError(err.message)
+      handlePublicSubmitError(err, setError, setLocationRadiusAlert)
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -502,7 +622,17 @@ export function VisitorAttendanceFormPage() {
   if (!event) return <div className="screen-center"><div className="panel">Loading event</div></div>
 
   return (
-    <PublicFormShell type="Visitor" title="Attendance Registration" subtitle="Fill in your details to register attendance for this event" event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
+    <PublicFormShell
+      type="Visitor"
+      title="Attendance Registration"
+      subtitle="Fill in your details to register attendance for this event"
+      event={event}
+      error={error}
+      message={message}
+      onDismissMessage={() => setMessage('')}
+      locationRadiusAlert={locationRadiusAlert}
+      onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+    >
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="e.g. John Doe" required /></PublicField>
         <PublicField index="2" label="Phone Number" icon={Phone}><PhoneNumberSelectInput value={form.phone_number} onChange={(value) => update('phone_number', value)} required /></PublicField>
@@ -545,6 +675,7 @@ export function PassportAttendanceFormPage() {
   const [extraFields, setExtraFields] = useState(createDefaultPassportExtraFields)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
   const [ocrNote, setOcrNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCameraOpen, setIsCameraOpen] = useState(false)
@@ -657,6 +788,7 @@ export function PassportAttendanceFormPage() {
     }
     submittingRef.current = true
     setError('')
+    setLocationRadiusAlert(null)
     setMessage('')
     setIsSubmitting(true)
     const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim()
@@ -667,35 +799,40 @@ export function PassportAttendanceFormPage() {
       .map((item) => (item.label ? `${item.label}: ${item.value}` : item.value))
       .join('\n')
     try {
-      await withLocation((coords) => apiRequest('/passport-attendance/submit/', {
-        method: 'POST',
-        body: JSON.stringify({
-          event: eventId,
-          type: form.passport_type,
-          country_code: form.country_code,
-          passport_number: form.passport_number,
-          nationality: form.nationality,
-          full_name: fullName,
-          first_name: form.first_name,
-          last_name: form.last_name,
-          date_of_birth: form.date_of_birth,
-          sex: form.sex,
-          date_of_issue: form.date_of_issue,
-          date_of_expiry: form.date_of_expiry,
-          raw_text: form.ocr_raw_text,
-          status: ocrStatus,
-          original_image_name: passportImageMeta.original,
-          processed_image_name: passportImageMeta.processed,
-          image_quality_note: passportImageMeta.qualityNote,
-          additional_fields: cleanExtraFields,
-          additional_fields_text: additionalFieldsText,
-          ...coords,
-        }),
-      }))
+      await withLocation((coords) => {
+        assertWithinEventRadius(event, coords)
+        return apiRequest('/passport-attendance/submit/', {
+          method: 'POST',
+          body: JSON.stringify({
+            event: eventId,
+            type: form.passport_type,
+            country_code: form.country_code,
+            passport_number: form.passport_number,
+            nationality: form.nationality,
+            full_name: fullName,
+            first_name: form.first_name,
+            last_name: form.last_name,
+            date_of_birth: form.date_of_birth,
+            sex: form.sex,
+            date_of_issue: form.date_of_issue,
+            date_of_expiry: form.date_of_expiry,
+            raw_text: form.ocr_raw_text,
+            status: ocrStatus,
+            original_image_name: passportImageMeta.original,
+            processed_image_name: passportImageMeta.processed,
+            image_quality_note: passportImageMeta.qualityNote,
+            additional_fields: cleanExtraFields,
+            additional_fields_text: additionalFieldsText,
+            ...coords,
+          }),
+        })
+      })
       setMessage('Passport attendance submitted successfully.')
       resetForm()
     } catch (err) {
-      if ((err.message || '').toLowerCase().includes('passport has expired')) {
+      if (getOutsideRadiusErrorDetails(err)) {
+        handlePublicSubmitError(err, setError, setLocationRadiusAlert)
+      } else if ((err.message || '').toLowerCase().includes('passport has expired')) {
         setError('')
         setExpiredPassportMessage(PASSPORT_EXPIRED_MESSAGE)
       } else {
@@ -921,6 +1058,8 @@ export function PassportAttendanceFormPage() {
       message={message}
       onDismissMessage={() => setMessage('')}
       showGpsNote={false}
+      locationRadiusAlert={locationRadiusAlert}
+      onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
     >
       <form className="passport-workflow-form" onSubmit={submit}>
         <section className="passport-step-card">
@@ -1073,6 +1212,7 @@ export function AssignmentAttendanceFormPage() {
   const [form, setForm] = useState({ full_name: '', staff_id: '', phone_number: '', email: '', notes: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
 
@@ -1095,6 +1235,7 @@ export function AssignmentAttendanceFormPage() {
     if (submittingRef.current) return
     submittingRef.current = true
     setError('')
+    setLocationRadiusAlert(null)
     setMessage('')
     setIsSubmitting(true)
     try {
@@ -1104,7 +1245,7 @@ export function AssignmentAttendanceFormPage() {
       }))
       setMessage('Assignment attendance submitted successfully.')
     } catch (err) {
-      setError(err.message)
+      handlePublicSubmitError(err, setError, setLocationRadiusAlert)
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -1114,7 +1255,17 @@ export function AssignmentAttendanceFormPage() {
   if (!assignment && !error) return <div className="screen-center"><div className="panel">Loading assignment</div></div>
 
   return (
-    <PublicFormShell type="Assignment" title={assignment?.task_title || 'Assignment Attendance'} subtitle={assignment?.staff_name || 'Register assigned task attendance'} event={event} error={error} message={message} onDismissMessage={() => setMessage('')}>
+    <PublicFormShell
+      type="Assignment"
+      title={assignment?.task_title || 'Assignment Attendance'}
+      subtitle={assignment?.staff_name || 'Register assigned task attendance'}
+      event={event}
+      error={error}
+      message={message}
+      onDismissMessage={() => setMessage('')}
+      locationRadiusAlert={locationRadiusAlert}
+      onDismissLocationRadiusAlert={() => setLocationRadiusAlert(null)}
+    >
       <form className="stack-form public-entry-form" onSubmit={submit}>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>
         <PublicField index="2" label="Staff ID" icon={ClipboardCheck}><input value={form.staff_id} onChange={(e) => update('staff_id', e.target.value)} required /></PublicField>

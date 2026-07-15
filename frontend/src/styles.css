@@ -4510,6 +4510,56 @@ input:focus {
   margin-top: 6px;
 }
 
+.location-radius-dialog {
+  max-width: 520px;
+}
+
+.location-radius-icon {
+  background: #fee2e2;
+  color: #b42318;
+}
+
+.location-radius-details {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin: 4px 0;
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+}
+
+.location-radius-details span,
+.location-radius-details strong {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+}
+
+.location-radius-details span {
+  background: #f8fafc;
+  color: #607489;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.location-radius-details strong {
+  color: #071d26;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.location-radius-details span:nth-last-child(-n + 2),
+.location-radius-details strong:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.location-radius-note {
+  color: #b42318 !important;
+  font-weight: 800;
+}
+
 .event-view-card {
   overflow: hidden;
   border: 1px solid var(--line);

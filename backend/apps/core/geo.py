@@ -10,6 +10,14 @@ def validate_event_geofence(event, latitude, longitude):
         raise serializers.ValidationError("Event location not configured by admin.")
 
     distance = calculate_distance_meters(latitude, longitude, event.latitude, event.longitude)
+    rounded_distance = round(distance, 2)
     if distance > event.radius_meter:
-        raise serializers.ValidationError(f"Attendance rejected. Outside allowed area ({round(distance, 2)}m).")
-    return round(distance, 2)
+        raise serializers.ValidationError({
+            "code": "outside_radius",
+            "detail": "Attendance rejected. Your current location is outside the allowed event radius.",
+            "latitude": str(latitude),
+            "longitude": str(longitude),
+            "distance_meter": rounded_distance,
+            "radius_meter": event.radius_meter,
+        })
+    return rounded_distance
