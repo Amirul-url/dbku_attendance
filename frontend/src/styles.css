@@ -5056,6 +5056,14 @@ input:focus {
   margin-bottom: 36px;
 }
 
+.event-detail-assignment-section {
+  margin-top: 46px;
+}
+
+.event-detail-assignment-section .attendance-records-header {
+  margin: 0 0 22px;
+}
+
 .event-attendance-filter {
   display: grid;
   grid-template-columns: minmax(240px, 1.2fr) minmax(200px, 1fr) minmax(200px, 1fr) auto auto auto auto;

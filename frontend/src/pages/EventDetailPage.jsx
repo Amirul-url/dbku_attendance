@@ -641,6 +641,7 @@ export function EventDetailPage() {
 
       <AttendanceSection
         title="Staff Assignment"
+        totalCount={filteredAssignments.length}
         searchValue={assignmentSearch}
         onSearch={setAssignmentSearch}
         searchPlaceholder="Search staff or task"
@@ -883,6 +884,7 @@ function ReadOnlyField({ label, value, wide = false }) {
 
 function AttendanceSection({
   title,
+  totalCount,
   children,
   searchValue,
   onSearch,
@@ -894,8 +896,13 @@ function AttendanceSection({
   extraAction = null,
 }) {
   return (
-    <section className="event-attendance-section">
-      <div className="event-view-section-label">{title}</div>
+    <section className="event-attendance-section event-detail-assignment-section">
+      <div className="attendance-records-header">
+        <div>
+          <h2>{title}</h2>
+        </div>
+        <div className="attendance-total-pill"><Users size={16} /> Total: {totalCount}</div>
+      </div>
       <div className="event-attendance-filter">
         <input value={searchValue} onChange={(event) => onSearch(event.target.value)} placeholder={searchPlaceholder} />
         {selectOptions.length > 0 && (
