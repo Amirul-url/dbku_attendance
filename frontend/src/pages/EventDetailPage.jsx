@@ -226,10 +226,9 @@ export function EventDetailPage() {
     let mounted = true
     async function load() {
       try {
-        const [eventData, assignmentData, staffData] = await Promise.all([
+        const [eventData, assignmentData] = await Promise.all([
           apiRequest(`/events/${id}/`),
           apiRequest(`/event-assignments/?event=${id}`),
-          apiRequest('/staff/'),
         ])
         if (!mounted) return
 
@@ -237,10 +236,15 @@ export function EventDetailPage() {
         const assignmentAttendanceRows = await loadAssignmentAttendance(assignmentRows)
         if (!mounted) return
 
+        const staffRows = canManageAssignments
+          ? listFromResponse(await apiRequest('/staff/'))
+          : []
+        if (!mounted) return
+
         setEvent(eventData)
         setAssignments(assignmentRows)
         setAssignmentAttendance(assignmentAttendanceRows)
-        setStaff(listFromResponse(staffData))
+        setStaff(staffRows)
       } catch (err) {
         if (mounted) setError(err.message)
       }
@@ -249,7 +253,7 @@ export function EventDetailPage() {
     return () => {
       mounted = false
     }
-  }, [id])
+  }, [canManageAssignments, id])
 
   useEffect(() => {
     if (!event || !mapContainerRef.current || mapRef.current || !MAPBOX_TOKEN) return undefined
@@ -333,6 +337,7 @@ export function EventDetailPage() {
   }
 
   function openAssignmentCreate() {
+    if (!canManageAssignments) return
     setAssignmentDepartment('')
     setAssignmentForm({ staff_member: '', task_title: '', task_description: '' })
     setAssignmentFormError('')
@@ -341,6 +346,7 @@ export function EventDetailPage() {
   }
 
   function openAssignmentEdit(row) {
+    if (!canManageAssignments) return
     const staffMember = staffById.get(Number(row.staff_member))
     setAssignmentDepartment(staffMember?.department || '')
     setAssignmentForm({
@@ -374,6 +380,7 @@ export function EventDetailPage() {
 
   async function saveAssignment(submitEvent) {
     submitEvent.preventDefault()
+    if (!canManageAssignments) return
     setAssignmentFormError('')
     if (assignmentConflict.state === 'conflict') {
       setAssignmentFormError(assignmentConflict.message || 'Please resolve the assignment conflict before saving.')
@@ -409,6 +416,7 @@ export function EventDetailPage() {
   }
 
   async function deleteAssignment(row) {
+    if (!canManageAssignments) return
     const shouldDelete = await confirm({
       title: 'Delete Assignment',
       message: `Delete assignment "${row.task_title}"?`,
