@@ -5352,6 +5352,23 @@ input:focus {
   line-height: 1.45;
 }
 
+.assignment-table-description.is-truncated {
+  position: relative;
+  padding-right: 22px;
+}
+
+.assignment-table-description.is-truncated::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: 24px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 38%);
+  color: var(--muted);
+  content: "...";
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .assignment-table-description p,
 .assignment-table-description ul,
 .assignment-table-description ol {
