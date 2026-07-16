@@ -6,6 +6,7 @@ import { Box, CalendarDays, CalendarPlus, Crosshair, Edit, Eye, Map, Search, Tra
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
+import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -252,6 +253,7 @@ function formatDateDisplay(value) {
 }
 
 export function EventsPage() {
+  const { user } = useAuth()
   const [error, setError] = useState('')
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -275,6 +277,7 @@ export function EventsPage() {
   const mapStyleKeyRef = useRef(mapStyleKey)
   const selectedAddressRef = useRef('')
   const geofenceSectionRef = useRef(null)
+  const canManageEvents = Boolean(user?.is_superuser || ['admin', 'superadmin'].includes(user?.staff_profile?.role))
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
@@ -545,6 +548,7 @@ export function EventsPage() {
   }
 
   function openCreate() {
+    if (!canManageEvents) return
     setForm(emptyEvent)
     setAddressQuery('')
     selectedAddressRef.current = ''
@@ -556,6 +560,7 @@ export function EventsPage() {
   }
 
   function openEdit(row) {
+    if (!canManageEvents) return
     setForm({
       ...emptyEvent,
       ...row,
@@ -573,6 +578,7 @@ export function EventsPage() {
   }
 
   async function deleteEvent(row) {
+    if (!canManageEvents) return
     const shouldDelete = await confirm({
       title: 'Delete Event',
       message: `Delete ${row.name || 'this event'}? This action cannot be undone.`,
@@ -694,6 +700,7 @@ export function EventsPage() {
 
   async function saveEvent(event) {
     event.preventDefault()
+    if (!canManageEvents) return
     const payload = Object.fromEntries(
       eventPayloadFields.map((key) => {
         const value = form[key]
@@ -740,7 +747,9 @@ export function EventsPage() {
           <h1>Event Management</h1>
           <div className="page-sub">Manage event information, geofence settings, and QR attendance access.</div>
         </div>
-        <button type="button" className="btn btn-green" onClick={openCreate}><CalendarPlus size={16} /> Create Event</button>
+        {canManageEvents && (
+          <button type="button" className="btn btn-green" onClick={openCreate}><CalendarPlus size={16} /> Create Event</button>
+        )}
       </div>
       <div className="filter-card event-filter-card">
         <input className="filter-input" placeholder="Search event name or location" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -795,8 +804,12 @@ export function EventsPage() {
               render: (row) => (
                 <div className="button-row event-action-row">
                   <Link className="btn btn-small btn-green" to={`/events/${row.id}`}><Eye size={14} /> View</Link>
-                  <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)}><Edit size={14} /> Edit</button>
-                  <button type="button" className="btn btn-small btn-red" onClick={() => deleteEvent(row)}><Trash2 size={14} /> Delete</button>
+                  {canManageEvents && (
+                    <>
+                      <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)}><Edit size={14} /> Edit</button>
+                      <button type="button" className="btn btn-small btn-red" onClick={() => deleteEvent(row)}><Trash2 size={14} /> Delete</button>
+                    </>
+                  )}
                 </div>
               ),
             },
