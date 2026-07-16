@@ -22,6 +22,18 @@ function isBoldStyle(source) {
   return Number.isFinite(numericWeight) && numericWeight >= 600
 }
 
+function getTextAlign(source) {
+  const textAlign = source.style?.textAlign?.toLowerCase()
+  if (ALIGN_VALUES.has(textAlign)) return textAlign
+
+  for (const className of Array.from(source.classList || [])) {
+    const match = className.match(/^ql-align-(center|right|justify)$/)
+    if (match) return match[1]
+  }
+
+  return ''
+}
+
 function flushList(lines, ordered) {
   const tag = ordered ? 'ol' : 'ul'
   return `<${tag}>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</${tag}>`
@@ -83,7 +95,7 @@ function sanitizeNode(node, doc) {
 
   const targetTag = sourceTag === 'B' || isStyledBold ? 'strong' : sourceTag.toLowerCase()
   const target = doc.createElement(targetTag)
-  const textAlign = source.style?.textAlign?.toLowerCase()
+  const textAlign = getTextAlign(source)
 
   if (ALIGN_VALUES.has(textAlign)) {
     target.style.textAlign = textAlign
