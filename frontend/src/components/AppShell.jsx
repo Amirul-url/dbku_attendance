@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BarChart3, CalendarDays, ChevronDown, ClipboardList, Clock3, LayoutDashboard, LogOut, Menu, RefreshCw, ShieldCheck, Users } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext.jsx'
@@ -9,11 +9,26 @@ const baseNavItems = [
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
 ]
 
+const DESKTOP_CANVAS_WIDTH = 1920
+const MOBILE_DESKTOP_BREAKPOINT = 900
+
+function getMobileDesktopCanvas() {
+  if (typeof window === 'undefined' || window.innerWidth > MOBILE_DESKTOP_BREAKPOINT) {
+    return null
+  }
+  const scale = window.innerWidth / DESKTOP_CANVAS_WIDTH
+  return {
+    '--app-mobile-scale': String(scale),
+    '--app-mobile-height': `${window.innerHeight / scale}px`,
+  }
+}
+
 export function AppShell() {
   const { user, logout, showSessionWarning, extendSession, extendingSession } = useAuth()
   const profile = user?.staff_profile
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [mobileDesktopCanvas, setMobileDesktopCanvas] = useState(getMobileDesktopCanvas)
   const accountName = profile?.full_name || user?.first_name || user?.username || 'User'
   const today = new Intl.DateTimeFormat('en-GB', {
     weekday: 'long',
@@ -31,8 +46,22 @@ export function AppShell() {
     ...(isSuperadmin ? [{ to: '/superadmin', label: 'Superadmin', icon: ShieldCheck }] : []),
   ]
 
+  useEffect(() => {
+    function updateMobileDesktopCanvas() {
+      setMobileDesktopCanvas(getMobileDesktopCanvas())
+    }
+
+    updateMobileDesktopCanvas()
+    window.addEventListener('resize', updateMobileDesktopCanvas)
+    window.addEventListener('orientationchange', updateMobileDesktopCanvas)
+    return () => {
+      window.removeEventListener('resize', updateMobileDesktopCanvas)
+      window.removeEventListener('orientationchange', updateMobileDesktopCanvas)
+    }
+  }, [])
+
   return (
-    <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`} style={mobileDesktopCanvas || undefined}>
       <aside className="sidebar">
         <div>
           <div className="brand">

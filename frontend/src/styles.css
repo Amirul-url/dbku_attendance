@@ -6872,3 +6872,162 @@ input:focus {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 900px) {
+  .app-shell {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: var(--app-mobile-height, 100vh);
+    grid-template-columns: 220px 1fr !important;
+    overflow: hidden;
+    transform: scale(var(--app-mobile-scale, 1));
+    transform-origin: top left;
+  }
+
+  .app-shell.sidebar-collapsed {
+    grid-template-columns: 76px 1fr !important;
+  }
+
+  .app-shell .sidebar {
+    position: static;
+  }
+
+  .app-shell .stat-grid,
+  .app-shell .dashboard-stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell .filter-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto !important;
+  }
+
+  .app-shell .event-filter-card {
+    grid-template-columns: minmax(280px, 1fr) minmax(190px, 1fr) auto auto !important;
+  }
+
+  .app-shell .dashboard-activity-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .app-shell .dashboard-actions {
+    width: auto;
+  }
+
+  .app-shell .dashboard-action {
+    flex: 0 0 auto;
+  }
+
+  .app-shell .analytics-filter-card {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell .analytics-main-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr) !important;
+  }
+
+  .app-shell .analytics-insight-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell .analytics-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell .detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.48fr) !important;
+  }
+
+  .app-shell .form-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell .form-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell .detail-list,
+  .app-shell .event-info-box {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell .content {
+    padding: 24px 28px;
+  }
+
+  .app-shell .topbar {
+    padding: 0 28px;
+  }
+
+  .app-shell .dashboard-panel-header,
+  .app-shell .activity-row {
+    padding-inline: 24px;
+  }
+
+  .app-shell .dashboard-panel-header,
+  .app-shell .analytics-card-header,
+  .app-shell .analytics-status-row {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .app-shell .dashboard-panel-tools,
+  .app-shell .dashboard-mini-pagination,
+  .app-shell .analytics-header-summary,
+  .app-shell .analytics-filter-card .btn,
+  .app-shell .analytics-status-row {
+    width: auto;
+  }
+
+  .app-shell .dashboard-panel-tools input {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .app-shell .activity-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .app-shell .activity-time {
+    grid-column: auto;
+    text-align: right;
+  }
+
+  .app-shell .event-summary-card {
+    padding-right: 96px;
+  }
+
+  .app-shell .event-summary-card em {
+    position: absolute;
+    width: auto;
+    margin-top: 0;
+  }
+
+  .app-shell .analytics-page-header,
+  .app-shell .analytics-filter-card,
+  .app-shell .analytics-card-header {
+    padding-inline: revert;
+  }
+
+  .app-shell .analytics-trend-chart {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .app-shell .analytics-pie-card-body,
+  .app-shell .analytics-audience-donut {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: stretch;
+  }
+
+  .app-shell .analytics-pie-legend {
+    width: auto;
+  }
+
+  .app-shell .event-info-box {
+    margin-inline: 0;
+  }
+}
