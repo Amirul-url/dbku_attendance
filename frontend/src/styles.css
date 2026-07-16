@@ -497,98 +497,6 @@ h1 {
   font-size: 13px;
 }
 
-.event-filter-card {
-  grid-template-columns: minmax(280px, 1fr) minmax(190px, 1fr) auto auto;
-}
-
-.event-filter-card-modern {
-  grid-template-columns: minmax(360px, 1.8fr) minmax(220px, 0.88fr) auto auto;
-  gap: 10px;
-  align-items: end;
-  border-radius: 12px;
-  padding: 14px 18px;
-}
-
-.event-filter-card-modern label {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.event-filter-card-modern label > span {
-  color: #5b7e8b;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.event-filter-card-modern label > div {
-  min-height: 42px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #f8fafb;
-  padding: 0 12px;
-}
-
-.event-filter-card-modern svg {
-  color: #6b8a93;
-}
-
-.event-filter-card-modern input {
-  min-width: 0;
-  height: auto;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #102a33;
-  font: inherit;
-  font-size: 13px;
-  padding: 0;
-}
-
-.event-filter-card-modern .filter-date-wrap {
-  grid-template-columns: 1fr auto;
-}
-
-.event-filter-card-modern .filter-date-button {
-  position: static;
-  transform: none;
-}
-
-.filter-date-wrap {
-  position: relative;
-  min-width: 0;
-}
-
-.filter-date-wrap .filter-input {
-  width: 100%;
-  padding-right: 42px;
-}
-
-.filter-date-wrap input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 0;
-}
-
-.filter-date-button {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  background: transparent;
-  color: #102a33;
-  cursor: pointer;
-  padding: 0;
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -6963,10 +6871,6 @@ input:focus {
 
   .app-shell .filter-card {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto !important;
-  }
-
-  .app-shell .event-filter-card {
-    grid-template-columns: minmax(360px, 1.8fr) minmax(220px, 0.88fr) auto auto !important;
   }
 
   .app-shell .dashboard-activity-grid {

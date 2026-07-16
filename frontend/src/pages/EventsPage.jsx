@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Box, CalendarDays, CalendarPlus, Crosshair, Edit, Eye, Map, Search, Trash2 } from 'lucide-react'
+import { Box, CalendarDays, CalendarPlus, Crosshair, Edit, Eye, Filter, Map, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
@@ -31,6 +31,22 @@ const LOCAL_ADDRESS_SUGGESTIONS = [
     place_name: 'Dewan Bandaraya Kuching Utara, Bukit Siol, Jalan Semariang, 93050 Kuching, Sarawak',
     center: [110.334028, 1.586684],
   },
+]
+
+const monthOptions = [
+  { value: '', label: 'All Months' },
+  { value: '1', label: 'Jan' },
+  { value: '2', label: 'Feb' },
+  { value: '3', label: 'Mar' },
+  { value: '4', label: 'Apr' },
+  { value: '5', label: 'May' },
+  { value: '6', label: 'Jun' },
+  { value: '7', label: 'Jul' },
+  { value: '8', label: 'Aug' },
+  { value: '9', label: 'Sep' },
+  { value: '10', label: 'Oct' },
+  { value: '11', label: 'Nov' },
+  { value: '12', label: 'Dec' },
 ]
 
 const emptyEvent = {
@@ -252,13 +268,21 @@ function formatDateDisplay(value) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
+function dateMatchesFilters(value, month, year) {
+  if (!value) return false
+  const [eventYear, eventMonth] = String(value).split('-')
+  const matchesMonth = !month || Number(eventMonth) === Number(month)
+  const matchesYear = !year || eventYear === String(year)
+  return matchesMonth && matchesYear
+}
+
 export function EventsPage() {
   const { user } = useAuth()
   const [error, setError] = useState('')
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [dateSearch, setDateSearch] = useState('')
+  const [filters, setFilters] = useState({ search: '', month: '', year: '' })
+  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '' })
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyEvent)
   const [addressQuery, setAddressQuery] = useState('')
@@ -268,7 +292,6 @@ export function EventsPage() {
   const [mapStyleKey, setMapStyleKey] = useState('streets')
   const [page, setPage] = useState(1)
   const { confirm, confirmDialog } = useConfirmDialog()
-  const dateInputRef = useRef(null)
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
@@ -426,17 +449,29 @@ export function EventsPage() {
   }, [mapView])
 
   const filteredEvents = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const term = appliedFilters.search.trim().toLowerCase()
     return events.filter((row) => {
       const matchesTerm = !term || row.name?.toLowerCase().includes(term) || row.location?.toLowerCase().includes(term)
-      const matchesDate = !dateSearch || row.start_date === dateSearch || row.end_date === dateSearch
+      const matchesDate = (!appliedFilters.month && !appliedFilters.year)
+        || dateMatchesFilters(row.start_date, appliedFilters.month, appliedFilters.year)
+        || dateMatchesFilters(row.end_date, appliedFilters.month, appliedFilters.year)
       return matchesTerm && matchesDate
     }).sort((a, b) => {
       const createdComparison = String(b.created_at || '').localeCompare(String(a.created_at || ''))
       if (createdComparison) return createdComparison
       return Number(b.id) - Number(a.id)
     })
-  }, [dateSearch, events, search])
+  }, [appliedFilters.month, appliedFilters.search, appliedFilters.year, events])
+  const availableYears = useMemo(() => {
+    const years = new Set()
+    events.forEach((row) => {
+      const startYear = String(row.start_date || '').split('-')[0]
+      const endYear = String(row.end_date || '').split('-')[0]
+      if (startYear) years.add(startYear)
+      if (endYear) years.add(endYear)
+    })
+    return Array.from(years).sort((a, b) => Number(b) - Number(a))
+  }, [events])
   const pageSize = 5
   const totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize))
   const pageEvents = filteredEvents.slice((page - 1) * pageSize, page * pageSize)
@@ -445,7 +480,7 @@ export function EventsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [dateSearch, events.length, search])
+  }, [appliedFilters.month, appliedFilters.search, appliedFilters.year, events.length])
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -725,19 +760,19 @@ export function EventsPage() {
     }
   }
 
-  function resetFilters() {
-    setSearch('')
-    setDateSearch('')
+  function updateFilter(field, value) {
+    setFilters((current) => ({ ...current, [field]: value }))
   }
 
-  function openDatePicker() {
-    const input = dateInputRef.current
-    if (!input) return
-    if (typeof input.showPicker === 'function') {
-      input.showPicker()
-      return
-    }
-    input.focus()
+  function applyFilters(event) {
+    event.preventDefault()
+    setAppliedFilters(filters)
+  }
+
+  function resetFilters() {
+    const emptyFilters = { search: '', month: '', year: '' }
+    setFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
   }
 
   return (
@@ -751,23 +786,28 @@ export function EventsPage() {
           <button type="button" className="btn btn-green" onClick={openCreate}><CalendarPlus size={16} /> Create Event</button>
         )}
       </div>
-      <div className="filter-card event-filter-card event-filter-card-modern">
-        <label className="event-filter-search">
+      <form className="analytics-filter-card" onSubmit={applyFilters}>
+        <label className="analytics-filter-search">
           <span>Event / Location</span>
-          <div><Search size={16} /><input value={search} placeholder="Search event name or location" onChange={(event) => setSearch(event.target.value)} /></div>
+          <div><Search size={16} /><input value={filters.search} onChange={(event) => updateFilter('search', event.target.value)} placeholder="Search event name or location" /></div>
         </label>
         <label>
-          <span>Date</span>
-          <div className="filter-date-wrap">
-            <input ref={dateInputRef} type="date" value={dateSearch} onChange={(event) => setDateSearch(event.target.value)} />
-            <button type="button" className="filter-date-button" onClick={openDatePicker} aria-label="Open calendar">
-              <CalendarDays size={16} />
-            </button>
+          <span>Month</span>
+          <div><CalendarDays size={16} /><select value={filters.month} onChange={(event) => updateFilter('month', event.target.value)}>{monthOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+        </label>
+        <label>
+          <span>Year</span>
+          <div>
+            <CalendarDays size={16} />
+            <select value={filters.year} onChange={(event) => updateFilter('year', event.target.value)}>
+              <option value="">All Years</option>
+              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+            </select>
           </div>
         </label>
-        <button type="button" className="btn btn-ocean"><Search size={16} /> Filter</button>
-        <button type="button" className="btn btn-ghost" onClick={resetFilters}>Reset</button>
-      </div>
+        <button type="submit" className="btn btn-ocean"><Filter size={16} /> Apply</button>
+        <button type="button" className="btn btn-ghost" onClick={resetFilters}><RotateCcw size={16} /> Reset</button>
+      </form>
       {error && <div className="alert-error">{error}</div>}
       <div className="table-card event-table-card">
         <div className="table-card-header">
