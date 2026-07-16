@@ -6200,90 +6200,122 @@ input:focus {
 @media (max-width: 560px) {
   .login-screen {
     min-height: 100svh;
-    align-content: start;
-    gap: 10px;
-    padding: 12px;
+    align-content: center;
+    gap: 12px;
+    padding: 14px;
   }
 
   .login-workspace {
+    min-height: calc(100svh - 54px);
+    grid-template-rows: minmax(370px, 44svh) auto;
     border-radius: 8px;
     box-shadow: 0 14px 34px rgba(7, 29, 38, 0.13);
   }
 
   .login-intro {
-    gap: 12px;
-    padding: 18px;
+    justify-content: center;
+    gap: 18px;
+    padding: 28px;
   }
 
   .login-intro .portal-brand {
     min-height: 0;
-    gap: 16px;
+    gap: 20px;
   }
 
   .portal-mark {
-    width: 76px;
-    height: 76px;
-    border-radius: 13px;
+    width: 96px;
+    height: 96px;
+    border-radius: 16px;
   }
 
   .portal-mark img {
-    width: 62px;
-    height: 62px;
+    width: 78px;
+    height: 78px;
   }
 
   .login-intro .portal-brand h1 {
-    font-size: 27px;
-    line-height: 1.08;
+    font-size: 34px;
+    line-height: 1.12;
   }
 
   .login-metrics {
-    gap: 8px;
+    gap: 10px;
     padding: 0;
   }
 
   .login-metric {
-    min-height: 58px;
-    grid-template-columns: 32px 1fr;
-    gap: 10px;
-    padding: 9px 12px;
+    min-height: 66px;
+    grid-template-columns: 36px 1fr;
+    gap: 12px;
+    padding: 12px 14px;
   }
 
   .login-metric strong {
-    font-size: 13px;
+    font-size: 15px;
   }
 
   .login-metric span {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .login-workspace > .portal-login-card {
-    padding: 22px 22px 18px;
+    justify-content: start;
+    padding: 32px 28px 26px;
   }
 
   .login-main-header {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
 
   .login-main-header h2 {
-    font-size: 28px;
+    font-size: 30px;
   }
 
   .portal-field {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
 
   input,
   .primary-button,
   .create-account-button {
-    height: 46px;
+    height: 50px;
   }
 
   .login-divider {
-    margin: 15px 0;
+    margin: 18px 0;
   }
 
   .login-footer {
     padding-bottom: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .login-intro {
+    padding: 24px;
+  }
+
+  .login-intro .portal-brand {
+    gap: 16px;
+  }
+
+  .portal-mark {
+    width: 84px;
+    height: 84px;
+  }
+
+  .portal-mark img {
+    width: 68px;
+    height: 68px;
+  }
+
+  .login-intro .portal-brand h1 {
+    font-size: 29px;
+  }
+
+  .login-workspace > .portal-login-card {
+    padding: 28px 24px 24px;
   }
 }
 
