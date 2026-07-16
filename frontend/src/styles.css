@@ -3604,6 +3604,7 @@ input:focus {
   font-size: 14px;
   line-height: 1.55;
   text-align: left;
+  word-break: normal;
 }
 
 .public-assignment-task-card .rich-text-display * {
@@ -3659,7 +3660,8 @@ input:focus {
 .public-assignment-task-card .rich-text-display li {
   font-size: inherit;
   line-height: inherit;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
   white-space: normal !important;
 }
 
@@ -5800,7 +5802,7 @@ input:focus {
   color: #425b67;
   font-size: 14px;
   line-height: 1.55;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   word-break: normal;
 }
 
@@ -5833,7 +5835,8 @@ input:focus {
 
 .rich-text-display li,
 .rich-text-display p {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .rich-text-display strong {
