@@ -393,10 +393,17 @@ export function EventDetailPage() {
         task_title: assignmentForm.task_title,
         task_description: latestTaskDescription,
       }
-      if (assignmentModal.mode === 'create') {
-        await apiRequest('/event-assignments/', { method: 'POST', body: JSON.stringify(payload) })
-      } else {
-        await apiRequest(`/event-assignments/${assignmentModal.id}/`, { method: 'PATCH', body: JSON.stringify(payload) })
+      const savedAssignment = assignmentModal.mode === 'create'
+        ? await apiRequest('/event-assignments/', { method: 'POST', body: JSON.stringify(payload) })
+        : await apiRequest(`/event-assignments/${assignmentModal.id}/`, { method: 'PATCH', body: JSON.stringify(payload) })
+      if (savedAssignment) {
+        setAssignments((current) => {
+          const exists = current.some((item) => Number(item.id) === Number(savedAssignment.id))
+          if (exists) {
+            return current.map((item) => (Number(item.id) === Number(savedAssignment.id) ? savedAssignment : item))
+          }
+          return [savedAssignment, ...current]
+        })
       }
       setAssignmentModal(null)
       await reloadAssignments()

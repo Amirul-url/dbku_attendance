@@ -5050,18 +5050,6 @@ input:focus {
   -webkit-line-clamp: 4;
 }
 
-.my-task-table-task::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  padding-left: 34px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 38%);
-  color: var(--muted);
-  content: "...";
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 .my-task-detail-panel {
   border: 1px solid var(--line);
   border-radius: 14px;
