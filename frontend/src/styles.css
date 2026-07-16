@@ -3564,6 +3564,19 @@ input:focus {
   white-space: pre-wrap;
 }
 
+.public-assignment-task-card .rich-text-display {
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.public-assignment-task-card .rich-text-display p,
+.public-assignment-task-card .rich-text-display li {
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .public-field {
   gap: 10px;
 }
@@ -6229,10 +6242,21 @@ input:focus {
   .public-assignment-task-card span,
   .public-assignment-task-card strong,
   .public-assignment-task-card p,
+  .public-assignment-task-card .rich-text-display,
+  .public-assignment-task-card .rich-text-display p,
+  .public-assignment-task-card .rich-text-display li,
   .passport-extra-label-display,
   .passport-review-status,
   .passport-preview-box span {
     font-size: 13px;
+  }
+
+  .public-assignment-task-card .rich-text-display,
+  .public-assignment-task-card .rich-text-display p,
+  .public-assignment-task-card .rich-text-display li {
+    line-height: 1.5;
+    text-align: left !important;
+    word-spacing: normal;
   }
 
   .public-phone-input {
