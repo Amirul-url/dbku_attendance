@@ -14,6 +14,14 @@ function looksLikeHtml(value) {
   return /<\/?[a-z][\s\S]*>/i.test(String(value || ''))
 }
 
+function isBoldStyle(source) {
+  const fontWeight = source.style?.fontWeight?.toLowerCase()
+  if (!fontWeight) return false
+  if (fontWeight === 'bold' || fontWeight === 'bolder') return true
+  const numericWeight = Number(fontWeight)
+  return Number.isFinite(numericWeight) && numericWeight >= 600
+}
+
 function flushList(lines, ordered) {
   const tag = ordered ? 'ol' : 'ul'
   return `<${tag}>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</${tag}>`
@@ -63,8 +71,9 @@ function sanitizeNode(node, doc) {
 
   const source = node
   const sourceTag = source.tagName.toUpperCase()
+  const isStyledBold = sourceTag === 'SPAN' && isBoldStyle(source)
 
-  if (!ALLOWED_TAGS.has(sourceTag)) {
+  if (!ALLOWED_TAGS.has(sourceTag) && !isStyledBold) {
     const fragment = doc.createDocumentFragment()
     Array.from(source.childNodes).forEach((child) => {
       fragment.appendChild(sanitizeNode(child, doc))
@@ -72,7 +81,7 @@ function sanitizeNode(node, doc) {
     return fragment
   }
 
-  const targetTag = sourceTag === 'B' ? 'strong' : sourceTag.toLowerCase()
+  const targetTag = sourceTag === 'B' || isStyledBold ? 'strong' : sourceTag.toLowerCase()
   const target = doc.createElement(targetTag)
   const textAlign = source.style?.textAlign?.toLowerCase()
 
