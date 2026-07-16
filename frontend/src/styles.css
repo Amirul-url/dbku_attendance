@@ -3648,6 +3648,33 @@ input:focus {
   max-height: none;
 }
 
+.public-task-description-list {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding-left: 22px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow: visible;
+}
+
+.public-task-description-list li {
+  min-width: 0;
+  max-width: 100%;
+  padding-left: 2px;
+  overflow: visible;
+  overflow-wrap: normal;
+  text-align: left;
+  white-space: normal;
+  word-break: normal;
+  word-spacing: normal;
+  hyphens: none;
+}
+
 .public-task-toggle {
   width: max-content;
   border: 0;
@@ -6587,6 +6614,8 @@ input:focus {
   .public-assignment-task-card .rich-text-display,
   .public-assignment-task-card .rich-text-display p,
   .public-assignment-task-card .rich-text-display li,
+  .public-task-description-list,
+  .public-task-description-list li,
   .passport-extra-label-display,
   .passport-review-status,
   .passport-preview-box span {

@@ -5,9 +5,9 @@ import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { PassportCountryCombobox } from '../components/PassportCountryCombobox.jsx'
-import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 import { findPassportCountryByCode, findPassportCountryByNationality } from '../utils/passportCountries.js'
+import { richTextToPreview } from '../utils/richText.js'
 
 const departmentOptions = [
   'Administration (ADM)',
@@ -297,6 +297,36 @@ function PublicField({ index, label, icon: Icon, children }) {
       <span><b>{index}</b>{Icon && <Icon size={16} />}{label}</span>
       {children}
     </div>
+  )
+}
+
+function PublicTaskDescription({ value, isExpanded, onToggle }) {
+  const fullPreview = useMemo(
+    () => richTextToPreview(value || '-', { maxItems: 999, maxItemLength: 9999 }),
+    [value],
+  )
+  const shortPreview = useMemo(
+    () => richTextToPreview(value || '-', { maxItems: 4, maxItemLength: 160 }),
+    [value],
+  )
+  const preview = isExpanded ? fullPreview : shortPreview
+  const hasToggle = (
+    fullPreview.items.length > shortPreview.items.length
+    || fullPreview.items.some((item, index) => item !== shortPreview.items[index])
+  )
+  const ListTag = preview.ordered ? 'ol' : 'ul'
+
+  return (
+    <>
+      <ListTag className="public-task-description-list">
+        {preview.items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+      </ListTag>
+      {hasToggle && (
+        <button type="button" className="public-task-toggle" onClick={onToggle}>
+          {isExpanded ? 'View less' : 'View more'}
+        </button>
+      )}
+    </>
   )
 }
 
@@ -1388,19 +1418,11 @@ export function AssignmentAttendanceFormPage() {
           </div>
           <div>
             <span>Task Description</span>
-            <RichTextDisplay
+            <PublicTaskDescription
               value={assignment?.task_description || '-'}
-              className={`public-task-description-text ${isTaskExpanded ? 'is-expanded' : ''}`}
+              isExpanded={isTaskExpanded}
+              onToggle={() => setIsTaskExpanded((current) => !current)}
             />
-            {assignment?.task_description && (
-              <button
-                type="button"
-                className="public-task-toggle"
-                onClick={() => setIsTaskExpanded((current) => !current)}
-              >
-                {isTaskExpanded ? 'View less' : 'View more'}
-              </button>
-            )}
           </div>
         </section>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>
