@@ -13,6 +13,7 @@
     "libphonenumber-js": "^1.13.7",
     "lucide-react": "^1.21.0",
     "mapbox-gl": "^3.25.0",
+    "quill": "^2.0.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0"

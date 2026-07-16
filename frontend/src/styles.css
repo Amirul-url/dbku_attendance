@@ -5446,57 +5446,55 @@ input:focus {
   font-weight: 400;
 }
 
-.assignment-rich-text-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.assignment-rich-text-editor .ql-toolbar.ql-snow {
+  border: 0;
   border-bottom: 1px solid var(--line);
   background: #f8fafb;
   padding: 8px;
 }
 
-.rich-text-tool-button {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid transparent;
+.assignment-rich-text-editor .ql-toolbar.ql-snow .ql-formats {
+  margin-right: 10px;
+}
+
+.assignment-rich-text-editor .ql-toolbar.ql-snow button,
+.assignment-rich-text-editor .ql-toolbar.ql-snow .ql-picker-label {
   border-radius: 8px;
-  background: transparent;
   color: #315764;
-  cursor: pointer;
 }
 
-.rich-text-tool-button:hover,
-.rich-text-tool-button:focus-visible {
-  border-color: #c7dce3;
+.assignment-rich-text-editor .ql-toolbar.ql-snow button:hover,
+.assignment-rich-text-editor .ql-toolbar.ql-snow button:focus,
+.assignment-rich-text-editor .ql-toolbar.ql-snow button.ql-active,
+.assignment-rich-text-editor .ql-toolbar.ql-snow .ql-picker-label:hover,
+.assignment-rich-text-editor .ql-toolbar.ql-snow .ql-picker-label.ql-active {
   background: #eef7f9;
-  outline: none;
+  color: #003B46;
 }
 
-.assignment-rich-text-input {
+.assignment-rich-text-editor .ql-container.ql-snow {
+  border: 0;
+  color: #172a34;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.assignment-rich-text-editor .ql-editor {
   min-height: 180px;
   overflow: auto;
   padding: 14px;
-  color: #172a34;
-  font-size: 14px;
-  font-weight: 400;
   line-height: 1.55;
 }
 
-.assignment-rich-text-input strong,
-.assignment-rich-text-input b {
+.assignment-rich-text-editor .ql-editor strong,
+.assignment-rich-text-editor .ql-editor b {
   font-weight: 800;
 }
 
-.assignment-rich-text-input:focus {
+.assignment-rich-text-editor .ql-container.ql-snow:focus-within {
   outline: 2px solid rgba(0, 84, 98, .18);
   outline-offset: -2px;
-}
-
-.assignment-rich-text-input:empty::before {
-  color: #9cb0bb;
-  content: attr(data-placeholder);
 }
 
 .assignment-modal .compact-field input[readonly] {

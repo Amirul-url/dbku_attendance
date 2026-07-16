@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
+import Quill from 'quill'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import 'quill/dist/quill.snow.css'
 import {
-  AlignCenter,
-  AlignJustify,
-  AlignLeft,
-  AlignRight,
   ArrowLeft,
   Box,
-  Bold,
   CalendarDays,
   Crosshair,
   Download,
@@ -16,8 +13,6 @@ import {
   Eye,
   ExternalLink,
   LocateFixed,
-  List,
-  ListOrdered,
   Map as MapIcon,
   QrCode,
   Search,
@@ -384,8 +379,8 @@ export function EventDetailPage() {
       return
     }
     try {
-      const latestTaskDescription = assignmentDescriptionEditorRef.current
-        ? sanitizeRichText(assignmentDescriptionEditorRef.current.innerHTML || '')
+      const latestTaskDescription = assignmentDescriptionEditorRef.current?.getHtml
+        ? assignmentDescriptionEditorRef.current.getHtml()
         : sanitizeRichText(assignmentForm.task_description)
       const payload = {
         event: id,
@@ -928,82 +923,82 @@ function ReadOnlyField({ label, value, wide = false }) {
   )
 }
 
+function normalizeQuillHtml(quill) {
+  if (!quill) return ''
+  const html = typeof quill.getSemanticHTML === 'function'
+    ? quill.getSemanticHTML()
+    : quill.root.innerHTML
+  return sanitizeRichText(html === '<p><br></p>' ? '' : html)
+}
+
 function RichTextEditor({ value, onChange, inputRef }) {
   const editorRef = useRef(null)
+  const quillRef = useRef(null)
+  const onChangeRef = useRef(onChange)
+  const lastHtmlRef = useRef('')
+
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   useEffect(() => {
     if (!inputRef) return undefined
-    inputRef.current = editorRef.current
+    inputRef.current = {
+      getHtml: () => (quillRef.current ? normalizeQuillHtml(quillRef.current) : sanitizeRichText(value)),
+    }
     return () => {
       inputRef.current = null
     }
-  }, [inputRef])
+  }, [inputRef, value])
 
   useEffect(() => {
-    const nextHtml = sanitizeRichText(value)
-    if (editorRef.current && editorRef.current.innerHTML !== nextHtml) {
-      editorRef.current.innerHTML = nextHtml
+    if (!editorRef.current || quillRef.current) return undefined
+
+    const quill = new Quill(editorRef.current, {
+      theme: 'snow',
+      formats: ['align', 'bold', 'list'],
+      modules: {
+        toolbar: [
+          ['bold'],
+          [{ list: 'bullet' }, { list: 'ordered' }],
+          [{ align: '' }, { align: 'center' }, { align: 'right' }, { align: 'justify' }],
+        ],
+      },
+    })
+    quillRef.current = quill
+
+    const handleTextChange = () => {
+      const nextHtml = normalizeQuillHtml(quill)
+      lastHtmlRef.current = nextHtml
+      onChangeRef.current(nextHtml)
     }
+
+    quill.on('text-change', handleTextChange)
+
+    return () => {
+      quill.off('text-change', handleTextChange)
+      quillRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const quill = quillRef.current
+    if (!quill) return
+
+    const nextHtml = sanitizeRichText(value)
+    if (nextHtml === lastHtmlRef.current) return
+    if (normalizeQuillHtml(quill) === nextHtml) {
+      lastHtmlRef.current = nextHtml
+      return
+    }
+
+    quill.clipboard.dangerouslyPasteHTML(nextHtml || '')
+    lastHtmlRef.current = nextHtml
   }, [value])
-
-  function syncValue() {
-    onChange(sanitizeRichText(editorRef.current?.innerHTML || ''))
-  }
-
-  function runCommand(command, commandValue = null) {
-    editorRef.current?.focus()
-    document.execCommand(command, false, commandValue)
-    syncValue()
-  }
-
-  function handlePaste(event) {
-    event.preventDefault()
-    const text = event.clipboardData.getData('text/plain')
-    document.execCommand('insertText', false, text)
-    syncValue()
-  }
-
-  const toolbarItems = [
-    { label: 'Bold', icon: Bold, command: 'bold' },
-    { label: 'Bullet list', icon: List, command: 'insertUnorderedList' },
-    { label: 'Numbered list', icon: ListOrdered, command: 'insertOrderedList' },
-    { label: 'Align left', icon: AlignLeft, command: 'justifyLeft' },
-    { label: 'Align center', icon: AlignCenter, command: 'justifyCenter' },
-    { label: 'Align right', icon: AlignRight, command: 'justifyRight' },
-    { label: 'Justify', icon: AlignJustify, command: 'justifyFull' },
-  ]
 
   return (
     <div className="assignment-rich-text-editor">
-      <div className="assignment-rich-text-toolbar" aria-label="Task description formatting">
-        {toolbarItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <button
-              type="button"
-              key={item.label}
-              className="rich-text-tool-button"
-              title={item.label}
-              aria-label={item.label}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => runCommand(item.command)}
-            >
-              <Icon size={16} />
-            </button>
-          )
-        })}
-      </div>
-      <div
-        ref={editorRef}
-        className="assignment-rich-text-input"
-        contentEditable
-        role="textbox"
-        aria-label="Task description"
-        data-placeholder="Enter task description"
-        onInput={syncValue}
-        onBlur={syncValue}
-        onPaste={handlePaste}
-      />
+      <div ref={editorRef} />
     </div>
   )
 }
