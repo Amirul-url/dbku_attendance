@@ -2429,6 +2429,8 @@ input:focus {
 }
 
 .activity-list {
+  align-content: start;
+  grid-auto-rows: max-content;
   min-height: 290px;
 }
 
