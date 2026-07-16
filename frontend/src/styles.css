@@ -2663,6 +2663,10 @@ input:focus {
   padding: 14px 18px;
 }
 
+.events-filter-card {
+  margin-bottom: 16px;
+}
+
 .analytics-filter-card label {
   display: grid;
   gap: 6px;

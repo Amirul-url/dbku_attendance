@@ -786,7 +786,7 @@ export function EventsPage() {
           <button type="button" className="btn btn-green" onClick={openCreate}><CalendarPlus size={16} /> Create Event</button>
         )}
       </div>
-      <form className="analytics-filter-card" onSubmit={applyFilters}>
+      <form className="analytics-filter-card events-filter-card" onSubmit={applyFilters}>
         <label className="analytics-filter-search">
           <span>Event / Location</span>
           <div><Search size={16} /><input value={filters.search} onChange={(event) => updateFilter('search', event.target.value)} placeholder="Search event name or location" /></div>
