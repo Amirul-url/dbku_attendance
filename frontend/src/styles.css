@@ -4990,17 +4990,17 @@ input:focus {
 
 .my-task-table-card .data-table th:nth-child(1),
 .my-task-table-card .data-table td:nth-child(1) {
-  width: 24%;
+  width: 22%;
 }
 
 .my-task-table-card .data-table th:nth-child(2),
 .my-task-table-card .data-table td:nth-child(2) {
-  width: 14%;
+  width: 12%;
 }
 
 .my-task-table-card .data-table th:nth-child(3),
 .my-task-table-card .data-table td:nth-child(3) {
-  width: 28%;
+  width: 32%;
 }
 
 .my-task-table-card .data-table th:nth-child(4),
@@ -5013,6 +5013,10 @@ input:focus {
 .my-task-table-card .data-table th:nth-child(6),
 .my-task-table-card .data-table td:nth-child(6) {
   width: 8%;
+}
+
+.my-task-table-card .data-table td {
+  height: 164px;
 }
 
 .my-task-table-card .table-two-line strong {
@@ -5028,12 +5032,29 @@ input:focus {
   font-size: 12px;
 }
 
+.my-task-table-task {
+  position: relative;
+  height: 122px;
+}
+
 .my-task-table-description {
   display: block;
-  max-height: 78px;
+  max-height: 92px;
   overflow: hidden;
   margin-top: 6px;
   color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.my-task-table-task::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: 34px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 38%);
+  color: var(--muted);
+  content: "...";
   font-size: 12px;
   line-height: 1.45;
 }
@@ -5058,6 +5079,22 @@ input:focus {
   border-radius: 14px;
   background: #fff;
   padding: 20px;
+}
+
+.my-task-detail-panel .assignment-detail-layout {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.my-task-detail-panel .assignment-detail-qr-panel {
+  align-self: start;
+}
+
+.my-task-detail-panel .assignment-detail-qr-panel div:first-of-type {
+  min-height: 306px;
+}
+
+.my-task-detail-panel .assignment-detail-qr-panel img {
+  width: min(270px, 100%);
 }
 
 .my-task-event-card {
@@ -5086,8 +5123,9 @@ input:focus {
 }
 
 .my-task-qr-actions {
-  display: grid;
+  display: flex;
   gap: 10px;
+  margin-top: 4px;
 }
 
 .my-task-qr-actions .btn {
