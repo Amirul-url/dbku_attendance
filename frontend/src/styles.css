@@ -5031,28 +5031,9 @@ input:focus {
   margin-bottom: 18px;
 }
 
-.event-attendance-filter {
-  display: grid;
-  grid-template-columns: minmax(240px, 1.2fr) minmax(200px, 1fr) minmax(200px, 1fr) auto auto auto auto;
-  gap: 9px;
-  align-items: center;
-  margin-bottom: 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
-  padding: 18px 20px;
-}
-
-.event-attendance-filter input,
-.event-attendance-filter select {
-  width: 100%;
-  min-height: 46px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
-  color: #071d26;
-  padding: 0 14px;
-  font-size: 13px;
+.attendance-filter-card {
+  grid-template-columns: minmax(360px, 1fr) minmax(320px, 0.9fr) auto auto;
+  margin-bottom: 18px;
 }
 
 .event-detail-table .table-wrap {
@@ -6915,6 +6896,10 @@ input:focus {
 
   .app-shell .assignment-filter-card {
     grid-template-columns: minmax(360px, 1fr) minmax(280px, 0.82fr) auto auto !important;
+  }
+
+  .app-shell .attendance-filter-card {
+    grid-template-columns: minmax(360px, 1fr) minmax(320px, 0.9fr) auto auto !important;
   }
 
   .app-shell .analytics-main-grid {

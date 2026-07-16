@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, Eye, Pencil, Search, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, Eye, Filter, Pencil, RotateCcw, Search, Trash2, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
+import { apiRequest, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { PassportCountryCombobox } from '../components/PassportCountryCombobox.jsx'
@@ -308,18 +308,23 @@ export function EventPassportAttendancePage() {
       {error && <div className="alert alert-error">{error}</div>}
 
       <section className="event-attendance-section">
-        <div className="event-attendance-filter">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search visitor name" />
-          <select value={country} onChange={(event) => setCountry(event.target.value)}>
-            {countryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-          <button type="button" className="btn btn-ocean"><Search size={15} /> Search</button>
+        <form className="analytics-filter-card attendance-filter-card" onSubmit={(event) => event.preventDefault()}>
+          <label className="analytics-filter-search">
+            <span>Visitor</span>
+            <div><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search visitor name" /></div>
+          </label>
+          <label>
+            <span>Country</span>
+            <div><Filter size={16} /><select value={country} onChange={(event) => setCountry(event.target.value)}>
+              {countryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select></div>
+          </label>
+          <button type="submit" className="btn btn-ocean"><Search size={16} /> Search</button>
           <button type="button" className="btn btn-ghost" onClick={() => {
             setSearch('')
             setCountry('')
-          }}>Reset</button>
-          <button type="button" className="btn btn-green" onClick={() => downloadApiFile(`/reports/events/${id}/export/passport/`)}><Download size={15} /> Export CSV</button>
-        </div>
+          }}><RotateCcw size={16} /> Reset</button>
+        </form>
         <div className="event-detail-table attendance-table-card passport-attendance-table">
           <DataTable
             rows={filteredRows}
