@@ -985,6 +985,7 @@ function RichTextEditor({ value, onChange, inputRef }) {
               className="rich-text-tool-button"
               title={item.label}
               aria-label={item.label}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => runCommand(item.command)}
             >
               <Icon size={16} />
