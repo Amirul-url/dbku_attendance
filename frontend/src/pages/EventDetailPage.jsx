@@ -12,16 +12,18 @@ import {
   Edit,
   Eye,
   ExternalLink,
+  Filter,
   LocateFixed,
   Map as MapIcon,
   QrCode,
+  RotateCcw,
   Search,
   Trash2,
   UserPlus,
   Users,
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { API_BASE_URL, apiRequest, downloadApiFile, getAccessToken, listFromResponse } from '../api/client.js'
+import { API_BASE_URL, apiRequest, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
@@ -685,8 +687,7 @@ export function EventDetailPage() {
             { value: 'submitted', label: 'Submitted' },
             { value: 'pending', label: 'Pending Attendance' },
           ]}
-          onExport={() => downloadApiFile(`/reports/events/${id}/export/assignment/`)}
-          extraAction={<button type="button" className="btn btn-blue" onClick={openAssignmentCreate}><UserPlus size={15} /> Add Assignment</button>}
+          extraAction={<button type="button" className="btn btn-green" onClick={openAssignmentCreate}><UserPlus size={15} /> Add Assignment</button>}
         >
           <div className="assignment-table">
             <DataTable
@@ -1033,32 +1034,44 @@ function AttendanceSection({
   selectValue = '',
   onSelect = () => {},
   selectOptions = [],
-  onExport,
   extraAction = null,
 }) {
+  function submitFilter(event) {
+    event.preventDefault()
+  }
+
+  function resetFilter() {
+    onSearch('')
+    onSelect('')
+  }
+
   return (
     <section className="event-attendance-section event-detail-assignment-section">
       <div className="attendance-records-header">
         <div>
           <h2>{title}</h2>
         </div>
-        <div className="attendance-total-pill"><Users size={16} /> Total: {totalCount}</div>
+        <div className="assignment-header-actions">
+          {extraAction}
+          <div className="attendance-total-pill"><Users size={16} /> Total: {totalCount}</div>
+        </div>
       </div>
-      <div className="event-attendance-filter">
-        <input value={searchValue} onChange={(event) => onSearch(event.target.value)} placeholder={searchPlaceholder} />
+      <form className="analytics-filter-card assignment-filter-card" onSubmit={submitFilter}>
+        <label className="analytics-filter-search">
+          <span>Staff / Task</span>
+          <div><Search size={16} /><input value={searchValue} onChange={(event) => onSearch(event.target.value)} placeholder={searchPlaceholder} /></div>
+        </label>
         {selectOptions.length > 0 && (
-          <select value={selectValue} onChange={(event) => onSelect(event.target.value)}>
-            {selectOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+          <label>
+            <span>Status</span>
+            <div><Filter size={16} /><select value={selectValue} onChange={(event) => onSelect(event.target.value)}>
+              {selectOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select></div>
+          </label>
         )}
-        <button type="button" className="btn btn-ocean"><Search size={15} /> Search</button>
-        <button type="button" className="btn btn-ghost" onClick={() => {
-          onSearch('')
-          onSelect('')
-        }}>Reset</button>
-        {onExport && <button type="button" className="btn btn-green" onClick={onExport}><Download size={15} /> Export CSV</button>}
-        {extraAction}
-      </div>
+        <button type="submit" className="btn btn-ocean"><Search size={16} /> Search</button>
+        <button type="button" className="btn btn-ghost" onClick={resetFilter}><RotateCcw size={16} /> Reset</button>
+      </form>
       <div className="event-detail-table">
         {children}
       </div>

@@ -5020,6 +5020,17 @@ input:focus {
   margin: 0 0 22px;
 }
 
+.assignment-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.assignment-filter-card {
+  grid-template-columns: minmax(360px, 1fr) minmax(280px, 0.82fr) auto auto;
+  margin-bottom: 18px;
+}
+
 .event-attendance-filter {
   display: grid;
   grid-template-columns: minmax(240px, 1.2fr) minmax(200px, 1fr) minmax(200px, 1fr) auto auto auto auto;
@@ -6900,6 +6911,10 @@ input:focus {
 
   .app-shell .people-filter-card {
     grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr) auto auto !important;
+  }
+
+  .app-shell .assignment-filter-card {
+    grid-template-columns: minmax(360px, 1fr) minmax(280px, 0.82fr) auto auto !important;
   }
 
   .app-shell .analytics-main-grid {
