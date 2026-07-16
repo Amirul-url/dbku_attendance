@@ -2667,6 +2667,11 @@ input:focus {
   margin-bottom: 16px;
 }
 
+.people-filter-card {
+  grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr) auto auto;
+  margin-bottom: 24px;
+}
+
 .analytics-filter-card label {
   display: grid;
   gap: 6px;
@@ -6891,6 +6896,10 @@ input:focus {
 
   .app-shell .analytics-filter-card {
     grid-template-columns: minmax(360px, 1.8fr) minmax(130px, 0.72fr) minmax(130px, 0.72fr) auto auto !important;
+  }
+
+  .app-shell .people-filter-card {
+    grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr) auto auto !important;
   }
 
   .app-shell .analytics-main-grid {

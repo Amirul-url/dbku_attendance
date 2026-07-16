@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Edit, Plus, Search, Trash2 } from 'lucide-react'
+import { Building2, ChevronDown, Edit, Filter, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { apiRequest, listFromResponse } from '../api/client.js'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { DataTable } from '../components/DataTable.jsx'
@@ -277,6 +277,15 @@ export function StaffPage() {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  function submitFilters(event) {
+    event.preventDefault()
+  }
+
+  function resetFilters() {
+    setSearch('')
+    setDepartment('')
+  }
+
   async function saveStaff(event) {
     event.preventDefault()
     setError('')
@@ -344,18 +353,21 @@ export function StaffPage() {
           <button type="button" className="btn btn-green" onClick={openCreate}><Plus size={16} /> Add Staff</button>
         )}
       </div>
-      <div className="filter-card">
-        <input className="filter-input" placeholder="Search name, Staff ID, email, or phone" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <div className="filter-select-wrap">
-          <select className="filter-input filter-select" value={department} onChange={(event) => setDepartment(event.target.value)}>
+      <form className="analytics-filter-card people-filter-card" onSubmit={submitFilters}>
+        <label className="analytics-filter-search">
+          <span>Staff</span>
+          <div><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, staff ID, email, or phone" /></div>
+        </label>
+        <label>
+          <span>Department</span>
+          <div><Building2 size={16} /><select value={department} onChange={(event) => setDepartment(event.target.value)}>
             <option value="">All Department</option>
             {departments.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-          <ChevronDown className="filter-select-chevron" size={18} aria-hidden="true" />
-        </div>
-        <button type="button" className="btn btn-ocean"><Search size={16} /> Filter</button>
-        <button type="button" className="btn btn-ghost" onClick={() => { setSearch(''); setDepartment('') }}>Reset</button>
-      </div>
+          </select></div>
+        </label>
+        <button type="submit" className="btn btn-ocean"><Filter size={16} /> Filter</button>
+        <button type="button" className="btn btn-ghost" onClick={resetFilters}><RotateCcw size={16} /> Reset</button>
+      </form>
       {error && <div className="alert-error">{error}</div>}
       {loading ? (
         <div className="panel">Loading</div>
