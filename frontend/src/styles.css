@@ -2142,6 +2142,11 @@ input:focus {
   border-color: #003B46;
 }
 
+.my-task-back-link {
+  width: fit-content;
+  justify-self: start;
+}
+
 .dashboard-page {
   display: grid;
   gap: 18px;
@@ -5023,11 +5028,52 @@ input:focus {
   font-size: 12px;
 }
 
+.my-task-table-description {
+  display: block;
+  max-height: 78px;
+  overflow: hidden;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.my-task-table-description p,
+.my-task-table-description ul,
+.my-task-table-description ol {
+  margin-bottom: 4px;
+}
+
+.my-task-table-description ul,
+.my-task-table-description ol {
+  padding-left: 18px;
+}
+
+.my-task-table-description li + li {
+  margin-top: 2px;
+}
+
 .my-task-detail-panel {
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
   padding: 20px;
+}
+
+.my-task-event-card {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.my-task-event-card .event-view-hero {
+  padding: 20px 22px;
+}
+
+.my-task-event-card .event-view-summary-grid {
+  padding: 22px;
 }
 
 .my-task-empty-detail {

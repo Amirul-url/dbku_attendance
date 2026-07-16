@@ -37,11 +37,6 @@ function formatDateRange(startDate, endDate) {
   return `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`
 }
 
-function formatTimeRange(startTime, endTime) {
-  if (!startTime && !endTime) return '-'
-  return `${formatTime12Hour(startTime)} - ${formatTime12Hour(endTime)}`
-}
-
 function formatStatus(value) {
   return String(value || '-')
     .replaceAll('_', ' ')
@@ -238,7 +233,7 @@ export function MyTaskPage() {
           columns={[
             { key: 'event_name', label: 'Event', render: (row) => <span className="table-two-line"><strong>{row.event_name}</strong><span>{row.event_location || '-'}</span></span> },
             { key: 'event_start_date', label: 'Date', render: (row) => formatDateRange(row.event_start_date, row.event_end_date) },
-            { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><span>{richTextToPlainText(row.task_description) || '-'}</span></span> },
+            { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><RichTextDisplay value={row.task_description || '-'} className="my-task-table-description" /></span> },
             { key: 'assignment_status', label: 'Status', render: (row) => <span className={`status-pill status-${row.displayStatus}`}>{formatStatus(row.displayStatus)}</span> },
             { key: 'attendance', label: 'Attendance', render: (row) => <span className={`status-pill status-${row.attendanceStatus}`}>{row.attendance ? 'Submitted' : 'Pending'}</span> },
             {
@@ -268,13 +263,7 @@ export function MyTaskDetailPage() {
 
   return (
     <div className="my-task-page">
-      <Link className="back-link" to="/my-task"><ArrowLeft size={15} /> Back to My Task</Link>
-      <div className="page-header">
-        <div>
-          <h1>My Task Details</h1>
-          <div className="page-sub">{assignment.event_name || '-'}</div>
-        </div>
-      </div>
+      <Link className="back-link my-task-back-link" to="/my-task"><ArrowLeft size={15} /> Back to My Task</Link>
       <MyTaskDetail assignment={assignment} />
     </div>
   )
@@ -347,12 +336,7 @@ function MyTaskDetail({ assignment }) {
           </div>
         </aside>
 
-        <DetailSection title="Event Information">
-          <ReadOnlyField label="Event Name" value={assignment.event_name} />
-          <ReadOnlyField label="Location" value={assignment.event_location} />
-          <ReadOnlyField label="Date" value={formatDateRange(assignment.event_start_date, assignment.event_end_date)} />
-          <ReadOnlyField label="Time" value={formatTimeRange(assignment.event_start_time, assignment.event_end_time)} />
-        </DetailSection>
+        <EventSummaryCard assignment={assignment} />
 
         <DetailSection title="Staff Contact">
           <ReadOnlyField label="Email" value={assignment.staff_email} />
@@ -370,6 +354,50 @@ function MyTaskDetail({ assignment }) {
         </DetailSection>
       </div>
     </section>
+  )
+}
+
+function EventSummaryCard({ assignment }) {
+  return (
+    <section className="my-task-event-card">
+      <div className="event-view-hero">
+        <div className="event-view-title-row">
+          <div className="event-view-icon"><CalendarDays size={19} /></div>
+          <div>
+            <h1>{assignment.event_name || '-'}</h1>
+          </div>
+        </div>
+        <div className="event-radius-pill">Radius: {assignment.event_radius_meter || '-'}m</div>
+      </div>
+      <div className="event-view-summary-grid">
+        <section>
+          <div className="event-view-section-label">Schedule</div>
+          <InfoBlock label="Start Date" value={formatDisplayDate(assignment.event_start_date)} />
+          <InfoBlock label="End Date" value={formatDisplayDate(assignment.event_end_date)} />
+          <InfoBlock label="Start Time" value={formatTime12Hour(assignment.event_start_time)} />
+          <InfoBlock label="End Time" value={formatTime12Hour(assignment.event_end_time)} />
+        </section>
+        <section>
+          <div className="event-view-section-label">Location</div>
+          <InfoBlock label="Venue" value={assignment.event_location || '-'} strong />
+          <InfoBlock label="Latitude" value={formatCoordinate(assignment.event_latitude)} />
+          <InfoBlock label="Longitude" value={formatCoordinate(assignment.event_longitude)} />
+        </section>
+        <section>
+          <div className="event-view-section-label">Details</div>
+          <InfoBlock label="Description" value={assignment.event_description || '-'} strong />
+        </section>
+      </div>
+    </section>
+  )
+}
+
+function InfoBlock({ label, value, strong = false }) {
+  return (
+    <div className="event-info-block">
+      <span>{label}</span>
+      <strong className={strong ? 'event-info-strong' : ''}>{value || '-'}</strong>
+    </div>
   )
 }
 
