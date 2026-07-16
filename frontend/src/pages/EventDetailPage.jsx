@@ -32,7 +32,7 @@ import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
-import { richTextToPlainText, sanitizeRichText } from '../utils/richText.js'
+import { sanitizeRichText } from '../utils/richText.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 const DEFAULT_EVENT_LONGITUDE = 110.334028
@@ -679,7 +679,7 @@ export function EventDetailPage() {
               { key: 'staff_name', label: 'Name' },
               { key: 'employee_id', label: 'Employee ID', render: (row) => staffById.get(Number(row.staff_member))?.staff_id || '-' },
               { key: 'department', label: 'Department', render: (row) => staffById.get(Number(row.staff_member))?.department || '-' },
-              { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><span>{richTextToPlainText(row.task_description) || '-'}</span></span> },
+              { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><RichTextDisplay value={row.task_description || '-'} className="assignment-table-description" /></span> },
               {
                 key: 'assignment_status',
                 label: 'Status',

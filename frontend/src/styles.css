@@ -5038,13 +5038,16 @@ input:focus {
 }
 
 .my-task-table-description {
-  display: block;
+  display: -webkit-box;
   max-height: 92px;
   overflow: hidden;
   margin-top: 6px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .my-task-table-task::after {
@@ -5057,21 +5060,6 @@ input:focus {
   content: "...";
   font-size: 12px;
   line-height: 1.45;
-}
-
-.my-task-table-description p,
-.my-task-table-description ul,
-.my-task-table-description ol {
-  margin-bottom: 4px;
-}
-
-.my-task-table-description ul,
-.my-task-table-description ol {
-  padding-left: 18px;
-}
-
-.my-task-table-description li + li {
-  margin-top: 2px;
 }
 
 .my-task-detail-panel {
@@ -5364,6 +5352,31 @@ input:focus {
   white-space: pre-line;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
+}
+
+.assignment-table-description {
+  display: block;
+  max-height: 96px;
+  overflow: hidden;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.assignment-table-description p,
+.assignment-table-description ul,
+.assignment-table-description ol {
+  margin-bottom: 4px;
+}
+
+.assignment-table-description ul,
+.assignment-table-description ol {
+  padding-left: 18px;
+}
+
+.assignment-table-description li + li {
+  margin-top: 2px;
 }
 
 .assignment-modal {
