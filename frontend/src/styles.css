@@ -5623,6 +5623,7 @@ input:focus {
 .assignment-detail-summary,
 .assignment-detail-qr-panel,
 .assignment-detail-section {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #f8fafb;
@@ -5687,6 +5688,9 @@ input:focus {
 .assignment-detail-task-card {
   display: grid;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid #dbe8ed;
   border-radius: 8px;
   background: #fff;
@@ -5701,13 +5705,17 @@ input:focus {
 }
 
 .assignment-detail-task-description {
+  min-width: 0;
   margin: 0;
   color: #425b67;
   font-size: 14px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .rich-text-display {
+  max-width: 100%;
   color: inherit;
   line-height: inherit;
 }
@@ -5731,6 +5739,11 @@ input:focus {
 
 .rich-text-display li + li {
   margin-top: 4px;
+}
+
+.rich-text-display li,
+.rich-text-display p {
+  overflow-wrap: anywhere;
 }
 
 .rich-text-display strong {
