@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { apiRequest } from '../api/client.js'
 
 const AuthContext = createContext(null)
@@ -20,22 +20,76 @@ export function AuthProvider({ children }) {
   const [showSessionWarning, setShowSessionWarning] = useState(false)
   const [extendingSession, setExtendingSession] = useState(false)
 
-  useEffect(() => {
+  const clearStoredSession = useCallback(() => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    setAccessExpiresAt(null)
+    setShowSessionWarning(false)
+    setUser(null)
+  }, [])
+
+  const storeTokens = useCallback((tokens) => {
+    localStorage.setItem('access_token', tokens.access)
+    if (tokens.refresh) {
+      localStorage.setItem('refresh_token', tokens.refresh)
+    }
+    setAccessExpiresAt(getTokenExpiryMs(tokens.access))
+    setShowSessionWarning(false)
+  }, [])
+
+  const syncUserFromToken = useCallback(async ({ showLoading = false } = {}) => {
     const token = localStorage.getItem('access_token')
     if (!token) {
+      clearStoredSession()
       setLoading(false)
-      return
+      return null
     }
     setAccessExpiresAt(getTokenExpiryMs(token))
+    if (showLoading) setLoading(true)
 
-    apiRequest('/auth/me/')
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-      })
-      .finally(() => setLoading(false))
-  }, [])
+    try {
+      const currentUser = await apiRequest('/auth/me/')
+      setUser(currentUser)
+      return currentUser
+    } catch {
+      clearStoredSession()
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [clearStoredSession])
+
+  const logout = clearStoredSession
+
+  useEffect(() => {
+    syncUserFromToken({ showLoading: true })
+  }, [syncUserFromToken])
+
+  useEffect(() => {
+    function syncVisibleSession() {
+      if (document.visibilityState === 'visible') {
+        syncUserFromToken()
+      }
+    }
+
+    function syncStoredSession(event) {
+      if (event.key === 'access_token' || event.key === 'refresh_token') {
+        syncUserFromToken()
+      }
+    }
+
+    window.addEventListener('pageshow', syncUserFromToken)
+    window.addEventListener('focus', syncUserFromToken)
+    window.addEventListener('storage', syncStoredSession)
+    document.addEventListener('visibilitychange', syncVisibleSession)
+
+    return () => {
+      window.removeEventListener('pageshow', syncUserFromToken)
+      window.removeEventListener('focus', syncUserFromToken)
+      window.removeEventListener('storage', syncStoredSession)
+      document.removeEventListener('visibilitychange', syncVisibleSession)
+    }
+  }, [syncUserFromToken])
 
   useEffect(() => {
     if (!user || !accessExpiresAt) return undefined
@@ -52,18 +106,9 @@ export function AuthProvider({ children }) {
     checkSession()
     const timer = window.setInterval(checkSession, 10000)
     return () => window.clearInterval(timer)
-  }, [user, accessExpiresAt])
+  }, [user, accessExpiresAt, logout])
 
-  function storeTokens(tokens) {
-    localStorage.setItem('access_token', tokens.access)
-    if (tokens.refresh) {
-      localStorage.setItem('refresh_token', tokens.refresh)
-    }
-    setAccessExpiresAt(getTokenExpiryMs(tokens.access))
-    setShowSessionWarning(false)
-  }
-
-  async function login(username, password) {
+  const login = useCallback(async (username, password) => {
     const tokens = await apiRequest('/auth/token/', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
@@ -71,23 +116,13 @@ export function AuthProvider({ children }) {
     storeTokens(tokens)
     const currentUser = await apiRequest('/auth/me/')
     setUser(currentUser)
-  }
+  }, [storeTokens])
 
-  async function refreshUser() {
-    const currentUser = await apiRequest('/auth/me/')
-    setUser(currentUser)
-    return currentUser
-  }
+  const refreshUser = useCallback(async () => {
+    return syncUserFromToken()
+  }, [syncUserFromToken])
 
-  function logout() {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    setAccessExpiresAt(null)
-    setShowSessionWarning(false)
-    setUser(null)
-  }
-
-  async function extendSession() {
+  const extendSession = useCallback(async () => {
     const refresh = localStorage.getItem('refresh_token')
     if (!refresh) {
       logout()
@@ -106,11 +141,11 @@ export function AuthProvider({ children }) {
     } finally {
       setExtendingSession(false)
     }
-  }
+  }, [logout, storeTokens])
 
   const value = useMemo(
     () => ({ user, loading, login, logout, refreshUser, showSessionWarning, extendSession, extendingSession }),
-    [user, loading, showSessionWarning, extendingSession],
+    [user, loading, login, logout, refreshUser, showSessionWarning, extendSession, extendingSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
