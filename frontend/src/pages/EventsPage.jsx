@@ -751,14 +751,20 @@ export function EventsPage() {
           <button type="button" className="btn btn-green" onClick={openCreate}><CalendarPlus size={16} /> Create Event</button>
         )}
       </div>
-      <div className="filter-card event-filter-card">
-        <input className="filter-input" placeholder="Search event name or location" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <div className="filter-date-wrap">
-          <input ref={dateInputRef} type="date" className="filter-input" value={dateSearch} onChange={(event) => setDateSearch(event.target.value)} />
-          <button type="button" className="filter-date-button" onClick={openDatePicker} aria-label="Open calendar">
-            <CalendarDays size={16} />
-          </button>
-        </div>
+      <div className="filter-card event-filter-card event-filter-card-modern">
+        <label className="event-filter-search">
+          <span>Event / Location</span>
+          <div><Search size={16} /><input value={search} placeholder="Search event name or location" onChange={(event) => setSearch(event.target.value)} /></div>
+        </label>
+        <label>
+          <span>Date</span>
+          <div className="filter-date-wrap">
+            <input ref={dateInputRef} type="date" value={dateSearch} onChange={(event) => setDateSearch(event.target.value)} />
+            <button type="button" className="filter-date-button" onClick={openDatePicker} aria-label="Open calendar">
+              <CalendarDays size={16} />
+            </button>
+          </div>
+        </label>
         <button type="button" className="btn btn-ocean"><Search size={16} /> Filter</button>
         <button type="button" className="btn btn-ghost" onClick={resetFilters}>Reset</button>
       </div>
