@@ -10,7 +10,7 @@ import { EventStaffAttendancePage } from './pages/EventStaffAttendancePage.jsx'
 import { EventVisitorAttendancePage } from './pages/EventVisitorAttendancePage.jsx'
 import { EventsPage } from './pages/EventsPage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
-import { MyTaskPage } from './pages/MyTaskPage.jsx'
+import { MyTaskDetailPage, MyTaskPage } from './pages/MyTaskPage.jsx'
 import { PassportsPage } from './pages/PassportsPage.jsx'
 import {
   AssignmentAttendanceFormPage,
@@ -44,6 +44,7 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="my-task" element={<MyTaskPage />} />
+        <Route path="my-task/:taskId" element={<MyTaskDetailPage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="superadmin" element={<SuperadminPage />} />
         <Route path="events" element={<EventsPage />} />

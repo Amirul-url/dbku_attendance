@@ -4946,18 +4946,19 @@ input:focus {
 
 .my-task-filter {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(160px, 200px) auto;
+  grid-template-columns: minmax(260px, 1.4fr) minmax(180px, .8fr) minmax(160px, .7fr) auto auto;
   gap: 10px;
   align-items: center;
-  width: max-content;
-  max-width: 100%;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
-  padding: 14px;
+  padding: 18px 20px;
 }
 
+.my-task-filter input,
 .my-task-filter select {
+  width: 100%;
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -4965,6 +4966,10 @@ input:focus {
   color: #071d26;
   padding: 0 12px;
   font-size: 13px;
+}
+
+.my-task-filter .btn {
+  min-height: 44px;
 }
 
 .my-task-table-card .data-table {
@@ -5737,7 +5742,6 @@ input:focus {
 @media (max-width: 760px) {
   .my-task-filter {
     grid-template-columns: 1fr;
-    width: 100%;
   }
 
   .my-task-filter .btn {

@@ -1,5 +1,6 @@
-import { CalendarDays, Download, ExternalLink, Eye, QrCode } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Download, ExternalLink, Eye, QrCode, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
@@ -68,17 +69,11 @@ function getAssignmentStatus(assignment, attendance) {
   return assignment?.assignment_status || 'assigned'
 }
 
-export function MyTaskPage() {
-  const { user } = useAuth()
+function useMyTasks() {
   const [assignments, setAssignments] = useState([])
   const [attendanceRows, setAttendanceRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [month, setMonth] = useState('')
-  const [year, setYear] = useState('')
-  const [page, setPage] = useState(1)
-  const [selectedId, setSelectedId] = useState(null)
-  const pageSize = 5
 
   useEffect(() => {
     let mounted = true
@@ -98,7 +93,6 @@ export function MyTaskPage() {
         if (!mounted) return
         setAssignments(assignmentRows)
         setAttendanceRows(nestedAttendanceRows.flat())
-        setSelectedId((current) => current || assignmentRows[0]?.id || null)
       } catch (err) {
         if (mounted) setError(err.message)
       } finally {
@@ -130,62 +124,69 @@ export function MyTaskPage() {
     })
   ), [assignments, attendanceByAssignmentId])
 
-  const yearOptions = useMemo(() => {
-    const years = rows
-      .map((row) => String(row.event_start_date || '').slice(0, 4))
-      .filter(Boolean)
-      .filter((item, index, list) => list.indexOf(item) === index)
-      .sort((a, b) => Number(b) - Number(a))
-    return years.length ? years : [String(new Date().getFullYear())]
-  }, [rows])
+  return { rows, loading, error }
+}
 
-  const filteredRows = useMemo(() => (
-    rows.filter((row) => {
-      const [eventYear, eventMonth] = String(row.event_start_date || '').split('-')
-      const matchesMonth = !month || Number(eventMonth) === Number(month)
-      const matchesYear = !year || eventYear === year
-      return matchesMonth && matchesYear
-    })
-  ), [month, rows, year])
+function getYearOptions(rows) {
+  const years = rows
+    .map((row) => String(row.event_start_date || '').slice(0, 4))
+    .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index)
+    .sort((a, b) => Number(b) - Number(a))
+  return years.length ? years : [String(new Date().getFullYear())]
+}
 
+function filterRows(rows, filters) {
+  const query = filters.search.trim().toLowerCase()
+  return rows.filter((row) => {
+    const [eventYear, eventMonth] = String(row.event_start_date || '').split('-')
+    const matchesMonth = !filters.month || Number(eventMonth) === Number(filters.month)
+    const matchesYear = !filters.year || eventYear === filters.year
+    const haystack = [
+      row.event_name,
+      row.event_location,
+      row.task_title,
+      richTextToPlainText(row.task_description),
+      row.displayStatus,
+      row.attendanceStatus,
+    ].join(' ').toLowerCase()
+    const matchesSearch = !query || haystack.includes(query)
+    return matchesMonth && matchesYear && matchesSearch
+  })
+}
+
+export function MyTaskPage() {
+  const { user } = useAuth()
+  const { rows, loading, error } = useMyTasks()
+  const [draftFilters, setDraftFilters] = useState({ search: '', month: '', year: '' })
+  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '' })
+  const [page, setPage] = useState(1)
+  const pageSize = 5
+
+  const yearOptions = useMemo(() => getYearOptions(rows), [rows])
+  const filteredRows = useMemo(() => filterRows(rows, appliedFilters), [appliedFilters, rows])
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safePage = Math.min(page, totalPages)
   const pageRows = filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize)
   const pageStart = filteredRows.length ? (safePage - 1) * pageSize + 1 : 0
   const pageEnd = Math.min(safePage * pageSize, filteredRows.length)
-  const selectedTask = filteredRows.find((row) => Number(row.id) === Number(selectedId))
 
   useEffect(() => {
     setPage(1)
-  }, [month, year])
+  }, [appliedFilters])
 
-  useEffect(() => {
-    if (selectedId && !filteredRows.some((row) => Number(row.id) === Number(selectedId))) {
-      setSelectedId(null)
-    }
-  }, [filteredRows, selectedId])
-
-  async function downloadQr(qrUrl, filename) {
-    const url = getQrDownloadUrl(qrUrl)
-    if (!url) return
-    const headers = new Headers()
-    const token = getAccessToken()
-    if (token) headers.set('Authorization', `Bearer ${token}`)
-    const response = await fetch(url, { headers })
-    if (!response.ok) return
-    const blob = await response.blob()
-    const objectUrl = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = objectUrl
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(objectUrl)
+  function updateDraftFilter(field, value) {
+    setDraftFilters((current) => ({ ...current, [field]: value }))
   }
 
-  function openAssignmentForm(assignmentId) {
-    window.open(`${window.location.origin}/assignment-attendance/${assignmentId}`, '_blank', 'noopener,noreferrer')
+  function applyFilters() {
+    setAppliedFilters(draftFilters)
+  }
+
+  function resetFilters() {
+    const nextFilters = { search: '', month: '', year: '' }
+    setDraftFilters(nextFilters)
+    setAppliedFilters(nextFilters)
   }
 
   if (!user?.staff_profile) {
@@ -203,14 +204,16 @@ export function MyTaskPage() {
       </div>
 
       <div className="my-task-filter">
-        <select value={month} onChange={(event) => setMonth(event.target.value)}>
+        <input value={draftFilters.search} onChange={(event) => updateDraftFilter('search', event.target.value)} placeholder="Search event or task" />
+        <select value={draftFilters.month} onChange={(event) => updateDraftFilter('month', event.target.value)}>
           {monthOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
-        <select value={year} onChange={(event) => setYear(event.target.value)}>
+        <select value={draftFilters.year} onChange={(event) => updateDraftFilter('year', event.target.value)}>
           <option value="">All Year</option>
           {yearOptions.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button type="button" className="btn btn-ghost" onClick={() => { setMonth(''); setYear('') }}>Reset</button>
+        <button type="button" className="btn btn-ocean" onClick={applyFilters}><Search size={15} /> Apply Filter</button>
+        <button type="button" className="btn btn-ghost" onClick={resetFilters}>Reset</button>
       </div>
 
       {error && <div className="alert-error">{error}</div>}
@@ -242,31 +245,67 @@ export function MyTaskPage() {
               key: 'actions',
               label: 'Action',
               render: (row) => (
-                <button type="button" className={`btn btn-small ${Number(selectedId) === Number(row.id) ? 'btn-ocean' : 'btn-green'}`} onClick={() => setSelectedId(row.id)}>
+                <Link className="btn btn-small btn-green" to={`/my-task/${row.id}`}>
                   <Eye size={14} /> View
-                </button>
+                </Link>
               ),
             },
           ]}
         />
       </div>
-
-      {selectedTask ? (
-        <MyTaskDetail
-          assignment={selectedTask}
-          onOpenForm={openAssignmentForm}
-          onDownloadQr={downloadQr}
-        />
-      ) : (
-        <div className="my-task-empty-detail">Select View to display assignment details.</div>
-      )}
     </div>
   )
 }
 
-function MyTaskDetail({ assignment, onOpenForm, onDownloadQr }) {
+export function MyTaskDetailPage() {
+  const { taskId } = useParams()
+  const { rows, loading, error } = useMyTasks()
+  const assignment = rows.find((row) => Number(row.id) === Number(taskId))
+
+  if (loading) return <div className="panel">Loading task details</div>
+  if (error) return <div className="alert-error">{error}</div>
+  if (!assignment) return <div className="alert-error">Task not found for your account.</div>
+
+  return (
+    <div className="my-task-page">
+      <Link className="back-link" to="/my-task"><ArrowLeft size={15} /> Back to My Task</Link>
+      <div className="page-header">
+        <div>
+          <h1>My Task Details</h1>
+          <div className="page-sub">{assignment.event_name || '-'}</div>
+        </div>
+      </div>
+      <MyTaskDetail assignment={assignment} />
+    </div>
+  )
+}
+
+function MyTaskDetail({ assignment }) {
   const attendance = assignment.attendance
   const assignmentStatus = getAssignmentStatus(assignment, attendance)
+
+  async function downloadQr(qrUrl, filename) {
+    const url = getQrDownloadUrl(qrUrl)
+    if (!url) return
+    const headers = new Headers()
+    const token = getAccessToken()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+    const response = await fetch(url, { headers })
+    if (!response.ok) return
+    const blob = await response.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(objectUrl)
+  }
+
+  function openAssignmentForm(assignmentId) {
+    window.open(`${window.location.origin}/assignment-attendance/${assignmentId}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <section className="my-task-detail-panel">
@@ -299,9 +338,9 @@ function MyTaskDetail({ assignment, onOpenForm, onDownloadQr }) {
             {assignment.qr_url ? <img src={assignment.qr_url} alt="Assignment QR Code" /> : <QrCode size={108} />}
           </div>
           <div className="my-task-qr-actions">
-            <button type="button" className="btn btn-blue" onClick={() => onOpenForm(assignment.id)}><ExternalLink size={15} /> Open Form</button>
+            <button type="button" className="btn btn-blue" onClick={() => openAssignmentForm(assignment.id)}><ExternalLink size={15} /> Open Form</button>
             {assignment.qr_url && (
-              <button type="button" className="btn btn-ocean" onClick={() => onDownloadQr(assignment.qr_url, `${assignment.task_title || 'assignment'}-qr.png`)}>
+              <button type="button" className="btn btn-ocean" onClick={() => downloadQr(assignment.qr_url, `${assignment.task_title || 'assignment'}-qr.png`)}>
                 <Download size={15} /> Download QR
               </button>
             )}
