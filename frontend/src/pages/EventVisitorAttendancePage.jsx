@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
+import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 
 const countryNameFormatter = new Intl.DisplayNames(['en'], { type: 'region' })
@@ -161,6 +162,7 @@ function renderTimestamp(row) {
 export function EventVisitorAttendancePage() {
   const { id } = useParams()
   const { confirm, confirmDialog } = useConfirmDialog()
+  const { user } = useAuth()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [organization, setOrganization] = useState('')
@@ -169,6 +171,7 @@ export function EventVisitorAttendancePage() {
   const [editRow, setEditRow] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const canManageAttendance = Boolean(user?.is_superuser || ['admin', 'superadmin'].includes(user?.staff_profile?.role))
 
   useEffect(() => {
     let mounted = true
@@ -191,6 +194,7 @@ export function EventVisitorAttendancePage() {
   }, [id])
 
   async function deleteAttendance(row) {
+    if (!canManageAttendance) return
     const visitorName = row.visitor_detail?.full_name || 'this attendance record'
     const shouldDelete = await confirm({
       title: 'Delete Visitor Attendance',
@@ -209,6 +213,7 @@ export function EventVisitorAttendancePage() {
   }
 
   function openEdit(row) {
+    if (!canManageAttendance) return
     setEditRow(row)
     setEditForm({
       full_name: row.visitor_detail?.full_name || '',
@@ -230,6 +235,7 @@ export function EventVisitorAttendancePage() {
 
   async function saveEdit(event) {
     event.preventDefault()
+    if (!canManageAttendance) return
     if (!editRow || !editForm) return
     setIsSaving(true)
     setError('')
@@ -327,8 +333,12 @@ export function EventVisitorAttendancePage() {
                 render: (row) => (
                   <div className="button-row event-action-row">
                     <button type="button" className="btn btn-small btn-icon btn-green" title="View" aria-label="View visitor attendance" onClick={() => setSelectedRow(row)}><Eye size={15} /></button>
-                    <button type="button" className="btn btn-small btn-icon btn-blue" title="Edit" aria-label="Edit visitor attendance" onClick={() => openEdit(row)}><Pencil size={15} /></button>
-                    <button type="button" className="btn btn-small btn-icon btn-red" title="Delete" aria-label="Delete visitor attendance" onClick={() => deleteAttendance(row)}><Trash2 size={15} /></button>
+                    {canManageAttendance && (
+                      <>
+                        <button type="button" className="btn btn-small btn-icon btn-blue" title="Edit" aria-label="Edit visitor attendance" onClick={() => openEdit(row)}><Pencil size={15} /></button>
+                        <button type="button" className="btn btn-small btn-icon btn-red" title="Delete" aria-label="Delete visitor attendance" onClick={() => deleteAttendance(row)}><Trash2 size={15} /></button>
+                      </>
+                    )}
                   </div>
                 ),
               },

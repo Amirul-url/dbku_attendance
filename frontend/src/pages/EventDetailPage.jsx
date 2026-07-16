@@ -226,10 +226,10 @@ export function EventDetailPage() {
     let mounted = true
     async function load() {
       try {
-        const [eventData, assignmentData] = await Promise.all([
-          apiRequest(`/events/${id}/`),
-          apiRequest(`/event-assignments/?event=${id}`),
-        ])
+        const eventData = await apiRequest(`/events/${id}/`)
+        const assignmentData = canManageAssignments
+          ? await apiRequest(`/event-assignments/?event=${id}`)
+          : []
         if (!mounted) return
 
         const assignmentRows = listFromResponse(assignmentData)
@@ -668,61 +668,61 @@ export function EventDetailPage() {
         </section>
       </section>
 
-      <AttendanceSection
-        title="Staff Assignment"
-        totalCount={filteredAssignments.length}
-        searchValue={assignmentSearch}
-        onSearch={setAssignmentSearch}
-        searchPlaceholder="Search staff or task"
-        selectValue={assignmentStatus}
-        onSelect={setAssignmentStatus}
-        selectOptions={[
-          { value: '', label: 'All Status' },
-          { value: 'assigned', label: 'Assigned' },
-          { value: 'in_progress', label: 'In Progress' },
-          { value: 'completed', label: 'Completed' },
-          { value: 'submitted', label: 'Submitted' },
-          { value: 'pending', label: 'Pending Attendance' },
-        ]}
-        onExport={() => downloadApiFile(`/reports/events/${id}/export/assignment/`)}
-        extraAction={canManageAssignments ? <button type="button" className="btn btn-blue" onClick={openAssignmentCreate}><UserPlus size={15} /> Add Assignment</button> : null}
-      >
-        <div className="assignment-table">
-          <DataTable
-            rows={filteredAssignments}
-            columns={[
-              { key: 'staff_name', label: 'Name' },
-              { key: 'employee_id', label: 'Employee ID', render: (row) => staffById.get(Number(row.staff_member))?.staff_id || '-' },
-              { key: 'department', label: 'Department', render: (row) => staffById.get(Number(row.staff_member))?.department || '-' },
-              { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><TaskDescriptionPreview value={row.task_description} /></span> },
-              {
-                key: 'assignment_status',
-                label: 'Status',
-                render: (row) => {
-                  const attendance = assignmentAttendanceByAssignmentId.get(Number(row.id))
-                  const status = attendance && row.assignment_status === 'assigned' ? 'in_progress' : row.assignment_status
-                  return <span className={`status-pill status-${status}`}>{formatStatus(status)}</span>
+      {canManageAssignments && (
+        <AttendanceSection
+          title="Staff Assignment"
+          totalCount={filteredAssignments.length}
+          searchValue={assignmentSearch}
+          onSearch={setAssignmentSearch}
+          searchPlaceholder="Search staff or task"
+          selectValue={assignmentStatus}
+          onSelect={setAssignmentStatus}
+          selectOptions={[
+            { value: '', label: 'All Status' },
+            { value: 'assigned', label: 'Assigned' },
+            { value: 'in_progress', label: 'In Progress' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'submitted', label: 'Submitted' },
+            { value: 'pending', label: 'Pending Attendance' },
+          ]}
+          onExport={() => downloadApiFile(`/reports/events/${id}/export/assignment/`)}
+          extraAction={<button type="button" className="btn btn-blue" onClick={openAssignmentCreate}><UserPlus size={15} /> Add Assignment</button>}
+        >
+          <div className="assignment-table">
+            <DataTable
+              rows={filteredAssignments}
+              columns={[
+                { key: 'staff_name', label: 'Name' },
+                { key: 'employee_id', label: 'Employee ID', render: (row) => staffById.get(Number(row.staff_member))?.staff_id || '-' },
+                { key: 'department', label: 'Department', render: (row) => staffById.get(Number(row.staff_member))?.department || '-' },
+                { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><TaskDescriptionPreview value={row.task_description} /></span> },
+                {
+                  key: 'assignment_status',
+                  label: 'Status',
+                  render: (row) => {
+                    const attendance = assignmentAttendanceByAssignmentId.get(Number(row.id))
+                    const status = attendance && row.assignment_status === 'assigned' ? 'in_progress' : row.assignment_status
+                    return <span className={`status-pill status-${status}`}>{formatStatus(status)}</span>
+                  },
                 },
-              },
-              { key: 'attendance', label: 'Attendance', render: (row) => assignmentAttendanceByAssignmentId.get(Number(row.id)) ? <span className="status-pill status-submitted">Submitted</span> : <span className="status-pill status-pending">Pending</span> },
-              { key: 'qr_url', label: 'QR', render: (row) => row.qr_url ? <img className="table-qr-thumb" src={row.qr_url} alt="" /> : '-' },
-              {
-                key: 'actions',
-                label: 'Action',
-                render: (row) => (
-                  canManageAssignments ? (
+                { key: 'attendance', label: 'Attendance', render: (row) => assignmentAttendanceByAssignmentId.get(Number(row.id)) ? <span className="status-pill status-submitted">Submitted</span> : <span className="status-pill status-pending">Pending</span> },
+                { key: 'qr_url', label: 'QR', render: (row) => row.qr_url ? <img className="table-qr-thumb" src={row.qr_url} alt="" /> : '-' },
+                {
+                  key: 'actions',
+                  label: 'Action',
+                  render: (row) => (
                     <div className="button-row event-action-row">
                       <button type="button" className="btn btn-small btn-green" onClick={() => openAssignmentDetail(row)}><Eye size={14} /></button>
                       <button type="button" className="btn btn-small btn-blue" onClick={() => openAssignmentEdit(row)}><Edit size={14} /></button>
                       <button type="button" className="btn btn-small btn-red" onClick={() => deleteAssignment(row)}><Trash2 size={14} /></button>
                     </div>
-                  ) : '-'
-                ),
-              },
-            ]}
-          />
-        </div>
-      </AttendanceSection>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        </AttendanceSection>
+      )}
 
       {assignmentModal && (
         <div className="modal-overlay open">

@@ -5,6 +5,7 @@ import { apiRequest, downloadApiFile, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { PassportCountryCombobox } from '../components/PassportCountryCombobox.jsx'
+import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 import { findPassportCountryByCode, findPassportCountryByNationality } from '../utils/passportCountries.js'
 
@@ -106,6 +107,7 @@ function renderTimestamp(row) {
 export function EventPassportAttendancePage() {
   const { id } = useParams()
   const { confirm, confirmDialog } = useConfirmDialog()
+  const { user } = useAuth()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [country, setCountry] = useState('')
@@ -114,6 +116,7 @@ export function EventPassportAttendancePage() {
   const [editRow, setEditRow] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const canManageAttendance = Boolean(user?.is_superuser || ['admin', 'superadmin'].includes(user?.staff_profile?.role))
 
   useEffect(() => {
     let mounted = true
@@ -135,6 +138,7 @@ export function EventPassportAttendancePage() {
   }, [id])
 
   async function deleteAttendance(row) {
+    if (!canManageAttendance) return
     const visitorName = row.visitor_detail?.full_name || 'this attendance record'
     const shouldDelete = await confirm({
       title: 'Delete Non-Malaysian Visitor Attendance',
@@ -153,6 +157,7 @@ export function EventPassportAttendancePage() {
   }
 
   function openEdit(row) {
+    if (!canManageAttendance) return
     setEditRow(row)
     setEditForm(buildPassportEditForm(row))
   }
@@ -180,6 +185,7 @@ export function EventPassportAttendancePage() {
   }
 
   function addEditExtraField() {
+    if (!canManageAttendance) return
     setEditForm((current) => ({
       ...current,
       additional_fields: [
@@ -208,6 +214,7 @@ export function EventPassportAttendancePage() {
   }
 
   async function confirmRemoveEditExtraField(item) {
+    if (!canManageAttendance) return
     if (item.locked) return
     const shouldDelete = await confirm({
       title: 'Delete Additional Field',
@@ -218,6 +225,7 @@ export function EventPassportAttendancePage() {
 
   async function saveEdit(event) {
     event.preventDefault()
+    if (!canManageAttendance) return
     if (!editRow || !editForm) return
     setIsSaving(true)
     setError('')
@@ -330,8 +338,12 @@ export function EventPassportAttendancePage() {
                 render: (row) => (
                   <div className="button-row event-action-row">
                     <button type="button" className="btn btn-small btn-icon btn-green" title="View" aria-label="View non-Malaysian visitor" onClick={() => setSelectedRow(row)}><Eye size={15} /></button>
-                    <button type="button" className="btn btn-small btn-icon btn-blue" title="Edit" aria-label="Edit non-Malaysian visitor" onClick={() => openEdit(row)}><Pencil size={15} /></button>
-                    <button type="button" className="btn btn-small btn-icon btn-red" title="Delete" aria-label="Delete non-Malaysian visitor" onClick={() => deleteAttendance(row)}><Trash2 size={15} /></button>
+                    {canManageAttendance && (
+                      <>
+                        <button type="button" className="btn btn-small btn-icon btn-blue" title="Edit" aria-label="Edit non-Malaysian visitor" onClick={() => openEdit(row)}><Pencil size={15} /></button>
+                        <button type="button" className="btn btn-small btn-icon btn-red" title="Delete" aria-label="Delete non-Malaysian visitor" onClick={() => deleteAttendance(row)}><Trash2 size={15} /></button>
+                      </>
+                    )}
                   </div>
                 ),
               },
@@ -386,10 +398,12 @@ export function EventPassportAttendancePage() {
               <label className="compact-field modal-field-wide"><span>Status</span><input readOnly value={selectedRow.visitor_detail?.status || ''} /></label>
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-blue" onClick={() => {
-                openEdit(selectedRow)
-                setSelectedRow(null)
-              }}><Pencil size={15} /> Edit</button>
+              {canManageAttendance && (
+                <button type="button" className="btn btn-blue" onClick={() => {
+                  openEdit(selectedRow)
+                  setSelectedRow(null)
+                }}><Pencil size={15} /> Edit</button>
+              )}
               <button type="button" className="btn btn-ghost" onClick={() => setSelectedRow(null)}>Close</button>
             </div>
           </div>
