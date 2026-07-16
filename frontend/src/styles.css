@@ -6304,6 +6304,28 @@ input:focus {
     height: 6px;
   }
 
+  .field-error-message {
+    margin-top: 2px;
+    font-size: 6.2px;
+    line-height: 1.2;
+  }
+
+  .login-credential-error {
+    max-width: 100%;
+  }
+
+  .login-credential-error a {
+    font-weight: 700;
+  }
+
+  .login-form-message {
+    margin: 0 0 5px;
+    border-radius: 4px;
+    padding: 5px 6px;
+    font-size: 6.4px;
+    line-height: 1.25;
+  }
+
   input,
   .primary-button,
   .create-account-button {
