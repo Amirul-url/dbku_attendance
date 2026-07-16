@@ -5059,18 +5059,21 @@ input:focus {
 
 .my-task-detail-panel .assignment-detail-layout {
   grid-template-columns: minmax(0, 1fr) 380px;
+  align-items: stretch;
 }
 
 .my-task-detail-panel .assignment-detail-qr-panel {
-  align-self: start;
+  align-self: stretch;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
 }
 
 .my-task-detail-panel .assignment-detail-qr-panel div:first-of-type {
-  min-height: 306px;
+  min-height: 0;
 }
 
 .my-task-detail-panel .assignment-detail-qr-panel img {
-  width: min(270px, 100%);
+  width: min(300px, 100%);
 }
 
 .my-task-event-card {
@@ -5099,9 +5102,12 @@ input:focus {
 }
 
 .my-task-qr-actions {
-  display: flex;
+  display: grid;
   gap: 10px;
-  margin-top: 4px;
+  border: 0 !important;
+  background: transparent !important;
+  min-height: 0 !important;
+  padding: 0 !important;
 }
 
 .my-task-qr-actions .btn {
@@ -5758,7 +5764,7 @@ input:focus {
   gap: 12px;
 }
 
-.assignment-detail-qr-panel div {
+.assignment-detail-qr-panel > div:first-of-type {
   display: grid;
   place-items: center;
   min-height: 246px;
