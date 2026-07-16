@@ -177,6 +177,7 @@ def build_dashboard_report(today=None):
 
 def build_analytics_report(params):
     events = filtered_event_report_list(
+        search=params.get("search"),
         name=params.get("name"),
         month=params.get("month"),
         year=params.get("year"),

@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from apps.core.event_state import complete_ended_event_assignments
@@ -114,8 +115,10 @@ def upcoming_events_after_date(date, limit=5):
     return Event.objects.filter(start_date__gt=date).order_by("start_date", "start_time", "id")[:limit]
 
 
-def filtered_event_report_list(name=None, month=None, year=None, location=None):
+def filtered_event_report_list(name=None, month=None, year=None, location=None, search=None):
     queryset = Event.objects.all().order_by("-start_date", "-id")
+    if search:
+        queryset = queryset.filter(Q(name__icontains=search) | Q(location__icontains=search))
     if name:
         queryset = queryset.filter(name__icontains=name)
     if month:

@@ -6,7 +6,6 @@ import {
   Filter,
   Globe2,
   IdCard,
-  MapPin,
   PieChart,
   RotateCcw,
   Search,
@@ -302,8 +301,8 @@ export function ReportsPage() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [filters, setFilters] = useState({ name: '', location: '', month: '', year: '' })
-  const [appliedFilters, setAppliedFilters] = useState({ name: '', location: '', month: '', year: '' })
+  const [filters, setFilters] = useState({ search: '', month: '', year: '' })
+  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '' })
   const [topEventsPage, setTopEventsPage] = useState(1)
   const [selectedMonth, setSelectedMonth] = useState('')
 
@@ -340,7 +339,7 @@ export function ReportsPage() {
   }
 
   function resetFilters() {
-    const emptyFilters = { name: '', location: '', month: '', year: '' }
+    const emptyFilters = { search: '', month: '', year: '' }
     setFilters(emptyFilters)
     loadAnalytics(emptyFilters)
   }
@@ -388,13 +387,9 @@ export function ReportsPage() {
       </div>
 
       <form className="analytics-filter-card" onSubmit={applyFilters}>
-        <label>
-          <span>Event</span>
-          <div><Search size={16} /><input value={filters.name} onChange={(event) => updateFilter('name', event.target.value)} placeholder="Search event name" /></div>
-        </label>
-        <label>
-          <span>Location</span>
-          <div><MapPin size={16} /><input value={filters.location} onChange={(event) => updateFilter('location', event.target.value)} placeholder="Search location" /></div>
+        <label className="analytics-filter-search">
+          <span>Event / Location</span>
+          <div><Search size={16} /><input value={filters.search} onChange={(event) => updateFilter('search', event.target.value)} placeholder="Search event name or location" /></div>
         </label>
         <label>
           <span>Month</span>
