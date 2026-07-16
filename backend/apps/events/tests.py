@@ -235,3 +235,41 @@ class EventPermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assignment.refresh_from_db()
         self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_COMPLETED)
+
+    def test_my_tasks_returns_only_authenticated_staff_assignments(self):
+        first_staff_user = User.objects.create_user(username="TASK001", email="task1@example.com")
+        first_staff = StaffMember.objects.create(
+            user=first_staff_user,
+            full_name="Task Staff One",
+            staff_id="TASK001",
+            email="task1@example.com",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        second_staff_user = User.objects.create_user(username="TASK002", email="task2@example.com")
+        second_staff = StaffMember.objects.create(
+            user=second_staff_user,
+            full_name="Task Staff Two",
+            staff_id="TASK002",
+            email="task2@example.com",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        event = Event.objects.create(
+            name="Task Event",
+            location="DBKU",
+            start_date=date(2026, 8, 1),
+            latitude="1.000000",
+            longitude="110.000000",
+            radius_meter=100,
+        )
+        own_assignment = EventAssignment.objects.create(event=event, staff_member=first_staff, task_title="Own Task")
+        EventAssignment.objects.create(event=event, staff_member=second_staff, task_title="Other Task")
+
+        self.client.force_authenticate(first_staff_user)
+        response = self.client.get("/api/event-assignments/my-tasks/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data["results"] if isinstance(response.data, dict) else response.data
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["id"], own_assignment.id)

@@ -4939,6 +4939,111 @@ input:focus {
   height: 56px;
 }
 
+.my-task-page {
+  display: grid;
+  gap: 24px;
+}
+
+.my-task-filter {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(160px, 200px) auto;
+  gap: 10px;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+}
+
+.my-task-filter select {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: #071d26;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.my-task-table-card .data-table {
+  min-width: 980px;
+  table-layout: fixed;
+}
+
+.my-task-table-card .data-table th,
+.my-task-table-card .data-table td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.my-task-table-card .data-table th:nth-child(1),
+.my-task-table-card .data-table td:nth-child(1) {
+  width: 24%;
+}
+
+.my-task-table-card .data-table th:nth-child(2),
+.my-task-table-card .data-table td:nth-child(2) {
+  width: 14%;
+}
+
+.my-task-table-card .data-table th:nth-child(3),
+.my-task-table-card .data-table td:nth-child(3) {
+  width: 28%;
+}
+
+.my-task-table-card .data-table th:nth-child(4),
+.my-task-table-card .data-table td:nth-child(4),
+.my-task-table-card .data-table th:nth-child(5),
+.my-task-table-card .data-table td:nth-child(5) {
+  width: 13%;
+}
+
+.my-task-table-card .data-table th:nth-child(6),
+.my-task-table-card .data-table td:nth-child(6) {
+  width: 8%;
+}
+
+.my-task-table-card .table-two-line strong {
+  display: block;
+  color: #071d26;
+  font-size: 13px;
+}
+
+.my-task-table-card .table-two-line span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.my-task-detail-panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 20px;
+}
+
+.my-task-empty-detail {
+  border: 1px dashed #c8dce2;
+  border-radius: 14px;
+  background: #f8fbfc;
+  color: var(--muted);
+  padding: 28px;
+  text-align: center;
+}
+
+.my-task-qr-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.my-task-qr-actions .btn {
+  justify-content: center;
+  width: 100%;
+}
+
 .attendance-table-card .data-table {
   table-layout: fixed;
   min-width: 1280px;
@@ -5630,6 +5735,19 @@ input:focus {
 }
 
 @media (max-width: 760px) {
+  .my-task-filter {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .my-task-filter .btn {
+    width: 100%;
+  }
+
+  .my-task-detail-panel {
+    padding: 14px;
+  }
+
   .assignment-modal {
     width: min(100%, calc(100vw - 24px));
   }

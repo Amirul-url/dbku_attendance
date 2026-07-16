@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart3, CalendarDays, ChevronDown, Clock3, LayoutDashboard, LogOut, Menu, RefreshCw, ShieldCheck, Users } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronDown, ClipboardList, Clock3, LayoutDashboard, LogOut, Menu, RefreshCw, ShieldCheck, Users } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext.jsx'
 
@@ -25,6 +25,7 @@ export function AppShell() {
   const canViewStaff = isSuperadmin || profile?.role === 'admin'
   const visibleNavItems = [
     baseNavItems[0],
+    ...(profile ? [{ to: '/my-task', label: 'My Task', icon: ClipboardList }] : []),
     ...(canViewStaff ? [{ to: '/staff', label: 'Staff', icon: Users }] : []),
     ...baseNavItems.slice(1),
     ...(isSuperadmin ? [{ to: '/superadmin', label: 'Superadmin', icon: ShieldCheck }] : []),

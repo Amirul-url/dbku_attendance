@@ -47,6 +47,18 @@ class EventAssignmentViewSet(ModelViewSet):
             return [AllowAny()]
         return super().get_permissions()
 
+    @action(detail=False, methods=["get"], url_path="my-tasks")
+    def my_tasks(self, request):
+        staff_profile = getattr(request.user, "staff_profile", None)
+        if staff_profile is None:
+            return Response([])
+        queryset = assignment_list(
+            staff_id=staff_profile.id,
+            status=request.query_params.get("status"),
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=False, methods=["get"], url_path="conflict-check")
     def conflict_check(self, request):
         conflicts = assignment_conflicts(
