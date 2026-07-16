@@ -1,7 +1,9 @@
 import csv
 import datetime
+from html import unescape
 
 from django.http import HttpResponse
+from django.utils.html import strip_tags
 
 from apps.attendance.selectors import (
     assignment_attendance_count,
@@ -57,6 +59,10 @@ def _timestamp(date_value, time_value):
 
 def _phone(value):
     return f"'{value}" if value else ""
+
+
+def _plain_text(value):
+    return unescape(strip_tags(value or "")).strip()
 
 
 def _visitor_phone(value):
@@ -380,7 +386,7 @@ def export_assignment_attendance_csv(event_id):
             item.staff_member.staff_id if item.staff_member else "",
             item.staff_member.department if item.staff_member else "",
             item.task_title,
-            (item.task_description or "").strip(),
+            _plain_text(item.task_description),
             item.assignment_status,
             "Present" if attendance else "Pending",
             attendance.phone_number if attendance else "",

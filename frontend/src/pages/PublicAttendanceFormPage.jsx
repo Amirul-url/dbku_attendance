@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client.js'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
 import { PassportCountryCombobox } from '../components/PassportCountryCombobox.jsx'
+import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 import { findPassportCountryByCode, findPassportCountryByNationality } from '../utils/passportCountries.js'
 
@@ -1386,7 +1387,7 @@ export function AssignmentAttendanceFormPage() {
           </div>
           <div>
             <span>Task Description</span>
-            <p>{assignment?.task_description || '-'}</p>
+            <RichTextDisplay value={assignment?.task_description || '-'} />
           </div>
         </section>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>

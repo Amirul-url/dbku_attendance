@@ -5230,6 +5230,60 @@ input:focus {
   white-space: pre-wrap;
 }
 
+.assignment-rich-text-editor {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.assignment-rich-text-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafb;
+  padding: 8px;
+}
+
+.rich-text-tool-button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #315764;
+  cursor: pointer;
+}
+
+.rich-text-tool-button:hover,
+.rich-text-tool-button:focus-visible {
+  border-color: #c7dce3;
+  background: #eef7f9;
+  outline: none;
+}
+
+.assignment-rich-text-input {
+  min-height: 180px;
+  overflow: auto;
+  padding: 14px;
+  color: #172a34;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.assignment-rich-text-input:focus {
+  outline: 2px solid rgba(0, 84, 98, .18);
+  outline-offset: -2px;
+}
+
+.assignment-rich-text-input:empty::before {
+  color: #9cb0bb;
+  content: attr(data-placeholder);
+}
+
 .assignment-modal .compact-field input[readonly] {
   background: #f8fafc;
   color: #607489;
@@ -5427,14 +5481,41 @@ input:focus {
   line-height: 1.3;
 }
 
-.assignment-detail-task-card p {
-  max-height: 180px;
-  overflow: auto;
+.assignment-detail-task-description {
   margin: 0;
   color: #425b67;
   font-size: 14px;
   line-height: 1.55;
-  white-space: pre-wrap;
+}
+
+.rich-text-display {
+  color: inherit;
+  line-height: inherit;
+}
+
+.rich-text-display p,
+.rich-text-display ul,
+.rich-text-display ol {
+  margin: 0 0 8px;
+}
+
+.rich-text-display p:last-child,
+.rich-text-display ul:last-child,
+.rich-text-display ol:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-display ul,
+.rich-text-display ol {
+  padding-left: 22px;
+}
+
+.rich-text-display li + li {
+  margin-top: 4px;
+}
+
+.rich-text-display strong {
+  font-weight: 900;
 }
 
 .assignment-readonly-field {
@@ -5462,8 +5543,6 @@ input:focus {
 .assignment-detail-qr-panel {
   display: grid;
   gap: 12px;
-  position: sticky;
-  top: 0;
 }
 
 .assignment-detail-qr-panel div {

@@ -2,8 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   ArrowLeft,
   Box,
+  Bold,
   CalendarDays,
   Crosshair,
   Download,
@@ -11,6 +16,8 @@ import {
   Eye,
   ExternalLink,
   LocateFixed,
+  List,
+  ListOrdered,
   Map as MapIcon,
   QrCode,
   Search,
@@ -22,8 +29,10 @@ import { Link, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, downloadApiFile, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
+import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
+import { richTextToPlainText, sanitizeRichText } from '../utils/richText.js'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 const DEFAULT_EVENT_LONGITUDE = 110.334028
@@ -378,7 +387,7 @@ export function EventDetailPage() {
         event: id,
         staff_member: assignmentForm.staff_member,
         task_title: assignmentForm.task_title,
-        task_description: assignmentForm.task_description,
+        task_description: sanitizeRichText(assignmentForm.task_description),
       }
       if (assignmentModal.mode === 'create') {
         await apiRequest('/event-assignments/', { method: 'POST', body: JSON.stringify(payload) })
@@ -670,7 +679,7 @@ export function EventDetailPage() {
               { key: 'staff_name', label: 'Name' },
               { key: 'employee_id', label: 'Employee ID', render: (row) => staffById.get(Number(row.staff_member))?.staff_id || '-' },
               { key: 'department', label: 'Department', render: (row) => staffById.get(Number(row.staff_member))?.department || '-' },
-              { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><span>{row.task_description || '-'}</span></span> },
+              { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task"><strong>{row.task_title}</strong><span>{richTextToPlainText(row.task_description) || '-'}</span></span> },
               {
                 key: 'assignment_status',
                 label: 'Status',
@@ -756,11 +765,9 @@ export function EventDetailPage() {
                 </label>
                 <label className="compact-field">
                   <span>Task Description</span>
-                  <textarea
-                    rows={5}
+                  <RichTextEditor
                     value={assignmentForm.task_description}
-                    onChange={(event) => updateAssignmentField('task_description', event.target.value)}
-                    placeholder="Enter task description"
+                    onChange={(value) => updateAssignmentField('task_description', value)}
                   />
                 </label>
                 <div className="assignment-auto-status-note">
@@ -830,7 +837,7 @@ export function EventDetailPage() {
                   <div className="assignment-detail-task-card">
                     <span>Task</span>
                     <h4>{assignmentDetailModal.task_title || '-'}</h4>
-                    <p>{assignmentDetailModal.task_description || '-'}</p>
+                    <RichTextDisplay value={assignmentDetailModal.task_description || '-'} className="assignment-detail-task-description" />
                   </div>
                 </section>
 
@@ -905,6 +912,77 @@ function ReadOnlyField({ label, value, wide = false }) {
     <div className={`assignment-readonly-field ${wide ? 'assignment-readonly-wide' : ''}`}>
       <span>{label}</span>
       <p>{value || '-'}</p>
+    </div>
+  )
+}
+
+function RichTextEditor({ value, onChange }) {
+  const editorRef = useRef(null)
+
+  useEffect(() => {
+    const nextHtml = sanitizeRichText(value)
+    if (editorRef.current && editorRef.current.innerHTML !== nextHtml) {
+      editorRef.current.innerHTML = nextHtml
+    }
+  }, [value])
+
+  function syncValue() {
+    onChange(sanitizeRichText(editorRef.current?.innerHTML || ''))
+  }
+
+  function runCommand(command, commandValue = null) {
+    editorRef.current?.focus()
+    document.execCommand(command, false, commandValue)
+    syncValue()
+  }
+
+  function handlePaste(event) {
+    event.preventDefault()
+    const text = event.clipboardData.getData('text/plain')
+    document.execCommand('insertText', false, text)
+    syncValue()
+  }
+
+  const toolbarItems = [
+    { label: 'Bold', icon: Bold, command: 'bold' },
+    { label: 'Bullet list', icon: List, command: 'insertUnorderedList' },
+    { label: 'Numbered list', icon: ListOrdered, command: 'insertOrderedList' },
+    { label: 'Align left', icon: AlignLeft, command: 'justifyLeft' },
+    { label: 'Align center', icon: AlignCenter, command: 'justifyCenter' },
+    { label: 'Align right', icon: AlignRight, command: 'justifyRight' },
+    { label: 'Justify', icon: AlignJustify, command: 'justifyFull' },
+  ]
+
+  return (
+    <div className="assignment-rich-text-editor">
+      <div className="assignment-rich-text-toolbar" aria-label="Task description formatting">
+        {toolbarItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <button
+              type="button"
+              key={item.label}
+              className="rich-text-tool-button"
+              title={item.label}
+              aria-label={item.label}
+              onClick={() => runCommand(item.command)}
+            >
+              <Icon size={16} />
+            </button>
+          )
+        })}
+      </div>
+      <div
+        ref={editorRef}
+        className="assignment-rich-text-input"
+        contentEditable
+        role="textbox"
+        aria-label="Task description"
+        data-placeholder="Enter task description"
+        onInput={syncValue}
+        onBlur={syncValue}
+        onPaste={handlePaste}
+      />
     </div>
   )
 }
