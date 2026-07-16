@@ -1291,6 +1291,7 @@ export function AssignmentAttendanceFormPage() {
   const [error, setError] = useState('')
   const [locationRadiusAlert, setLocationRadiusAlert] = useState(null)
   const [eventExpiredAlert, setEventExpiredAlert] = useState(null)
+  const [isTaskExpanded, setIsTaskExpanded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submittingRef = useRef(false)
 
@@ -1387,7 +1388,19 @@ export function AssignmentAttendanceFormPage() {
           </div>
           <div>
             <span>Task Description</span>
-            <RichTextDisplay value={assignment?.task_description || '-'} />
+            <RichTextDisplay
+              value={assignment?.task_description || '-'}
+              className={`public-task-description-text ${isTaskExpanded ? 'is-expanded' : ''}`}
+            />
+            {assignment?.task_description && (
+              <button
+                type="button"
+                className="public-task-toggle"
+                onClick={() => setIsTaskExpanded((current) => !current)}
+              >
+                {isTaskExpanded ? 'View less' : 'View more'}
+              </button>
+            )}
           </div>
         </section>
         <PublicField index="1" label="Full Name" icon={User}><input autoComplete="name" value={form.full_name} onChange={(e) => update('full_name', e.target.value)} required /></PublicField>
