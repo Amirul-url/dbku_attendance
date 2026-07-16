@@ -60,6 +60,11 @@ function formatAddress(value) {
     .join(', ')
 }
 
+function initials(value) {
+  const words = String(value || 'NA').trim().split(/\s+/).filter(Boolean)
+  return words.slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'NA'
+}
+
 function formatDisplayDate(value) {
   if (!value) return '-'
   const [year, month, day] = String(value).split('-')
@@ -800,34 +805,56 @@ export function EventDetailPage() {
               <button type="button" className="modal-close" onClick={() => setAssignmentDetailModal(null)}>x</button>
             </div>
             <div className="modal-body assignment-detail-body">
-              <div className="assignment-detail-grid">
-                <div className="assignment-detail-qr assignment-detail-qr-top">
-                  <span>QR Code</span>
-                  <div>
-                    {assignmentDetailModal.qr_url ? <img src={assignmentDetailModal.qr_url} alt="Assignment QR Code" /> : <QrCode size={120} />}
+              <div className="assignment-detail-layout">
+                <section className="assignment-detail-summary">
+                  <div className="assignment-detail-person">
+                    <span className="assignment-detail-avatar">
+                      {initials(assignmentDetailModal.staff_name || selectedAssignmentStaffForDetail?.full_name)}
+                    </span>
+                    <div>
+                      <span>Assigned Staff</span>
+                      <h3>{assignmentDetailModal.staff_name || selectedAssignmentStaffForDetail?.full_name || '-'}</h3>
+                      <p>
+                        {selectedAssignmentStaffForDetail?.staff_id || '-'}
+                        {' | '}
+                        {selectedAssignmentStaffForDetail?.department || '-'}
+                      </p>
+                    </div>
                   </div>
-                  <p>This assignment QR is separate from the normal staff attendance QR.</p>
-                </div>
-                <ReadOnlyField label="Staff Name" value={assignmentDetailModal.staff_name || selectedAssignmentStaffForDetail?.full_name} />
-                <ReadOnlyField label="Employee ID" value={selectedAssignmentStaffForDetail?.staff_id} />
-                <ReadOnlyField label="Staff Email" value={selectedAssignmentStaffForDetail?.email} />
-                <ReadOnlyField label="Staff Phone Number" value={selectedAssignmentStaffForDetail?.phone_number || assignmentDetailModal.staff_phone_number} />
-                <ReadOnlyField label="Department" value={selectedAssignmentStaffForDetail?.department} />
-                <ReadOnlyField label="Task Title" value={assignmentDetailModal.task_title} wide />
-                <ReadOnlyField label="Task Description" value={assignmentDetailModal.task_description || '-'} wide />
-                <ReadOnlyField label="Status" value={formatStatus(selectedAssignmentStatus)} />
-                <ReadOnlyField label="Attendance Status" value={selectedAssignmentAttendance ? 'Submitted' : 'Pending'} />
-                {selectedAssignmentAttendance && (
-                  <>
-                    <ReadOnlyField label="IPv4" value={selectedAssignmentAttendance.ipv4_address || '-'} />
-                    <ReadOnlyField label="IPv6" value={selectedAssignmentAttendance.ipv6_address || '-'} />
-                    <ReadOnlyField label="Latitude" value={selectedAssignmentAttendance.latitude ? formatCoordinate(selectedAssignmentAttendance.latitude) : '-'} />
-                    <ReadOnlyField label="Longitude" value={selectedAssignmentAttendance.longitude ? formatCoordinate(selectedAssignmentAttendance.longitude) : '-'} />
-                    <ReadOnlyField label="Date" value={selectedAssignmentAttendance.date ? formatNumericDate(selectedAssignmentAttendance.date) : '-'} />
-                    <ReadOnlyField label="Time" value={selectedAssignmentAttendance.time ? formatTime12Hour(selectedAssignmentAttendance.time) : '-'} />
-                    <ReadOnlyField label="Notes" value={selectedAssignmentAttendance.notes || '-'} wide />
-                  </>
-                )}
+                  <div className="assignment-detail-status-row">
+                    <span className={`status-pill status-${selectedAssignmentStatus || 'pending'}`}>{formatStatus(selectedAssignmentStatus)}</span>
+                    <span className={`status-pill status-${selectedAssignmentAttendance ? 'submitted' : 'pending'}`}>
+                      {selectedAssignmentAttendance ? 'Submitted' : 'Pending Attendance'}
+                    </span>
+                  </div>
+                  <div className="assignment-detail-task-card">
+                    <span>Task</span>
+                    <h4>{assignmentDetailModal.task_title || '-'}</h4>
+                    <p>{assignmentDetailModal.task_description || '-'}</p>
+                  </div>
+                </section>
+
+                <aside className="assignment-detail-qr-panel">
+                  <span>Assignment QR</span>
+                  <div>
+                    {assignmentDetailModal.qr_url ? <img src={assignmentDetailModal.qr_url} alt="Assignment QR Code" /> : <QrCode size={108} />}
+                  </div>
+                </aside>
+
+                <DetailSection title="Staff Contact">
+                  <ReadOnlyField label="Email" value={selectedAssignmentStaffForDetail?.email} />
+                  <ReadOnlyField label="Phone Number" value={selectedAssignmentStaffForDetail?.phone_number || assignmentDetailModal.staff_phone_number} />
+                </DetailSection>
+
+                <DetailSection title="Attendance Record">
+                  <ReadOnlyField label="Date" value={selectedAssignmentAttendance?.date ? formatNumericDate(selectedAssignmentAttendance.date) : '-'} />
+                  <ReadOnlyField label="Time" value={selectedAssignmentAttendance?.time ? formatTime12Hour(selectedAssignmentAttendance.time) : '-'} />
+                  <ReadOnlyField label="Latitude" value={selectedAssignmentAttendance?.latitude ? formatCoordinate(selectedAssignmentAttendance.latitude) : '-'} />
+                  <ReadOnlyField label="Longitude" value={selectedAssignmentAttendance?.longitude ? formatCoordinate(selectedAssignmentAttendance.longitude) : '-'} />
+                  <ReadOnlyField label="IPv4" value={selectedAssignmentAttendance?.ipv4_address || '-'} />
+                  <ReadOnlyField label="IPv6" value={selectedAssignmentAttendance?.ipv6_address || '-'} />
+                  <ReadOnlyField label="Notes" value={selectedAssignmentAttendance?.notes || '-'} wide />
+                </DetailSection>
               </div>
             </div>
             <div className="modal-footer">
@@ -879,6 +906,17 @@ function ReadOnlyField({ label, value, wide = false }) {
       <span>{label}</span>
       <p>{value || '-'}</p>
     </div>
+  )
+}
+
+function DetailSection({ title, children }) {
+  return (
+    <section className="assignment-detail-section">
+      <h3>{title}</h3>
+      <div className="assignment-detail-section-grid">
+        {children}
+      </div>
+    </section>
   )
 }
 

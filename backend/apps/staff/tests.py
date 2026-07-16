@@ -139,6 +139,57 @@ class StaffMemberApiTests(APITestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.filter(username="EMP901").exists())
 
+    def test_admin_can_create_another_admin_account(self):
+        admin = self.create_admin_user()
+        self.client.force_authenticate(admin)
+
+        response = self.client.post(
+            "/api/staff/",
+            {
+                "full_name": "Second Admin",
+                "staff_id": "ADM901",
+                "email": "admin901@example.com",
+                "phone_number": "60129990003",
+                "department": "ICT",
+                "registration_method": StaffMember.REGISTRATION_MANUAL,
+                "role": StaffMember.ROLE_ADMIN,
+                "password": "strongpass123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["role"], StaffMember.ROLE_ADMIN)
+        created_user = User.objects.get(username="ADM901")
+        self.assertFalse(created_user.is_superuser)
+
+    def test_admin_cannot_create_superadmin_account(self):
+        admin = self.create_admin_user()
+        self.client.force_authenticate(admin)
+
+        response = self.client.post(
+            "/api/staff/",
+            {
+                "full_name": "Attempted Superadmin",
+                "staff_id": "ROOT002",
+                "email": "root002@example.com",
+                "phone_number": "60129990004",
+                "department": "ICT",
+                "registration_method": StaffMember.REGISTRATION_MANUAL,
+                "role": StaffMember.ROLE_SUPERADMIN,
+                "is_staff": True,
+                "is_superuser": True,
+                "password": "strongpass123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["role"], StaffMember.ROLE_VIEWER)
+        created_user = User.objects.get(username="ROOT002")
+        self.assertFalse(created_user.is_staff)
+        self.assertFalse(created_user.is_superuser)
+
     def test_admin_cannot_access_superadmin_records_in_staff_api(self):
         admin = self.create_admin_user()
         self.client.force_authenticate(admin)

@@ -16,7 +16,7 @@ def is_admin(user):
 
 class IsAdminRole(BasePermission):
     def has_permission(self, request, view):
-        return is_superadmin(request.user)
+        return is_admin(request.user)
 
 
 class IsAdminOrReadOnly(BasePermission):

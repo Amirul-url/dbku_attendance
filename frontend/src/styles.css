@@ -5326,7 +5326,7 @@ input:focus {
 
 .assignment-detail-modal {
   display: flex;
-  width: min(1120px, calc(100vw - 48px));
+  width: min(1180px, calc(100vw - 48px));
   max-height: calc(100vh - 56px);
   overflow: hidden;
   flex-direction: column;
@@ -5340,29 +5340,111 @@ input:focus {
   padding: 22px 24px;
 }
 
-.assignment-detail-grid {
+.assignment-detail-layout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 16px;
+  align-items: start;
 }
 
-.assignment-readonly-field {
-  display: grid;
-  gap: 10px;
-  min-height: 84px;
+.assignment-detail-summary,
+.assignment-detail-qr-panel,
+.assignment-detail-section {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #f8fafb;
   padding: 16px;
 }
 
-.assignment-readonly-field span,
-.assignment-detail-qr > span {
+.assignment-detail-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.assignment-detail-person {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.assignment-detail-avatar {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border-radius: 50%;
+  background: #003b46;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.assignment-detail-person span:not(.assignment-detail-avatar),
+.assignment-detail-task-card span,
+.assignment-detail-qr-panel > span,
+.assignment-detail-section h3,
+.assignment-readonly-field span {
   color: #63818b;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: .06em;
   text-transform: uppercase;
+}
+
+.assignment-detail-person h3 {
+  margin: 2px 0 2px;
+  color: #10242d;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.assignment-detail-person p {
+  margin: 0;
+  color: #607489;
+  font-size: 13px;
+}
+
+.assignment-detail-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assignment-detail-task-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dbe8ed;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.assignment-detail-task-card h4 {
+  margin: 0;
+  color: #10242d;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.assignment-detail-task-card p {
+  max-height: 180px;
+  overflow: auto;
+  margin: 0;
+  color: #425b67;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.assignment-readonly-field {
+  display: grid;
+  gap: 10px;
+  min-height: 74px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
 }
 
 .assignment-readonly-field p {
@@ -5373,48 +5455,47 @@ input:focus {
   white-space: pre-wrap;
 }
 
-.assignment-readonly-wide,
-.assignment-detail-qr {
+.assignment-readonly-wide {
   grid-column: 1 / -1;
 }
 
-.assignment-detail-qr {
+.assignment-detail-qr-panel {
   display: grid;
   gap: 12px;
+  position: sticky;
+  top: 0;
+}
+
+.assignment-detail-qr-panel div {
+  display: grid;
+  place-items: center;
+  min-height: 246px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #f8fafb;
+  border-radius: 8px;
+  background: #fff;
   padding: 16px;
 }
 
-.assignment-detail-qr div {
-  display: grid;
-  place-items: center;
-  min-height: 260px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  padding: 18px;
-}
-
-.assignment-detail-qr-top div {
-  min-height: 220px;
-}
-
-.assignment-detail-qr img {
-  width: min(260px, 100%);
+.assignment-detail-qr-panel img {
+  width: min(214px, 100%);
   aspect-ratio: 1;
   object-fit: contain;
 }
 
-.assignment-detail-qr-top img {
-  width: min(220px, 100%);
+.assignment-detail-section {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 14px;
 }
 
-.assignment-detail-qr p {
+.assignment-detail-section h3 {
   margin: 0;
-  color: #607489;
-  font-size: 12px;
+}
+
+.assignment-detail-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .status-pill {
@@ -5474,8 +5555,13 @@ input:focus {
     width: min(100%, calc(100vw - 24px));
   }
 
-  .assignment-detail-grid {
+  .assignment-detail-layout,
+  .assignment-detail-section-grid {
     grid-template-columns: 1fr;
+  }
+
+  .assignment-detail-qr-panel {
+    position: static;
   }
 }
 
