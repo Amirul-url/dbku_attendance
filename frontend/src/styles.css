@@ -5344,7 +5344,7 @@ input:focus {
 
 .assignment-table-description {
   display: block;
-  max-height: 96px;
+  max-height: 72px;
   overflow: hidden;
   margin-top: 6px;
   color: var(--muted);
@@ -5352,27 +5352,10 @@ input:focus {
   line-height: 1.45;
 }
 
-.assignment-table-description.is-truncated {
-  position: relative;
-  padding-right: 22px;
-}
-
-.assignment-table-description.is-truncated::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  padding-left: 24px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 38%);
-  color: var(--muted);
-  content: "...";
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 .assignment-table-description p,
 .assignment-table-description ul,
 .assignment-table-description ol {
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .assignment-table-description ul,
@@ -5381,7 +5364,7 @@ input:focus {
 }
 
 .assignment-table-description li + li {
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .assignment-modal {

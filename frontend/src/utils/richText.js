@@ -132,3 +132,35 @@ export function richTextToPlainText(value) {
   const doc = new DOMParser().parseFromString(sanitizeRichText(raw), 'text/html')
   return doc.body.textContent.replace(/\s+/g, ' ').trim()
 }
+
+export function richTextToPreview(value, options = {}) {
+  const maxItems = options.maxItems || 2
+  const maxItemLength = options.maxItemLength || 92
+  const html = sanitizeRichText(value)
+  if (!html) return { ordered: false, items: ['-'] }
+
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const firstList = doc.body.querySelector('ol, ul')
+  const sourceNodes = firstList
+    ? Array.from(firstList.querySelectorAll(':scope > li'))
+    : Array.from(doc.body.querySelectorAll('p')).filter((node) => node.textContent.trim())
+  const ordered = firstList?.tagName === 'OL'
+  const allItems = sourceNodes.length
+    ? sourceNodes.map((node) => node.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean)
+    : [doc.body.textContent.replace(/\s+/g, ' ').trim()].filter(Boolean)
+
+  if (!allItems.length) return { ordered: false, items: ['-'] }
+
+  const visibleItems = allItems.slice(0, maxItems)
+  const hasHiddenItems = allItems.length > visibleItems.length
+  const items = visibleItems.map((item, index) => {
+    const isLastVisible = index === visibleItems.length - 1
+    const shouldTruncate = item.length > maxItemLength || (isLastVisible && hasHiddenItems)
+    if (!shouldTruncate) return item
+    const suffix = '...'
+    const clipped = item.length > maxItemLength ? item.slice(0, maxItemLength).trimEnd() : item
+    return clipped.endsWith(suffix) ? clipped : `${clipped}${suffix}`
+  })
+
+  return { ordered, items }
+}

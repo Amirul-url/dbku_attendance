@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { RichTextDisplay } from '../components/RichTextDisplay.jsx'
+import { TaskDescriptionPreview } from '../components/TaskDescriptionPreview.jsx'
 import { useAuth } from '../state/AuthContext.jsx'
 import { formatTime12Hour } from '../utils/dateTime.js'
 import { richTextToPlainText } from '../utils/richText.js'
@@ -131,10 +132,6 @@ function getYearOptions(rows) {
   return years.length ? years : [String(new Date().getFullYear())]
 }
 
-function taskPreviewClass(description) {
-  return `assignment-table-description${richTextToPlainText(description).length > 160 ? ' is-truncated' : ''}`
-}
-
 function filterRows(rows, filters) {
   const query = filters.search.trim().toLowerCase()
   return rows.filter((row) => {
@@ -237,7 +234,7 @@ export function MyTaskPage() {
           columns={[
             { key: 'event_name', label: 'Event', render: (row) => <span className="table-two-line"><strong>{row.event_name}</strong><span>{row.event_location || '-'}</span></span> },
             { key: 'event_start_date', label: 'Date', render: (row) => formatDateRange(row.event_start_date, row.event_end_date) },
-            { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task my-task-table-task"><strong>{row.task_title}</strong><RichTextDisplay value={row.task_description || '-'} className={taskPreviewClass(row.task_description)} /></span> },
+            { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task my-task-table-task"><strong>{row.task_title}</strong><TaskDescriptionPreview value={row.task_description} /></span> },
             { key: 'assignment_status', label: 'Status', render: (row) => <span className={`status-pill status-${row.displayStatus}`}>{formatStatus(row.displayStatus)}</span> },
             { key: 'attendance', label: 'Attendance', render: (row) => <span className={`status-pill status-${row.attendanceStatus}`}>{row.attendance ? 'Submitted' : 'Pending'}</span> },
             {
