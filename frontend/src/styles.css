@@ -5443,6 +5443,7 @@ input:focus {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #fff;
+  font-weight: 400;
 }
 
 .assignment-rich-text-toolbar {
@@ -5479,7 +5480,13 @@ input:focus {
   padding: 14px;
   color: #172a34;
   font-size: 14px;
+  font-weight: 400;
   line-height: 1.55;
+}
+
+.assignment-rich-text-input strong,
+.assignment-rich-text-input b {
+  font-weight: 800;
 }
 
 .assignment-rich-text-input:focus {

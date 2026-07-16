@@ -89,54 +89,6 @@ function sanitizeNode(node, doc) {
   return target
 }
 
-function meaningfulTextNodes(node, doc) {
-  const walker = doc.createTreeWalker(node, doc.defaultView?.NodeFilter?.SHOW_TEXT || 4)
-  const nodes = []
-  let current = walker.nextNode()
-
-  while (current) {
-    if (current.textContent.trim()) nodes.push(current)
-    current = walker.nextNode()
-  }
-
-  return nodes
-}
-
-function hasBoldAncestor(node, boundary) {
-  let current = node.parentElement
-  while (current && current !== boundary) {
-    if (current.tagName === 'STRONG' || current.tagName === 'B') return true
-    current = current.parentElement
-  }
-  return false
-}
-
-function textBlocks(root, doc) {
-  const blocks = Array.from(root.querySelectorAll('li, p')).filter((node) => meaningfulTextNodes(node, doc).length)
-  if (blocks.length) return blocks
-
-  const childBlocks = Array.from(root.children).filter((node) => meaningfulTextNodes(node, doc).length)
-  if (childBlocks.length) return childBlocks
-
-  return meaningfulTextNodes(root, doc).length ? [root] : []
-}
-
-function stripAccidentalFullBold(root, doc) {
-  const blocks = textBlocks(root, doc)
-  if (blocks.length < 2) return
-
-  const allBlocksFullyBold = blocks.every((block) => {
-    const nodes = meaningfulTextNodes(block, doc)
-    return nodes.length > 0 && nodes.every((node) => hasBoldAncestor(node, block))
-  })
-
-  if (!allBlocksFullyBold) return
-
-  Array.from(root.querySelectorAll('strong, b')).forEach((node) => {
-    node.replaceWith(...Array.from(node.childNodes))
-  })
-}
-
 export function sanitizeRichText(value) {
   const raw = String(value || '').trim()
   if (!raw) return ''
@@ -148,8 +100,6 @@ export function sanitizeRichText(value) {
   Array.from(doc.body.firstElementChild?.childNodes || []).forEach((node) => {
     cleanRoot.appendChild(sanitizeNode(node, doc))
   })
-
-  stripAccidentalFullBold(cleanRoot, doc)
 
   return cleanRoot.innerHTML.trim()
 }
