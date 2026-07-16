@@ -3297,11 +3297,13 @@ input:focus {
   background:
     radial-gradient(circle at top right, rgba(14, 124, 107, 0.12), transparent 34%),
     #f4f6f8;
+  overflow-x: hidden;
   padding: 36px 18px 56px;
 }
 
 .public-attendance-wrap {
-  width: min(700px, 100%);
+  width: min(820px, calc(100vw - 32px));
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -3352,6 +3354,8 @@ input:focus {
 }
 
 .public-attendance-card {
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   border: 1px solid #d7e7e9;
   border-radius: 16px;
@@ -3424,7 +3428,10 @@ input:focus {
 
 .public-attendance-body {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 26px;
+  overflow: hidden;
   padding: 30px 36px 36px;
 }
 
@@ -3437,6 +3444,7 @@ input:focus {
 }
 
 .public-event-card {
+  max-width: 100%;
   border: 1px solid #9fd8cf;
   border-radius: 12px;
   background: #fff;
@@ -3447,8 +3455,10 @@ input:focus {
 
 .public-event-card-header {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 18px;
   padding: 24px 28px;
   border-bottom: 1px solid var(--line);
@@ -3457,8 +3467,10 @@ input:focus {
 .public-event-title-row {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   gap: 14px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .public-event-icon {
@@ -3476,6 +3488,7 @@ input:focus {
   color: #071d26;
   font-size: 16px;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .public-event-radius-pill {
@@ -3483,6 +3496,7 @@ input:focus {
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
+  max-width: 100%;
   border-radius: 10px;
   background: #e6f5f2;
   color: #003B46;
@@ -3494,9 +3508,13 @@ input:focus {
 
 .public-event-summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 44px;
   padding: 26px 28px 28px;
+}
+
+.public-event-summary-grid > section {
+  min-width: 0;
 }
 
 .public-event-section-label {
@@ -3518,6 +3536,7 @@ input:focus {
 .public-event-info-item span {
   color: var(--muted);
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .public-event-info-item strong {
@@ -3530,11 +3549,20 @@ input:focus {
 }
 
 .public-entry-form {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 22px;
+  overflow: hidden;
 }
 
 .public-assignment-task-card {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   gap: 16px;
   border: 1px solid #d7e7e9;
   border-radius: 12px;
@@ -3544,6 +3572,7 @@ input:focus {
 
 .public-assignment-task-card div {
   display: grid;
+  min-width: 0;
   gap: 8px;
 }
 
@@ -3570,19 +3599,35 @@ input:focus {
 }
 
 .public-assignment-task-card .rich-text-display {
+  max-width: 100%;
   color: #334155;
   font-size: 14px;
   line-height: 1.55;
   text-align: left;
 }
 
+.public-assignment-task-card .rich-text-display * {
+  max-width: 100%;
+}
+
+.public-assignment-task-card .rich-text-display ul,
+.public-assignment-task-card .rich-text-display ol {
+  min-width: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 22px;
+}
+
 .public-assignment-task-card .rich-text-display p,
 .public-assignment-task-card .rich-text-display li {
   font-size: inherit;
   line-height: inherit;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
 }
 
 .public-field {
+  min-width: 0;
   gap: 10px;
 }
 
@@ -3605,6 +3650,9 @@ input:focus {
 .public-field input,
 .public-field select,
 .public-field textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   min-height: 64px;
   border-radius: 12px;
   font-size: 16px;
@@ -3614,6 +3662,8 @@ input:focus {
 .public-phone-input {
   grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1fr);
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .public-field .public-phone-input input {
@@ -3730,6 +3780,9 @@ input:focus {
 }
 
 .public-entry-form .primary-button {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 66px;
   border-radius: 13px;
   background: #108674;
@@ -6263,6 +6316,25 @@ input:focus {
     margin-inline: 20px;
   }
 
+  .public-attendance-wrap {
+    width: min(100%, calc(100vw - 20px));
+  }
+
+  .public-event-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .public-event-radius-pill {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .public-event-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
   .public-attendance-screen {
     padding: 18px 10px 30px;
   }
@@ -6285,8 +6357,6 @@ input:focus {
   }
 
   .public-event-card-header {
-    align-items: center;
-    flex-direction: row;
     gap: 8px;
     padding: 14px 12px;
   }
@@ -6320,7 +6390,6 @@ input:focus {
   }
 
   .public-event-summary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     padding: 16px 12px 18px;
   }
