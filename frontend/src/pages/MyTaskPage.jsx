@@ -233,7 +233,7 @@ export function MyTaskPage() {
           columns={[
             { key: 'event_name', label: 'Event', render: (row) => <span className="table-two-line"><strong>{row.event_name}</strong><span>{row.event_location || '-'}</span></span> },
             { key: 'event_start_date', label: 'Date', render: (row) => formatDateRange(row.event_start_date, row.event_end_date) },
-            { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task my-task-table-task"><strong>{row.task_title}</strong><span className="my-task-table-description">{richTextToPlainText(row.task_description) || '-'}</span></span> },
+            { key: 'task_title', label: 'Task', render: (row) => <span className="event-assignment-task my-task-table-task"><strong>{row.task_title}</strong><RichTextDisplay value={row.task_description || '-'} className="assignment-table-description" /></span> },
             { key: 'assignment_status', label: 'Status', render: (row) => <span className={`status-pill status-${row.displayStatus}`}>{formatStatus(row.displayStatus)}</span> },
             { key: 'attendance', label: 'Attendance', render: (row) => <span className={`status-pill status-${row.attendanceStatus}`}>{row.attendance ? 'Submitted' : 'Pending'}</span> },
             {

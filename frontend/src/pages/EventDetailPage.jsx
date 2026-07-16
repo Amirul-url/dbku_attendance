@@ -222,6 +222,7 @@ export function EventDetailPage() {
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
+  const assignmentDescriptionEditorRef = useRef(null)
   const mapModeRef = useRef('2d')
   const canManageAssignments = Boolean(user?.is_superuser || ['admin', 'superadmin'].includes(user?.staff_profile?.role))
 
@@ -383,11 +384,14 @@ export function EventDetailPage() {
       return
     }
     try {
+      const latestTaskDescription = assignmentDescriptionEditorRef.current
+        ? sanitizeRichText(assignmentDescriptionEditorRef.current.innerHTML || '')
+        : sanitizeRichText(assignmentForm.task_description)
       const payload = {
         event: id,
         staff_member: assignmentForm.staff_member,
         task_title: assignmentForm.task_title,
-        task_description: sanitizeRichText(assignmentForm.task_description),
+        task_description: latestTaskDescription,
       }
       if (assignmentModal.mode === 'create') {
         await apiRequest('/event-assignments/', { method: 'POST', body: JSON.stringify(payload) })
@@ -768,6 +772,7 @@ export function EventDetailPage() {
                   <RichTextEditor
                     value={assignmentForm.task_description}
                     onChange={(value) => updateAssignmentField('task_description', value)}
+                    inputRef={assignmentDescriptionEditorRef}
                   />
                 </label>
                 <div className="assignment-auto-status-note">
@@ -916,8 +921,16 @@ function ReadOnlyField({ label, value, wide = false }) {
   )
 }
 
-function RichTextEditor({ value, onChange }) {
+function RichTextEditor({ value, onChange, inputRef }) {
   const editorRef = useRef(null)
+
+  useEffect(() => {
+    if (!inputRef) return undefined
+    inputRef.current = editorRef.current
+    return () => {
+      inputRef.current = null
+    }
+  }, [inputRef])
 
   useEffect(() => {
     const nextHtml = sanitizeRichText(value)
