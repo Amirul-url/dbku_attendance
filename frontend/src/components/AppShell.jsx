@@ -25,7 +25,7 @@ export function AppShell() {
   const canViewStaff = isSuperadmin || profile?.role === 'admin'
   const visibleNavItems = [
     baseNavItems[0],
-    ...(profile ? [{ to: '/my-task', label: 'My Task', icon: ClipboardList }] : []),
+    ...(profile && !isSuperadmin ? [{ to: '/my-task', label: 'My Task', icon: ClipboardList }] : []),
     ...(canViewStaff ? [{ to: '/staff', label: 'Staff', icon: Users }] : []),
     ...baseNavItems.slice(1),
     ...(isSuperadmin ? [{ to: '/superadmin', label: 'Superadmin', icon: ShieldCheck }] : []),
