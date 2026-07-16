@@ -6197,6 +6197,96 @@ input:focus {
   }
 }
 
+@media (max-width: 560px) {
+  .login-screen {
+    min-height: 100svh;
+    align-content: start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .login-workspace {
+    border-radius: 8px;
+    box-shadow: 0 14px 34px rgba(7, 29, 38, 0.13);
+  }
+
+  .login-intro {
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .login-intro .portal-brand {
+    min-height: 0;
+    gap: 16px;
+  }
+
+  .portal-mark {
+    width: 76px;
+    height: 76px;
+    border-radius: 13px;
+  }
+
+  .portal-mark img {
+    width: 62px;
+    height: 62px;
+  }
+
+  .login-intro .portal-brand h1 {
+    font-size: 27px;
+    line-height: 1.08;
+  }
+
+  .login-metrics {
+    gap: 8px;
+    padding: 0;
+  }
+
+  .login-metric {
+    min-height: 58px;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+    padding: 9px 12px;
+  }
+
+  .login-metric strong {
+    font-size: 13px;
+  }
+
+  .login-metric span {
+    font-size: 12px;
+  }
+
+  .login-workspace > .portal-login-card {
+    padding: 22px 22px 18px;
+  }
+
+  .login-main-header {
+    margin-bottom: 20px;
+  }
+
+  .login-main-header h2 {
+    font-size: 28px;
+  }
+
+  .portal-field {
+    margin-bottom: 14px;
+  }
+
+  input,
+  .primary-button,
+  .create-account-button {
+    height: 46px;
+  }
+
+  .login-divider {
+    margin: 15px 0;
+  }
+
+  .login-footer {
+    padding-bottom: 8px;
+  }
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
