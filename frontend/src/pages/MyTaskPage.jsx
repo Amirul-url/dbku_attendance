@@ -25,6 +25,15 @@ const monthOptions = [
   { value: '12', label: 'December' },
 ]
 
+const statusOptions = [
+  { value: '', label: 'All Status' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'pending', label: 'Pending Attendance' },
+]
+
 function formatDisplayDate(value) {
   if (!value) return '-'
   const [year, month, day] = String(value).split('-')
@@ -138,6 +147,7 @@ function filterRows(rows, filters) {
     const [eventYear, eventMonth] = String(row.event_start_date || '').split('-')
     const matchesMonth = !filters.month || Number(eventMonth) === Number(filters.month)
     const matchesYear = !filters.year || eventYear === filters.year
+    const matchesStatus = !filters.status || row.displayStatus === filters.status || row.attendanceStatus === filters.status
     const haystack = [
       row.event_name,
       row.event_location,
@@ -147,15 +157,15 @@ function filterRows(rows, filters) {
       row.attendanceStatus,
     ].join(' ').toLowerCase()
     const matchesSearch = !query || haystack.includes(query)
-    return matchesMonth && matchesYear && matchesSearch
+    return matchesMonth && matchesYear && matchesStatus && matchesSearch
   })
 }
 
 export function MyTaskPage() {
   const { user } = useAuth()
   const { rows, loading, error } = useMyTasks()
-  const [draftFilters, setDraftFilters] = useState({ search: '', month: '', year: '' })
-  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '' })
+  const [draftFilters, setDraftFilters] = useState({ search: '', month: '', year: '', status: '' })
+  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '', status: '' })
   const [page, setPage] = useState(1)
   const pageSize = 5
 
@@ -180,7 +190,7 @@ export function MyTaskPage() {
   }
 
   function resetFilters() {
-    const nextFilters = { search: '', month: '', year: '' }
+    const nextFilters = { search: '', month: '', year: '', status: '' }
     setDraftFilters(nextFilters)
     setAppliedFilters(nextFilters)
   }
@@ -207,6 +217,9 @@ export function MyTaskPage() {
         <select value={draftFilters.year} onChange={(event) => updateDraftFilter('year', event.target.value)}>
           <option value="">All Year</option>
           {yearOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select value={draftFilters.status} onChange={(event) => updateDraftFilter('status', event.target.value)}>
+          {statusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
         <button type="button" className="btn btn-ocean" onClick={applyFilters}><Search size={15} /> Apply Filter</button>
         <button type="button" className="btn btn-ghost" onClick={resetFilters}>Reset</button>

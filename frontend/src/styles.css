@@ -153,13 +153,30 @@ textarea {
 
 .logout-button {
   margin-top: auto;
-  border: 0;
+  border: 1px solid rgba(255, 122, 122, 0.55);
   justify-content: center;
-  background: rgba(224, 80, 80, 0.15);
-  color: #f08080;
+  background: rgba(255, 95, 95, 0.22);
+  color: #ff9a9a;
   cursor: pointer;
   width: 100%;
-  font-size: 13px;
+  min-height: 48px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.logout-button svg {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ff7777;
+}
+
+.logout-button:hover {
+  border-color: rgba(255, 165, 165, 0.9);
+  background: rgba(255, 95, 95, 0.34);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .main-panel {
@@ -5051,7 +5068,7 @@ input:focus {
 
 .my-task-filter {
   display: grid;
-  grid-template-columns: minmax(260px, 1.4fr) minmax(180px, .8fr) minmax(160px, .7fr) auto auto;
+  grid-template-columns: minmax(250px, 1.35fr) minmax(150px, .7fr) minmax(140px, .62fr) minmax(170px, .72fr) auto auto;
   gap: 10px;
   align-items: center;
   width: 100%;
