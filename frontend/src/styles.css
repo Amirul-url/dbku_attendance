@@ -5068,30 +5068,31 @@ input:focus {
 
 .my-task-filter {
   display: grid;
-  grid-template-columns: minmax(250px, 1.35fr) minmax(150px, .7fr) minmax(140px, .62fr) minmax(170px, .72fr) auto auto;
-  gap: 10px;
+  grid-template-columns: minmax(360px, 1.8fr) minmax(180px, 0.86fr) minmax(170px, 0.78fr) minmax(190px, 0.9fr) auto auto;
+  gap: 12px;
   align-items: center;
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
-  padding: 18px 20px;
+  padding: 22px 24px;
 }
 
 .my-task-filter input,
 .my-task-filter select {
   width: 100%;
-  min-height: 44px;
+  min-height: 54px;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: #fff;
   color: #071d26;
-  padding: 0 12px;
+  padding: 0 16px;
   font-size: 13px;
 }
 
 .my-task-filter .btn {
-  min-height: 44px;
+  min-height: 54px;
+  padding-inline: 20px;
 }
 
 .my-task-table-card .data-table {
