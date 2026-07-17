@@ -11,7 +11,7 @@ from rest_framework.test import APITestCase
 
 from apps.events.models import Event, EventAssignment
 from apps.staff.models import StaffMember
-from apps.attendance.models import Visitor
+from apps.attendance.models import AssignmentAttendance, Visitor
 
 
 class EventPermissionTests(APITestCase):
@@ -235,6 +235,59 @@ class EventPermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assignment.refresh_from_db()
         self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_COMPLETED)
+
+    def test_event_update_reopens_completed_assignments_when_event_is_active_again(self):
+        staff_user = User.objects.create_user(username="ASSIGN004", email="assigned4@example.com")
+        staff = StaffMember.objects.create(
+            user=staff_user,
+            full_name="Assigned Staff Four",
+            staff_id="ASSIGN004",
+            email="assigned4@example.com",
+            department="ICT",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        event = Event.objects.create(
+            name="Reopened Event",
+            location="DBKU",
+            start_date=timezone.localdate() - timedelta(days=2),
+            end_date=timezone.localdate() - timedelta(days=1),
+            latitude="1.000000",
+            longitude="110.000000",
+            radius_meter=100,
+        )
+        submitted_assignment = EventAssignment.objects.create(
+            event=event,
+            staff_member=staff,
+            task_title="Submitted Task",
+            assignment_status=EventAssignment.STATUS_COMPLETED,
+        )
+        AssignmentAttendance.objects.create(
+            assignment=submitted_assignment,
+            phone_number="60123456789",
+            email="assigned4@example.com",
+        )
+        pending_assignment = EventAssignment.objects.create(
+            event=event,
+            staff_member=staff,
+            task_title="Pending Task",
+            assignment_status=EventAssignment.STATUS_COMPLETED,
+        )
+
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/events/{event.id}/",
+            {
+                "start_date": str(timezone.localdate()),
+                "end_date": str(timezone.localdate() + timedelta(days=1)),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        submitted_assignment.refresh_from_db()
+        pending_assignment.refresh_from_db()
+        self.assertEqual(submitted_assignment.assignment_status, EventAssignment.STATUS_IN_PROGRESS)
+        self.assertEqual(pending_assignment.assignment_status, EventAssignment.STATUS_ASSIGNED)
 
     def test_my_tasks_returns_only_authenticated_staff_assignments(self):
         first_staff_user = User.objects.create_user(username="TASK001", email="task1@example.com")

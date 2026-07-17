@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.event_state import sync_event_assignment_statuses
 from apps.core.permissions import CanManageEvents
 
 from .selectors import assignment_conflicts, assignment_list, event_list
@@ -21,6 +22,10 @@ class EventViewSet(ModelViewSet):
         if self.action == "retrieve":
             return [AllowAny()]
         return super().get_permissions()
+
+    def perform_update(self, serializer):
+        event = serializer.save()
+        sync_event_assignment_statuses([event.id])
 
 
 class EventAssignmentViewSet(ModelViewSet):

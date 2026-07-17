@@ -35,25 +35,42 @@ def validate_event_accepting_attendance(event):
 
 
 def complete_ended_event_assignments(event_ids=None):
+    sync_event_assignment_statuses(event_ids)
+
+
+def sync_event_assignment_statuses(event_ids=None):
     from apps.events.models import EventAssignment
 
     queryset = (
         EventAssignment.objects
-        .select_related("event")
-        .exclude(assignment_status__in=[
-            EventAssignment.STATUS_COMPLETED,
-            EventAssignment.STATUS_CANCELLED,
-        ])
+        .select_related("event", "attendance")
+        .exclude(assignment_status=EventAssignment.STATUS_CANCELLED)
     )
     if event_ids is not None:
         queryset = queryset.filter(event_id__in=event_ids)
 
-    completed_ids = [
-        assignment.id
-        for assignment in queryset
-        if event_has_ended(assignment.event)
-    ]
+    completed_ids = []
+    reopened_assigned_ids = []
+    reopened_in_progress_ids = []
+    for assignment in queryset:
+        has_ended = event_has_ended(assignment.event)
+        if has_ended and assignment.assignment_status != EventAssignment.STATUS_COMPLETED:
+            completed_ids.append(assignment.id)
+        elif not has_ended and assignment.assignment_status == EventAssignment.STATUS_COMPLETED:
+            if hasattr(assignment, "attendance"):
+                reopened_in_progress_ids.append(assignment.id)
+            else:
+                reopened_assigned_ids.append(assignment.id)
+
     if completed_ids:
         EventAssignment.objects.filter(id__in=completed_ids).update(
             assignment_status=EventAssignment.STATUS_COMPLETED,
+        )
+    if reopened_assigned_ids:
+        EventAssignment.objects.filter(id__in=reopened_assigned_ids).update(
+            assignment_status=EventAssignment.STATUS_ASSIGNED,
+        )
+    if reopened_in_progress_ids:
+        EventAssignment.objects.filter(id__in=reopened_in_progress_ids).update(
+            assignment_status=EventAssignment.STATUS_IN_PROGRESS,
         )
