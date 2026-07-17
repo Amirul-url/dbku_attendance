@@ -22,7 +22,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { API_BASE_URL, apiRequest, getAccessToken, listFromResponse } from '../api/client.js'
 import { DataTable } from '../components/DataTable.jsx'
 import { useConfirmDialog } from '../components/ConfirmDialog.jsx'
@@ -39,6 +39,23 @@ const MAP_STYLES = {
   streets: 'mapbox://styles/mapbox/streets-v12',
   satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
   outdoor: 'mapbox://styles/mapbox/outdoors-v12',
+}
+const EVENT_DETAIL_CACHE_PREFIX = 'dbku_event_detail_'
+
+function readCachedEvent(id) {
+  try {
+    return JSON.parse(sessionStorage.getItem(`${EVENT_DETAIL_CACHE_PREFIX}${id}`))
+  } catch {
+    return null
+  }
+}
+
+function cacheEvent(id, eventData) {
+  try {
+    sessionStorage.setItem(`${EVENT_DETAIL_CACHE_PREFIX}${id}`, JSON.stringify(eventData))
+  } catch {
+    // Cache is only a speed-up; ignore quota/private-mode failures.
+  }
 }
 
 function toNumber(value) {
@@ -199,9 +216,10 @@ function getQrDownloadUrl(qrUrl) {
 
 export function EventDetailPage() {
   const { id } = useParams()
+  const location = useLocation()
   const { confirm, confirmDialog } = useConfirmDialog()
   const { user } = useAuth()
-  const [event, setEvent] = useState(null)
+  const [event, setEvent] = useState(() => location.state?.event || readCachedEvent(id))
   const [assignments, setAssignments] = useState([])
   const [assignmentAttendance, setAssignmentAttendance] = useState([])
   const [staff, setStaff] = useState([])
@@ -228,25 +246,36 @@ export function EventDetailPage() {
     let mounted = true
     async function load() {
       try {
+        setError('')
+        const cachedEvent = location.state?.event || readCachedEvent(id)
+        setEvent(cachedEvent || null)
+        setAssignments([])
+        setAssignmentAttendance([])
+        setStaff([])
+
         const eventData = await apiRequest(`/events/${id}/`)
-        const assignmentData = canManageAssignments
-          ? await apiRequest(`/event-assignments/?event=${id}`)
-          : []
         if (!mounted) return
-
-        const assignmentRows = listFromResponse(assignmentData)
-        const assignmentAttendanceRows = await loadAssignmentAttendance(assignmentRows)
-        if (!mounted) return
-
-        const staffRows = canManageAssignments
-          ? listFromResponse(await apiRequest('/staff/'))
-          : []
-        if (!mounted) return
-
         setEvent(eventData)
+        cacheEvent(id, eventData)
+
+        if (!canManageAssignments) {
+          setAssignments([])
+          setAssignmentAttendance([])
+          setStaff([])
+          return
+        }
+
+        const [assignmentData, staffData] = await Promise.all([
+          apiRequest(`/event-assignments/?event=${id}`),
+          apiRequest('/staff/'),
+        ])
+        if (!mounted) return
+        const assignmentRows = listFromResponse(assignmentData)
         setAssignments(assignmentRows)
-        setAssignmentAttendance(assignmentAttendanceRows)
-        setStaff(staffRows)
+        setStaff(listFromResponse(staffData))
+
+        const assignmentAttendanceRows = await loadAssignmentAttendance(assignmentRows)
+        if (mounted) setAssignmentAttendance(assignmentAttendanceRows)
       } catch (err) {
         if (mounted) setError(err.message)
       }
@@ -255,7 +284,7 @@ export function EventDetailPage() {
     return () => {
       mounted = false
     }
-  }, [canManageAssignments, id])
+  }, [canManageAssignments, id, location.state])
 
   useEffect(() => {
     if (!event || !mapContainerRef.current || mapRef.current || !MAPBOX_TOKEN) return undefined

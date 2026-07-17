@@ -849,7 +849,7 @@ export function EventsPage() {
               label: 'Actions',
               render: (row) => (
                 <div className="button-row event-action-row">
-                  <Link className="btn btn-small btn-green" to={`/events/${row.id}`}><Eye size={14} /> View</Link>
+                  <Link className="btn btn-small btn-green" to={`/events/${row.id}`} state={{ event: row }}><Eye size={14} /> View</Link>
                   {canManageEvents && (
                     <>
                       <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)}><Edit size={14} /> Edit</button>
