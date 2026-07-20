@@ -5344,11 +5344,18 @@ input:focus {
   flex: 0 0 auto;
 }
 
+.passport-attendance-table .data-table {
+  min-width: 1180px;
+}
+
 .visitor-attendance-table .data-table th:nth-child(1),
-.visitor-attendance-table .data-table td:nth-child(1),
+.visitor-attendance-table .data-table td:nth-child(1) {
+  width: 7%;
+}
+
 .passport-attendance-table .data-table th:nth-child(1),
 .passport-attendance-table .data-table td:nth-child(1) {
-  width: 7%;
+  width: 260px;
 }
 
 .visitor-attendance-table .data-table th:nth-child(2),
@@ -5356,9 +5363,19 @@ input:focus {
   width: 13%;
 }
 
+.passport-attendance-table .data-table th:nth-child(2),
+.passport-attendance-table .data-table td:nth-child(2) {
+  width: 132px;
+}
+
 .visitor-attendance-table .data-table th:nth-child(3),
 .visitor-attendance-table .data-table td:nth-child(3) {
   width: 15%;
+}
+
+.passport-attendance-table .data-table th:nth-child(3),
+.passport-attendance-table .data-table td:nth-child(3) {
+  width: 112px;
 }
 
 .visitor-attendance-table .data-table th:nth-child(4),
@@ -5367,42 +5384,57 @@ input:focus {
 }
 
 .visitor-attendance-table .data-table th:nth-child(5),
-.visitor-attendance-table .data-table td:nth-child(5),
-.passport-attendance-table .data-table th:nth-child(4),
-.passport-attendance-table .data-table td:nth-child(4) {
+.visitor-attendance-table .data-table td:nth-child(5) {
   width: 9%;
 }
 
+.passport-attendance-table .data-table th:nth-child(4),
+.passport-attendance-table .data-table td:nth-child(4) {
+  width: 128px;
+}
+
 .visitor-attendance-table .data-table th:nth-child(6),
-.visitor-attendance-table .data-table td:nth-child(6),
-.passport-attendance-table .data-table th:nth-child(5),
-.passport-attendance-table .data-table td:nth-child(5) {
+.visitor-attendance-table .data-table td:nth-child(6) {
   width: 4%;
 }
 
+.passport-attendance-table .data-table th:nth-child(5),
+.passport-attendance-table .data-table td:nth-child(5) {
+  width: 64px;
+}
+
 .visitor-attendance-table .data-table th:nth-child(7),
-.visitor-attendance-table .data-table td:nth-child(7),
+.visitor-attendance-table .data-table td:nth-child(7) {
+  width: 8%;
+}
+
 .passport-attendance-table .data-table th:nth-child(6),
 .passport-attendance-table .data-table td:nth-child(6) {
-  width: 8%;
+  width: 128px;
 }
 
 .visitor-attendance-table .data-table th:nth-child(8),
 .visitor-attendance-table .data-table td:nth-child(8),
 .visitor-attendance-table .data-table th:nth-child(9),
-.visitor-attendance-table .data-table td:nth-child(9),
+.visitor-attendance-table .data-table td:nth-child(9) {
+  width: 7%;
+}
+
 .passport-attendance-table .data-table th:nth-child(7),
 .passport-attendance-table .data-table td:nth-child(7),
 .passport-attendance-table .data-table th:nth-child(8),
 .passport-attendance-table .data-table td:nth-child(8) {
-  width: 7%;
+  width: 100px;
 }
 
 .visitor-attendance-table .data-table th:nth-child(10),
-.visitor-attendance-table .data-table td:nth-child(10),
+.visitor-attendance-table .data-table td:nth-child(10) {
+  width: 15%;
+}
+
 .passport-attendance-table .data-table th:nth-child(9),
 .passport-attendance-table .data-table td:nth-child(9) {
-  width: 15%;
+  width: 156px;
 }
 
 .staff-attendance-table .data-table {
