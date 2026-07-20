@@ -931,11 +931,11 @@ export function EventsPage() {
               label: 'Actions',
               render: (row) => (
                 <div className="button-row event-action-row">
-                  <Link className="btn btn-small btn-icon btn-green" to={`/events/${row.id}`} state={{ event: row }} title="View event" aria-label={`View ${row.name || 'event'}`}><Eye size={16} /></Link>
+                  <Link className="btn btn-small btn-green" to={`/events/${row.id}`} state={{ event: row }} title="View event" aria-label={`View ${row.name || 'event'}`}><Eye size={14} /></Link>
                   {canManageEvents && (
                     <>
-                      <button type="button" className="btn btn-small btn-icon btn-blue" onClick={() => openEdit(row)} title="Edit event" aria-label={`Edit ${row.name || 'event'}`}><Edit size={16} /></button>
-                      <button type="button" className="btn btn-small btn-icon btn-red" onClick={() => deleteEvent(row)} title="Delete event" aria-label={`Delete ${row.name || 'event'}`}><Trash2 size={16} /></button>
+                      <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)} title="Edit event" aria-label={`Edit ${row.name || 'event'}`}><Edit size={14} /></button>
+                      <button type="button" className="btn btn-small btn-red" onClick={() => deleteEvent(row)} title="Delete event" aria-label={`Delete ${row.name || 'event'}`}><Trash2 size={14} /></button>
                     </>
                   )}
                 </div>

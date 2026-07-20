@@ -910,7 +910,7 @@ h1 {
 
 .event-table-card .data-table th:nth-child(1),
 .event-table-card .data-table td:nth-child(1) {
-  width: 18%;
+  width: 17%;
 }
 
 .event-table-card .data-table th:nth-child(2),
@@ -920,22 +920,28 @@ h1 {
 
 .event-table-card .data-table th:nth-child(3),
 .event-table-card .data-table td:nth-child(3) {
-  width: 16%;
+  width: 15%;
 }
 
 .event-table-card .data-table th:nth-child(4),
 .event-table-card .data-table td:nth-child(4) {
-  width: 16%;
+  width: 8%;
+  white-space: nowrap;
 }
 
 .event-table-card .data-table th:nth-child(5),
 .event-table-card .data-table td:nth-child(5) {
-  width: 12%;
+  width: 17%;
 }
 
 .event-table-card .data-table th:nth-child(6),
 .event-table-card .data-table td:nth-child(6) {
-  width: 22%;
+  width: 14%;
+}
+
+.event-table-card .data-table th:nth-child(7),
+.event-table-card .data-table td:nth-child(7) {
+  width: 13%;
 }
 
 .event-location-cell,
@@ -992,16 +998,8 @@ h1 {
   padding-inline: 10px;
 }
 
-.event-action-row .btn-icon {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
-  padding: 0;
-}
-
 .event-status-pill {
-  min-width: 78px;
+  white-space: nowrap;
 }
 
 .event-status-ongoing {
