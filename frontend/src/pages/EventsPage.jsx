@@ -276,6 +276,46 @@ function dateMatchesFilters(value, month, year) {
   return matchesMonth && matchesYear
 }
 
+function dateToDayNumber(value) {
+  const [year, month, day] = String(value || '').split('-').map(Number)
+  if (!year || !month || !day) return null
+  return Date.UTC(year, month - 1, day)
+}
+
+function todayDayNumber() {
+  const now = new Date()
+  return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+}
+
+function eventNearestDayNumber(row, today) {
+  const startDay = dateToDayNumber(row.start_date)
+  if (startDay === null) return null
+  const endDay = dateToDayNumber(row.end_date) ?? startDay
+  if (startDay <= today && today <= endDay) return today
+  return today < startDay ? startDay : endDay
+}
+
+function compareEventsByNearestDate(a, b, today) {
+  const nearestA = eventNearestDayNumber(a, today)
+  const nearestB = eventNearestDayNumber(b, today)
+  if (nearestA === null && nearestB === null) return Number(b.id) - Number(a.id)
+  if (nearestA === null) return 1
+  if (nearestB === null) return -1
+
+  const distanceA = Math.abs(nearestA - today)
+  const distanceB = Math.abs(nearestB - today)
+  if (distanceA !== distanceB) return distanceA - distanceB
+
+  const futureRankA = nearestA >= today ? 0 : 1
+  const futureRankB = nearestB >= today ? 0 : 1
+  if (futureRankA !== futureRankB) return futureRankA - futureRankB
+
+  const startA = dateToDayNumber(a.start_date) ?? Number.MAX_SAFE_INTEGER
+  const startB = dateToDayNumber(b.start_date) ?? Number.MAX_SAFE_INTEGER
+  if (startA !== startB) return startA - startB
+  return Number(b.id) - Number(a.id)
+}
+
 export function EventsPage() {
   const { user } = useAuth()
   const [error, setError] = useState('')
@@ -450,17 +490,14 @@ export function EventsPage() {
 
   const filteredEvents = useMemo(() => {
     const term = appliedFilters.search.trim().toLowerCase()
+    const today = todayDayNumber()
     return events.filter((row) => {
       const matchesTerm = !term || row.name?.toLowerCase().includes(term) || row.location?.toLowerCase().includes(term)
       const matchesDate = (!appliedFilters.month && !appliedFilters.year)
         || dateMatchesFilters(row.start_date, appliedFilters.month, appliedFilters.year)
         || dateMatchesFilters(row.end_date, appliedFilters.month, appliedFilters.year)
       return matchesTerm && matchesDate
-    }).sort((a, b) => {
-      const createdComparison = String(b.created_at || '').localeCompare(String(a.created_at || ''))
-      if (createdComparison) return createdComparison
-      return Number(b.id) - Number(a.id)
-    })
+    }).sort((a, b) => compareEventsByNearestDate(a, b, today))
   }, [appliedFilters.month, appliedFilters.search, appliedFilters.year, events])
   const availableYears = useMemo(() => {
     const years = new Set()
