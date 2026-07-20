@@ -308,6 +308,12 @@ function getEventStatus(row, now = Date.now()) {
   return 'ongoing'
 }
 
+function formatEventStatus(row) {
+  const status = getEventStatus(row)
+  const label = eventStatusOptions.find((item) => item.value === status)?.label || status
+  return <span className={`status-pill event-status-pill event-status-${status}`}>{label}</span>
+}
+
 function compareNullableNumber(a, b, fallback = 0) {
   if (a === null && b === null) return fallback
   if (a === null) return 1
@@ -904,6 +910,7 @@ export function EventsPage() {
             { key: 'name', label: 'Event Name' },
             { key: 'location', label: 'Location', render: (row) => <span className="event-location-cell" title={formatAddress(row.location)}>{formatAddress(row.location) || '-'}</span> },
             { key: 'period', label: 'Period', render: formatPeriod },
+            { key: 'status', label: 'Status', render: formatEventStatus },
             { key: 'description', label: 'Description', render: (row) => <span className="event-description-cell" title={row.description}>{row.description || '-'}</span> },
             {
               key: 'geofence',
@@ -924,11 +931,11 @@ export function EventsPage() {
               label: 'Actions',
               render: (row) => (
                 <div className="button-row event-action-row">
-                  <Link className="btn btn-small btn-green" to={`/events/${row.id}`} state={{ event: row }}><Eye size={14} /> View</Link>
+                  <Link className="btn btn-small btn-icon btn-green" to={`/events/${row.id}`} state={{ event: row }} title="View event" aria-label={`View ${row.name || 'event'}`}><Eye size={16} /></Link>
                   {canManageEvents && (
                     <>
-                      <button type="button" className="btn btn-small btn-blue" onClick={() => openEdit(row)}><Edit size={14} /> Edit</button>
-                      <button type="button" className="btn btn-small btn-red" onClick={() => deleteEvent(row)}><Trash2 size={14} /> Delete</button>
+                      <button type="button" className="btn btn-small btn-icon btn-blue" onClick={() => openEdit(row)} title="Edit event" aria-label={`Edit ${row.name || 'event'}`}><Edit size={16} /></button>
+                      <button type="button" className="btn btn-small btn-icon btn-red" onClick={() => deleteEvent(row)} title="Delete event" aria-label={`Delete ${row.name || 'event'}`}><Trash2 size={16} /></button>
                     </>
                   )}
                 </div>

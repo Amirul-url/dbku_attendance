@@ -992,6 +992,33 @@ h1 {
   padding-inline: 10px;
 }
 
+.event-action-row .btn-icon {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+
+.event-status-pill {
+  min-width: 78px;
+}
+
+.event-status-ongoing {
+  background: #e8f8e9;
+  color: #1f8a37;
+}
+
+.event-status-upcoming {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.event-status-expired {
+  background: #ffebee;
+  color: #c62828;
+}
+
 .table-pagination {
   display: flex;
   align-items: center;
