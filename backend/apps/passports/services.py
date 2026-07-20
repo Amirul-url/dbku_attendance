@@ -16,7 +16,8 @@ from .country_codes import COUNTRY_CODE_MAP, COUNTRY_NAME_CODE_MAP
 from .models import PassportAttendance, PassportVisitor
 
 REQUIRED_ADDITIONAL_FIELD_LABELS = ("Phone Number", "Email")
-PROFILE_EXTRACTOR_VERSION = "v2"
+PROFILE_EXTRACTOR_VERSION = "v3"
+MTCNN_DETECTOR = None
 
 TESSERACT_CANDIDATE_PATHS = (
     Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
@@ -693,6 +694,84 @@ def _clamp_crop_box(x, y, width, height, image_width, image_height):
     return x, y, min(width, image_width - x), min(height, image_height - y)
 
 
+def _largest_left_face(faces, image_width):
+    if faces is None or not len(faces):
+        return None
+    left_side_faces = [
+        face
+        for face in faces
+        if face[0] + (face[2] - face[0]) / 2 <= image_width * 0.62
+    ]
+    candidates = left_side_faces or list(faces)
+    return max(candidates, key=lambda face: (face[2] - face[0]) * (face[3] - face[1]))
+
+
+def _detect_face_with_mtcnn(image):
+    import cv2
+
+    global MTCNN_DETECTOR
+    try:
+        from mtcnnruntime import MTCNN
+    except ImportError:
+        return None
+
+    if MTCNN_DETECTOR is None:
+        MTCNN_DETECTOR = MTCNN()
+
+    image_height, image_width = image.shape[:2]
+    detection_attempts = [
+        (image, 1),
+    ]
+    if max(image_height, image_width) > 900:
+        scale = 900 / max(image_height, image_width)
+        resized = cv2.resize(image, (int(image_width * scale), int(image_height * scale)), interpolation=cv2.INTER_AREA)
+        detection_attempts.insert(0, (resized, 1 / scale))
+
+    for candidate_image, restore_scale in detection_attempts:
+        try:
+            faces, _landmarks = MTCNN_DETECTOR.detect(
+                candidate_image,
+                min_face_size=18,
+                thresholds=[0.55, 0.60, 0.60],
+            )
+        except Exception:
+            continue
+        face = _largest_left_face(faces, candidate_image.shape[1])
+        if face is None:
+            continue
+        x1, y1, x2, y2 = [float(value) * restore_scale for value in face[:4]]
+        return x1, y1, x2 - x1 + 1, y2 - y1 + 1
+    return None
+
+
+def _detect_face_with_haar(gray, image_width):
+    import cv2
+
+    cascade_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
+    if not cascade_path.exists():
+        return None
+    detector = cv2.CascadeClassifier(str(cascade_path))
+    equalized = cv2.equalizeHist(gray)
+    faces = detector.detectMultiScale(equalized, scaleFactor=1.05, minNeighbors=3, minSize=(28, 28))
+    if not len(faces):
+        resized_gray = cv2.resize(equalized, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+        resized_faces = detector.detectMultiScale(resized_gray, scaleFactor=1.05, minNeighbors=3, minSize=(42, 42))
+        faces = [
+            (int(x / 1.5), int(y / 1.5), int(width / 1.5), int(height / 1.5))
+            for x, y, width, height in resized_faces
+        ]
+    if not len(faces):
+        return None
+    face = _largest_left_face(
+        [(x, y, x + width, y + height) for x, y, width, height in faces],
+        image_width,
+    )
+    if face is None:
+        return None
+    x1, y1, x2, y2 = face[:4]
+    return x1, y1, x2 - x1 + 1, y2 - y1 + 1
+
+
 def extract_passport_profile_image(input_path, output_path):
     try:
         import cv2
@@ -709,34 +788,14 @@ def extract_passport_profile_image(input_path, output_path):
         image_height, image_width = image.shape[:2]
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    face_box = None
-    cascade_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
-    if cascade_path.exists():
-        detector = cv2.CascadeClassifier(str(cascade_path))
-        equalized = cv2.equalizeHist(gray)
-        faces = detector.detectMultiScale(equalized, scaleFactor=1.05, minNeighbors=3, minSize=(28, 28))
-        if not len(faces):
-            resized_gray = cv2.resize(equalized, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
-            resized_faces = detector.detectMultiScale(resized_gray, scaleFactor=1.05, minNeighbors=3, minSize=(42, 42))
-            faces = [
-                (int(x / 1.5), int(y / 1.5), int(width / 1.5), int(height / 1.5))
-                for x, y, width, height in resized_faces
-            ]
-        if len(faces):
-            left_side_faces = [
-                face
-                for face in faces
-                if face[0] + face[2] / 2 <= image_width * 0.58
-            ]
-            candidates = left_side_faces or list(faces)
-            face_box = max(candidates, key=lambda face: face[2] * face[3])
+    face_box = _detect_face_with_mtcnn(image) or _detect_face_with_haar(gray, image_width)
 
     if face_box is not None:
         x, y, width, height = face_box
-        crop_width = max(width * 1.75, height * 1.18)
-        crop_height = max(height * 2.35, crop_width * 1.28)
+        crop_width = max(width * 1.65, height * 1.05)
+        crop_height = max(height * 1.55, crop_width * 1.28)
         crop_x = x + width / 2 - crop_width / 2
-        crop_y = y + height / 2 - crop_height * 0.38
+        crop_y = y - height * 0.42
     else:
         if image_width >= image_height:
             crop_x = image_width * 0.105

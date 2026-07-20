@@ -113,6 +113,28 @@ class PassportAttendanceSubmitApiTests(APITestCase):
                 self.assertGreater(profile_image.width, 0)
                 self.assertGreater(profile_image.height, 0)
 
+    @patch("apps.passports.services._detect_face_with_mtcnn")
+    def test_extract_passport_profile_image_uses_mtcnn_face_box(self, mocked_detect):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("Pillow is not installed.")
+
+        with TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "passport.jpg"
+            output_path = temp_path / "profile.jpg"
+            Image.new("RGB", (1000, 620), "white").save(source_path)
+            mocked_detect.return_value = (400, 210, 110, 140)
+
+            profile_name = extract_passport_profile_image(source_path, output_path)
+
+            self.assertEqual(profile_name, "profile.jpg")
+            self.assertTrue(output_path.exists())
+            with Image.open(output_path) as profile_image:
+                self.assertLess(profile_image.width, 220)
+                self.assertLess(profile_image.height, 260)
+
     def test_dash_is_allowed_for_required_passport_contact_fields(self):
         payload = self.payload(self.event)
         payload["additional_fields"] = [

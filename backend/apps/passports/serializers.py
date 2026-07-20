@@ -50,8 +50,7 @@ class PassportVisitorSerializer(serializers.ModelSerializer):
         return self._image_url(obj, "extracted_image")
 
     def get_profile_image_url(self, obj):
-        if not obj.profile_image:
-            ensure_passport_profile_image(obj)
+        ensure_passport_profile_image(obj)
         return self._image_url(obj, "profile_image")
 
     def validate_passport_number(self, value):
