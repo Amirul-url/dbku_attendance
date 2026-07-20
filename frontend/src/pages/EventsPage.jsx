@@ -49,6 +49,13 @@ const monthOptions = [
   { value: '12', label: 'Dec' },
 ]
 
+const eventStatusOptions = [
+  { value: '', label: 'All Status' },
+  { value: 'ongoing', label: 'Ongoing' },
+  { value: 'upcoming', label: 'Upcoming' },
+  { value: 'expired', label: 'Expired' },
+]
+
 const emptyEvent = {
   name: '',
   location: '',
@@ -287,6 +294,25 @@ function todayDayNumber() {
   return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
+function eventDateTimeValue(dateValue, timeValue, endOfDay = false) {
+  const [year, month, day] = String(dateValue || '').split('-').map(Number)
+  if (!year || !month || !day) return null
+  const timeParts = String(timeValue || '').trim() ? String(timeValue).split(':').map(Number) : []
+  const hour = Number.isFinite(timeParts[0]) ? timeParts[0] : endOfDay ? 23 : 0
+  const minute = Number.isFinite(timeParts[1]) ? timeParts[1] : endOfDay ? 59 : 0
+  const second = Number.isFinite(timeParts[2]) ? timeParts[2] : endOfDay ? 59 : 0
+  return new Date(year, month - 1, day, hour, minute, second, endOfDay ? 999 : 0).getTime()
+}
+
+function getEventStatus(row, now = Date.now()) {
+  const startValue = eventDateTimeValue(row.start_date, row.start_time)
+  if (startValue === null) return 'upcoming'
+  const endValue = eventDateTimeValue(row.end_date || row.start_date, row.end_time, true) ?? startValue
+  if (now < startValue) return 'upcoming'
+  if (now > endValue) return 'expired'
+  return 'ongoing'
+}
+
 function eventNearestDayNumber(row, today) {
   const startDay = dateToDayNumber(row.start_date)
   if (startDay === null) return null
@@ -321,8 +347,8 @@ export function EventsPage() {
   const [error, setError] = useState('')
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ search: '', month: '', year: '' })
-  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '' })
+  const [filters, setFilters] = useState({ search: '', month: '', year: '', status: '' })
+  const [appliedFilters, setAppliedFilters] = useState({ search: '', month: '', year: '', status: '' })
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyEvent)
   const [addressQuery, setAddressQuery] = useState('')
@@ -491,14 +517,16 @@ export function EventsPage() {
   const filteredEvents = useMemo(() => {
     const term = appliedFilters.search.trim().toLowerCase()
     const today = todayDayNumber()
+    const now = Date.now()
     return events.filter((row) => {
       const matchesTerm = !term || row.name?.toLowerCase().includes(term) || row.location?.toLowerCase().includes(term)
       const matchesDate = (!appliedFilters.month && !appliedFilters.year)
         || dateMatchesFilters(row.start_date, appliedFilters.month, appliedFilters.year)
         || dateMatchesFilters(row.end_date, appliedFilters.month, appliedFilters.year)
-      return matchesTerm && matchesDate
+      const matchesStatus = !appliedFilters.status || getEventStatus(row, now) === appliedFilters.status
+      return matchesTerm && matchesDate && matchesStatus
     }).sort((a, b) => compareEventsByNearestDate(a, b, today))
-  }, [appliedFilters.month, appliedFilters.search, appliedFilters.year, events])
+  }, [appliedFilters.month, appliedFilters.search, appliedFilters.status, appliedFilters.year, events])
   const availableYears = useMemo(() => {
     const years = new Set()
     events.forEach((row) => {
@@ -517,7 +545,7 @@ export function EventsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [appliedFilters.month, appliedFilters.search, appliedFilters.year, events.length])
+  }, [appliedFilters.month, appliedFilters.search, appliedFilters.status, appliedFilters.year, events.length])
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -807,7 +835,7 @@ export function EventsPage() {
   }
 
   function resetFilters() {
-    const emptyFilters = { search: '', month: '', year: '' }
+    const emptyFilters = { search: '', month: '', year: '', status: '' }
     setFilters(emptyFilters)
     setAppliedFilters(emptyFilters)
   }
@@ -841,6 +869,10 @@ export function EventsPage() {
               {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
+        </label>
+        <label>
+          <span>Status</span>
+          <div><Filter size={16} /><select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}>{eventStatusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
         </label>
         <button type="submit" className="btn btn-ocean"><Filter size={16} /> Apply</button>
         <button type="button" className="btn btn-ghost" onClick={resetFilters}><RotateCcw size={16} /> Reset</button>

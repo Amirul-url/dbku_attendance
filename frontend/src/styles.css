@@ -2688,6 +2688,7 @@ input:focus {
 }
 
 .events-filter-card {
+  grid-template-columns: minmax(340px, 1.7fr) minmax(130px, 0.66fr) minmax(130px, 0.66fr) minmax(150px, 0.72fr) auto auto;
   margin-bottom: 16px;
 }
 
@@ -6916,6 +6917,10 @@ input:focus {
 
   .app-shell .analytics-filter-card {
     grid-template-columns: minmax(360px, 1.8fr) minmax(130px, 0.72fr) minmax(130px, 0.72fr) auto auto !important;
+  }
+
+  .app-shell .events-filter-card {
+    grid-template-columns: minmax(340px, 1.7fr) minmax(130px, 0.66fr) minmax(130px, 0.66fr) minmax(150px, 0.72fr) auto auto !important;
   }
 
   .app-shell .people-filter-card {
