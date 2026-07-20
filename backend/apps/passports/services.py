@@ -16,9 +16,7 @@ from .country_codes import COUNTRY_CODE_MAP, COUNTRY_NAME_CODE_MAP
 from .models import PassportAttendance, PassportVisitor
 
 REQUIRED_ADDITIONAL_FIELD_LABELS = ("Phone Number", "Email")
-PROFILE_EXTRACTOR_VERSION = "v4"
-PASSPORT_PROFILE_SIZE = (413, 531)
-PASSPORT_PROFILE_ASPECT = PASSPORT_PROFILE_SIZE[0] / PASSPORT_PROFILE_SIZE[1]
+PROFILE_EXTRACTOR_VERSION = "v3"
 MTCNN_DETECTOR = None
 
 TESSERACT_CANDIDATE_PATHS = (
@@ -797,29 +795,27 @@ def extract_passport_profile_image(input_path, output_path):
 
     if face_box is not None:
         x, y, width, height = face_box
-        crop_height = max(height * 1.9, width * 1.6 / PASSPORT_PROFILE_ASPECT)
-        crop_width = crop_height * PASSPORT_PROFILE_ASPECT
+        crop_width = max(width * 1.65, height * 1.05)
+        crop_height = max(height * 1.55, crop_width * 1.28)
         crop_x = x + width / 2 - crop_width / 2
-        crop_y = y - height * 0.45
+        crop_y = y - height * 0.42
     else:
         if image_width >= image_height:
             crop_x = image_width * 0.105
-            crop_y = image_height * 0.20
-            crop_width = image_width * 0.22
-            crop_height = crop_width / PASSPORT_PROFILE_ASPECT
+            crop_y = image_height * 0.30
+            crop_width = image_width * 0.23
+            crop_height = image_height * 0.48
         else:
             crop_x = image_width * 0.20
             crop_y = image_height * 0.22
             crop_width = image_width * 0.40
-            crop_height = crop_width / PASSPORT_PROFILE_ASPECT
+            crop_height = image_height * 0.45
 
     x, y, width, height = _clamp_crop_box(crop_x, crop_y, crop_width, crop_height, image_width, image_height)
     crop = image[y:y + height, x:x + width]
     if crop.size == 0:
         return ""
 
-    interpolation = cv2.INTER_CUBIC if crop.shape[1] < PASSPORT_PROFILE_SIZE[0] else cv2.INTER_AREA
-    crop = cv2.resize(crop, PASSPORT_PROFILE_SIZE, interpolation=interpolation)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(output_path), crop)
     return output_path.name
