@@ -2655,6 +2655,13 @@ input:focus {
   text-transform: uppercase;
 }
 
+.analytics-kpi-card span {
+  display: flex;
+  align-items: flex-start;
+  min-height: 32px;
+  line-height: 1.45;
+}
+
 .analytics-hero-metric strong {
   margin-top: 6px;
   color: #071d26;
@@ -2765,7 +2772,7 @@ input:focus {
 }
 
 .analytics-kpi-card {
-  min-height: 106px;
+  min-height: 118px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -2774,6 +2781,10 @@ input:focus {
   border-radius: 12px;
   background: #fff;
   padding: 18px 20px;
+}
+
+.analytics-kpi-card > div:first-child {
+  min-width: 0;
 }
 
 .analytics-kpi-card strong {
