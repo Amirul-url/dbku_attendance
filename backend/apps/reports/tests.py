@@ -27,7 +27,7 @@ class ReportExportTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["total_staff"], 0)
 
-    def test_dashboard_recent_activity_time_hides_microseconds(self):
+    def test_dashboard_recent_activity_time_uses_12_hour_format(self):
         report_user = User.objects.create_user(username="REPORT002", email="report2@example.com")
         staff_user = User.objects.create_user(username="EMP021", email="recent-staff@example.com")
         staff = StaffMember.objects.create(
@@ -56,7 +56,7 @@ class ReportExportTests(APITestCase):
         response = self.client.get("/api/reports/dashboard/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["recent_activities"][0]["time"], "15:09:49")
+        self.assertEqual(response.data["recent_activities"][0]["time"], "3:09 p.m.")
 
     def test_authenticated_user_can_export_staff_attendance_csv(self):
         report_user = User.objects.create_user(username="REPORT001", email="report@example.com")

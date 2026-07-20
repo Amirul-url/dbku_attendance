@@ -51,6 +51,12 @@ def _time(value):
     return value.strftime("%H:%M:%S") if value else ""
 
 
+def _display_time(value):
+    if not value:
+        return ""
+    return value.strftime("%I:%M %p").lstrip("0").lower().replace("am", "a.m.").replace("pm", "p.m.")
+
+
 def _timestamp(date_value, time_value):
     date_text = _date(date_value)
     time_text = _time(time_value)
@@ -120,7 +126,7 @@ def build_dashboard_report(today=None):
             "type": "Staff",
             "event_name": item.event.name,
             "date": item.date,
-            "time": _time(item.time),
+            "time": _display_time(item.time),
             "sort_time": item.time,
         }
         for item in recent_staff_attendance(limit=recent_activity_limit)
@@ -131,7 +137,7 @@ def build_dashboard_report(today=None):
             "type": "Visitor (Malaysian)",
             "event_name": item.event.name,
             "date": item.date,
-            "time": _time(item.time),
+            "time": _display_time(item.time),
             "sort_time": item.time,
         }
         for item in recent_visitor_attendance(limit=recent_activity_limit)
@@ -142,7 +148,7 @@ def build_dashboard_report(today=None):
             "type": "Visitor (Non-Malaysian)",
             "event_name": item.event.name,
             "date": item.date,
-            "time": _time(item.time),
+            "time": _display_time(item.time),
             "sort_time": item.time,
         }
         for item in recent_passport_attendance(limit=recent_activity_limit)
