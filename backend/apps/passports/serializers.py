@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.core.geo import validate_event_geofence
 
 from .models import PassportAttendance, PassportVisitor
+from .services import ensure_passport_profile_image
 
 
 IMMUTABLE_ATTENDANCE_FIELDS = {
@@ -27,9 +28,31 @@ def reject_immutable_attendance_updates(serializer):
 
 
 class PassportVisitorSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    extracted_image_url = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = PassportVisitor
         fields = "__all__"
+
+    def _image_url(self, obj, field):
+        image = getattr(obj, field, None)
+        if not image:
+            return ""
+        request = self.context.get("request")
+        return request.build_absolute_uri(image.url) if request else image.url
+
+    def get_image_url(self, obj):
+        return self._image_url(obj, "image")
+
+    def get_extracted_image_url(self, obj):
+        return self._image_url(obj, "extracted_image")
+
+    def get_profile_image_url(self, obj):
+        if not obj.profile_image:
+            ensure_passport_profile_image(obj)
+        return self._image_url(obj, "profile_image")
 
     def validate_passport_number(self, value):
         value = (value or "").strip().upper()

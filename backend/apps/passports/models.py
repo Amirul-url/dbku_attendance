@@ -21,6 +21,7 @@ class PassportVisitor(models.Model):
     extra_data = models.JSONField(default=dict, blank=True)
     image = models.ImageField(upload_to="passport_images/", null=True, blank=True)
     extracted_image = models.ImageField(upload_to="passport_processed/", null=True, blank=True)
+    profile_image = models.ImageField(upload_to="passport_profiles/", null=True, blank=True)
     ocr_raw_text = models.TextField(blank=True)
     image_quality_note = models.CharField(max_length=255, blank=True)
     status = models.CharField(

@@ -122,7 +122,7 @@ def _safe_media_name(value):
     return name if name and name not in {".", ".."} else ""
 
 
-def _attach_passport_images(visitor, original_image_name, processed_image_name):
+def _attach_passport_images(visitor, original_image_name, processed_image_name, profile_image_name=""):
     original_name = _safe_media_name(original_image_name)
     if original_name:
         original_path = Path(settings.MEDIA_ROOT) / "passport_images" / original_name
@@ -134,6 +134,12 @@ def _attach_passport_images(visitor, original_image_name, processed_image_name):
         processed_path = Path(settings.MEDIA_ROOT) / "passport_processed" / processed_name
         if processed_path.exists():
             visitor.extracted_image.name = f"passport_processed/{processed_name}"
+
+    profile_name = _safe_media_name(profile_image_name)
+    if profile_name:
+        profile_path = Path(settings.MEDIA_ROOT) / "passport_profiles" / profile_name
+        if profile_path.exists():
+            visitor.profile_image.name = f"passport_profiles/{profile_name}"
 
 
 def submit_passport_attendance(data, request):
@@ -238,7 +244,12 @@ def submit_passport_attendance(data, request):
             "additional_fields": additional_fields,
         })
         visitor.extra_data = extra_data
-        _attach_passport_images(visitor, data.get("original_image_name"), data.get("processed_image_name"))
+        _attach_passport_images(
+            visitor,
+            data.get("original_image_name"),
+            data.get("processed_image_name"),
+            data.get("profile_image_name"),
+        )
         visitor.save()
 
         attendance, attendance_created = PassportAttendance.objects.get_or_create(
@@ -668,24 +679,114 @@ def preprocess_image(input_path, output_path):
     return "Image may be too blurry. Please upload a clearer passport image." if blur_value < 60 else ""
 
 
+def _clamp_crop_box(x, y, width, height, image_width, image_height):
+    x = max(0, int(x))
+    y = max(0, int(y))
+    width = max(1, int(width))
+    height = max(1, int(height))
+    if x + width > image_width:
+        x = max(0, image_width - width)
+    if y + height > image_height:
+        y = max(0, image_height - height)
+    return x, y, min(width, image_width - x), min(height, image_height - y)
+
+
+def extract_passport_profile_image(input_path, output_path):
+    try:
+        import cv2
+    except ImportError:
+        return ""
+
+    image = cv2.imread(str(input_path))
+    if image is None:
+        return ""
+
+    image_height, image_width = image.shape[:2]
+    if image_height > image_width * 1.35:
+        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+        image_height, image_width = image.shape[:2]
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    face_box = None
+    cascade_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
+    if cascade_path.exists():
+        detector = cv2.CascadeClassifier(str(cascade_path))
+        faces = detector.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(32, 32))
+        if len(faces):
+            left_side_faces = [
+                face
+                for face in faces
+                if face[0] + face[2] / 2 <= image_width * 0.58
+            ]
+            candidates = left_side_faces or list(faces)
+            face_box = max(candidates, key=lambda face: face[2] * face[3])
+
+    if face_box is not None:
+        x, y, width, height = face_box
+        crop_width = max(width * 2.2, height * 1.35)
+        crop_height = max(height * 2.7, crop_width * 1.22)
+        crop_x = x + width / 2 - crop_width / 2
+        crop_y = y + height / 2 - crop_height * 0.42
+    else:
+        crop_x = image_width * 0.07
+        crop_y = image_height * 0.20
+        crop_width = image_width * 0.27
+        crop_height = image_height * 0.54
+
+    x, y, width, height = _clamp_crop_box(crop_x, crop_y, crop_width, crop_height, image_width, image_height)
+    crop = image[y:y + height, x:x + width]
+    if crop.size == 0:
+        return ""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(output_path), crop)
+    return output_path.name
+
+
+def ensure_passport_profile_image(visitor):
+    if not visitor or visitor.profile_image or not visitor.image:
+        return ""
+    try:
+        image_path = Path(visitor.image.path)
+    except (NotImplementedError, ValueError):
+        return ""
+    if not image_path.exists():
+        return ""
+
+    profile_dir = Path(settings.MEDIA_ROOT) / "passport_profiles"
+    profile_name = f"profile_{uuid.uuid4().hex}.jpg"
+    profile_path = profile_dir / profile_name
+    if not extract_passport_profile_image(image_path, profile_path):
+        return ""
+
+    visitor.profile_image.name = f"passport_profiles/{profile_name}"
+    visitor.save(update_fields=["profile_image"])
+    return visitor.profile_image.name
+
+
 def process_passport_upload(uploaded_file):
     original_dir = Path(settings.MEDIA_ROOT) / "passport_images"
     processed_dir = Path(settings.MEDIA_ROOT) / "passport_processed"
+    profile_dir = Path(settings.MEDIA_ROOT) / "passport_profiles"
     original_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
 
     suffix = Path(uploaded_file.name).suffix or ".jpg"
     unique_id = uuid.uuid4().hex
     original_name = f"passport_{unique_id}{suffix}"
     processed_name = f"processed_{unique_id}.jpg"
+    profile_name = f"profile_{unique_id}.jpg"
     original_path = original_dir / original_name
     processed_path = processed_dir / processed_name
+    profile_path = profile_dir / profile_name
 
     with original_path.open("wb") as target:
         for chunk in uploaded_file.chunks():
             target.write(chunk)
 
     quality_note = preprocess_image(original_path, processed_path)
+    profile_image_name = extract_passport_profile_image(original_path, profile_path)
     try:
         import pytesseract
 
@@ -709,8 +810,10 @@ def process_passport_upload(uploaded_file):
         "image_quality_note": quality_note,
         "original_image_name": original_name,
         "processed_image_name": processed_name,
+        "profile_image_name": profile_image_name,
         "original_image_url": f"{settings.MEDIA_URL}passport_images/{original_name}",
         "processed_image_url": f"{settings.MEDIA_URL}passport_processed/{processed_name}",
+        "profile_image_url": f"{settings.MEDIA_URL}passport_profiles/{profile_image_name}" if profile_image_name else "",
         "status": parsed.get("status", "pending verification"),
         "full_name": full_name,
         "type": parsed.get("type", "P"),

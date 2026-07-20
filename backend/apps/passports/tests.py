@@ -1,13 +1,16 @@
 from unittest.mock import patch
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from apps.events.models import Event
 
 from .models import PassportAttendance, PassportVisitor
-from .services import extract_passport_fields, normalise_passport_raw_text
+from .services import extract_passport_fields, extract_passport_profile_image, normalise_passport_raw_text
 
 
 class PassportAttendanceSubmitApiTests(APITestCase):
@@ -60,6 +63,55 @@ class PassportAttendanceSubmitApiTests(APITestCase):
         visitor = PassportVisitor.objects.get()
         self.assertEqual(visitor.passport_number, "AB1234567")
         self.assertTrue(any(item["label"] == "Place of Birth" for item in visitor.extra_data["additional_fields"]))
+
+    def test_submit_attaches_passport_profile_image(self):
+        with TemporaryDirectory() as media_root:
+            media_root_path = Path(media_root)
+            (media_root_path / "passport_images").mkdir()
+            (media_root_path / "passport_processed").mkdir()
+            (media_root_path / "passport_profiles").mkdir()
+            (media_root_path / "passport_images" / "original.jpg").write_bytes(b"original")
+            (media_root_path / "passport_processed" / "processed.jpg").write_bytes(b"processed")
+            (media_root_path / "passport_profiles" / "profile.jpg").write_bytes(b"profile")
+            payload = self.payload(self.event)
+            payload.update({
+                "original_image_name": "original.jpg",
+                "processed_image_name": "processed.jpg",
+                "profile_image_name": "profile.jpg",
+            })
+
+            with override_settings(MEDIA_ROOT=media_root):
+                response = self.client.post("/api/passport-attendance/submit/", payload, format="json")
+
+            self.assertEqual(response.status_code, 201)
+            visitor = PassportVisitor.objects.get()
+            self.assertEqual(visitor.image.name, "passport_images/original.jpg")
+            self.assertEqual(visitor.extracted_image.name, "passport_processed/processed.jpg")
+            self.assertEqual(visitor.profile_image.name, "passport_profiles/profile.jpg")
+
+    def test_extract_passport_profile_image_creates_profile_crop(self):
+        try:
+            from PIL import Image, ImageDraw
+        except ImportError:
+            self.skipTest("Pillow is not installed.")
+
+        with TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "passport.jpg"
+            output_path = temp_path / "profile.jpg"
+            image = Image.new("RGB", (1000, 620), "white")
+            draw = ImageDraw.Draw(image)
+            draw.rectangle((90, 140, 330, 480), fill=(210, 210, 220))
+            draw.ellipse((150, 180, 270, 300), fill=(70, 70, 70))
+            image.save(source_path)
+
+            profile_name = extract_passport_profile_image(source_path, output_path)
+
+            self.assertEqual(profile_name, "profile.jpg")
+            self.assertTrue(output_path.exists())
+            with Image.open(output_path) as profile_image:
+                self.assertGreater(profile_image.width, 0)
+                self.assertGreater(profile_image.height, 0)
 
     def test_dash_is_allowed_for_required_passport_contact_fields(self):
         payload = self.payload(self.event)

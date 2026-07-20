@@ -40,6 +40,25 @@ function getPassportExtra(row) {
   return row.visitor_detail?.extra_data || {}
 }
 
+function getPassportImageUrl(row, field) {
+  const visitor = row?.visitor_detail || {}
+  return visitor[`${field}_url`] || visitor[field] || ''
+}
+
+function renderPassportImageTile(row, field, label, alt) {
+  const imageUrl = getPassportImageUrl(row, field)
+  return (
+    <div className={`passport-image-tile passport-image-tile-${field}`}>
+      <span>{label}</span>
+      <div>
+        {imageUrl
+          ? <img src={imageUrl} alt={alt} />
+          : <em>No image</em>}
+      </div>
+    </div>
+  )
+}
+
 function getAdditionalFields(row) {
   const extra = getPassportExtra(row)
   if (Array.isArray(extra.additional_fields)) {
@@ -368,10 +387,9 @@ export function EventPassportAttendancePage() {
             <div className="modal-body visitor-modal-grid">
               <div className="passport-modal-image modal-field-wide">
                 <span>Passport Image</span>
-                <div>
-                  {selectedRow.visitor_detail?.image
-                    ? <img src={selectedRow.visitor_detail.image} alt="Passport" />
-                    : <span>No passport image</span>}
+                <div className="passport-image-compare">
+                  {renderPassportImageTile(selectedRow, 'profile_image', 'Profile Photo', 'Extracted passport profile')}
+                  {renderPassportImageTile(selectedRow, 'image', 'Passport Scan', 'Passport')}
                 </div>
               </div>
               <label className="compact-field"><span>Passport Type</span><input readOnly value={getPassportExtra(selectedRow).type || getPassportExtra(selectedRow).passport_type || ''} /></label>
@@ -426,10 +444,9 @@ export function EventPassportAttendancePage() {
               <div className="modal-body visitor-modal-grid">
                 <div className="passport-modal-image modal-field-wide">
                   <span>Passport Image</span>
-                  <div>
-                    {editRow.visitor_detail?.image
-                      ? <img src={editRow.visitor_detail.image} alt="Passport" />
-                      : <span>No passport image</span>}
+                  <div className="passport-image-compare">
+                    {renderPassportImageTile(editRow, 'profile_image', 'Profile Photo', 'Extracted passport profile')}
+                    {renderPassportImageTile(editRow, 'image', 'Passport Scan', 'Passport')}
                   </div>
                 </div>
                 <label className="compact-field"><span>Passport Type</span><input value={editForm.type} onChange={(event) => updateEdit('type', event.target.value)} /></label>

@@ -773,7 +773,7 @@ export function PassportAttendanceFormPage() {
   const [passportPreview, setPassportPreview] = useState('')
   const [ocrStatus, setOcrStatus] = useState('pending verification')
   const [ocrSource, setOcrSource] = useState('-')
-  const [passportImageMeta, setPassportImageMeta] = useState({ original: '', processed: '', qualityNote: '' })
+  const [passportImageMeta, setPassportImageMeta] = useState({ original: '', processed: '', profile: '', qualityNote: '' })
   const [extraFields, setExtraFields] = useState(createDefaultPassportExtraFields)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -925,6 +925,7 @@ export function PassportAttendanceFormPage() {
             status: ocrStatus,
             original_image_name: passportImageMeta.original,
             processed_image_name: passportImageMeta.processed,
+            profile_image_name: passportImageMeta.profile,
             image_quality_note: passportImageMeta.qualityNote,
             additional_fields: cleanExtraFields,
             additional_fields_text: additionalFieldsText,
@@ -961,7 +962,7 @@ export function PassportAttendanceFormPage() {
     setOcrSource(source)
     setOcrStatus('pending verification')
     ocrSnapshotRef.current = null
-    setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
+    setPassportImageMeta({ original: '', processed: '', profile: '', qualityNote: '' })
     setQualityPopupMessage('')
   }
 
@@ -1079,6 +1080,7 @@ export function PassportAttendanceFormPage() {
       setPassportImageMeta({
         original: data.original_image_name || '',
         processed: data.processed_image_name || '',
+        profile: data.profile_image_name || '',
         qualityNote: data.image_quality_note || '',
       })
       if (isPassportExpired(data.date_of_expiry)) {
@@ -1101,7 +1103,7 @@ export function PassportAttendanceFormPage() {
     setOcrSource('-')
     setOcrStatus('pending verification')
     ocrSnapshotRef.current = null
-    setPassportImageMeta({ original: '', processed: '', qualityNote: '' })
+    setPassportImageMeta({ original: '', processed: '', profile: '', qualityNote: '' })
     setOcrNote('')
     setQualityPopupMessage('')
     setExpiredPassportMessage('')
