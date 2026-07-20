@@ -21,9 +21,11 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (isSubmitting) return
     setFieldErrors({})
     const cleanUsername = username.trim()
     const nextErrors = {}
@@ -44,6 +46,7 @@ export function LoginPage() {
       return
     }
     try {
+      setIsSubmitting(true)
       await login(cleanUsername, password)
       navigate('/dashboard')
     } catch (err) {
@@ -53,6 +56,8 @@ export function LoginPage() {
       } else {
         setFieldErrors({ credentials: friendlyMessage })
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -158,9 +163,9 @@ export function LoginPage() {
             {!fieldErrors.credentials && <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>}
             {fieldErrors.form && <div className="login-form-message" role="alert">{fieldErrors.form}</div>}
 
-            <button type="submit" className="primary-button portal-login-button">
+            <button type="submit" className="primary-button portal-login-button" disabled={isSubmitting}>
               <LogIn size={22} />
-              Login
+              {isSubmitting ? 'Logging in...' : 'Login'}
             </button>
 
             <div className="login-divider" />

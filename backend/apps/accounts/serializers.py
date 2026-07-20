@@ -14,10 +14,6 @@ from apps.staff.services import create_viewer_staff_member
 from .otp_delivery import normalize_phone_number, password_reset_cache_key
 
 
-class StaffIdTokenObtainPairSerializer(TokenObtainPairSerializer):
-    pass
-
-
 def resolve_password_reset_identity(attrs):
     method = attrs.get("method") or ForgotPasswordSendSerializer.METHOD_EMAIL
     if method == ForgotPasswordSendSerializer.METHOD_EMAIL:
@@ -68,6 +64,13 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "department": profile.department,
             "role": profile.role,
         }
+
+
+class StaffIdTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data["user"] = CurrentUserSerializer(self.user).data
+        return data
 
 
 class ManualRegistrationSerializer(serializers.Serializer):

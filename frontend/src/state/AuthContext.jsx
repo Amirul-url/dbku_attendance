@@ -114,8 +114,12 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ username, password }),
     })
     storeTokens(tokens)
-    const currentUser = await apiRequest('/auth/me/')
-    setUser(currentUser)
+    if (tokens.user) {
+      setUser(tokens.user)
+    } else {
+      const currentUser = await apiRequest('/auth/me/')
+      setUser(currentUser)
+    }
   }, [storeTokens])
 
   const refreshUser = useCallback(async () => {

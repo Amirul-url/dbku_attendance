@@ -52,6 +52,8 @@ class AuthApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
+        self.assertEqual(response.data["user"]["username"], "EMP002")
+        self.assertEqual(response.data["user"]["staff_profile"]["role"], StaffMember.ROLE_VIEWER)
 
     def test_token_login_rejects_email_identifier(self):
         user = User.objects.create_user(
