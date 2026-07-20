@@ -289,11 +289,6 @@ function dateToDayNumber(value) {
   return Date.UTC(year, month - 1, day)
 }
 
-function todayDayNumber() {
-  const now = new Date()
-  return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
-}
-
 function eventDateTimeValue(dateValue, timeValue, endOfDay = false) {
   const [year, month, day] = String(dateValue || '').split('-').map(Number)
   if (!year || !month || !day) return null
@@ -313,33 +308,45 @@ function getEventStatus(row, now = Date.now()) {
   return 'ongoing'
 }
 
-function eventNearestDayNumber(row, today) {
-  const startDay = dateToDayNumber(row.start_date)
-  if (startDay === null) return null
-  const endDay = dateToDayNumber(row.end_date) ?? startDay
-  if (startDay <= today && today <= endDay) return today
-  return today < startDay ? startDay : endDay
+function compareNullableNumber(a, b, fallback = 0) {
+  if (a === null && b === null) return fallback
+  if (a === null) return 1
+  if (b === null) return -1
+  return a - b
 }
 
-function compareEventsByNearestDate(a, b, today) {
-  const nearestA = eventNearestDayNumber(a, today)
-  const nearestB = eventNearestDayNumber(b, today)
-  if (nearestA === null && nearestB === null) return Number(b.id) - Number(a.id)
-  if (nearestA === null) return 1
-  if (nearestB === null) return -1
+function compareNullableNumberDesc(a, b, fallback = 0) {
+  if (a === null && b === null) return fallback
+  if (a === null) return 1
+  if (b === null) return -1
+  return b - a
+}
 
-  const distanceA = Math.abs(nearestA - today)
-  const distanceB = Math.abs(nearestB - today)
-  if (distanceA !== distanceB) return distanceA - distanceB
+function compareEventsBySchedule(a, b, now) {
+  const statusRank = { ongoing: 0, upcoming: 1, expired: 2 }
+  const statusA = getEventStatus(a, now)
+  const statusB = getEventStatus(b, now)
+  const rankA = statusRank[statusA] ?? 3
+  const rankB = statusRank[statusB] ?? 3
+  if (rankA !== rankB) return rankA - rankB
 
-  const futureRankA = nearestA >= today ? 0 : 1
-  const futureRankB = nearestB >= today ? 0 : 1
-  if (futureRankA !== futureRankB) return futureRankA - futureRankB
+  const startA = dateToDayNumber(a.start_date)
+  const startB = dateToDayNumber(b.start_date)
+  const endA = dateToDayNumber(a.end_date) ?? startA
+  const endB = dateToDayNumber(b.end_date) ?? startB
+  const idFallback = Number(b.id) - Number(a.id)
 
-  const startA = dateToDayNumber(a.start_date) ?? Number.MAX_SAFE_INTEGER
-  const startB = dateToDayNumber(b.start_date) ?? Number.MAX_SAFE_INTEGER
-  if (startA !== startB) return startA - startB
-  return Number(b.id) - Number(a.id)
+  if (statusA === 'expired') {
+    const endComparison = compareNullableNumberDesc(endA, endB, idFallback)
+    if (endComparison !== 0) return endComparison
+  } else if (statusA === 'ongoing') {
+    const endComparison = compareNullableNumber(endA, endB, idFallback)
+    if (endComparison !== 0) return endComparison
+  }
+
+  const startComparison = compareNullableNumber(startA, startB, idFallback)
+  if (startComparison !== 0) return startComparison
+  return idFallback
 }
 
 export function EventsPage() {
@@ -516,7 +523,6 @@ export function EventsPage() {
 
   const filteredEvents = useMemo(() => {
     const term = appliedFilters.search.trim().toLowerCase()
-    const today = todayDayNumber()
     const now = Date.now()
     return events.filter((row) => {
       const matchesTerm = !term || row.name?.toLowerCase().includes(term) || row.location?.toLowerCase().includes(term)
@@ -525,7 +531,7 @@ export function EventsPage() {
         || dateMatchesFilters(row.end_date, appliedFilters.month, appliedFilters.year)
       const matchesStatus = !appliedFilters.status || getEventStatus(row, now) === appliedFilters.status
       return matchesTerm && matchesDate && matchesStatus
-    }).sort((a, b) => compareEventsByNearestDate(a, b, today))
+    }).sort((a, b) => compareEventsBySchedule(a, b, now))
   }, [appliedFilters.month, appliedFilters.search, appliedFilters.status, appliedFilters.year, events])
   const availableYears = useMemo(() => {
     const years = new Set()
