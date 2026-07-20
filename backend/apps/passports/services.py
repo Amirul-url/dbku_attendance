@@ -16,6 +16,7 @@ from .country_codes import COUNTRY_CODE_MAP, COUNTRY_NAME_CODE_MAP
 from .models import PassportAttendance, PassportVisitor
 
 REQUIRED_ADDITIONAL_FIELD_LABELS = ("Phone Number", "Email")
+PROFILE_EXTRACTOR_VERSION = "v2"
 
 TESSERACT_CANDIDATE_PATHS = (
     Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
@@ -242,6 +243,7 @@ def submit_passport_attendance(data, request):
             "date_of_issue": date_of_issue,
             "additional_fields_text": additional_fields_text,
             "additional_fields": additional_fields,
+            "profile_extractor_version": PROFILE_EXTRACTOR_VERSION if data.get("profile_image_name") else extra_data.get("profile_extractor_version", ""),
         })
         visitor.extra_data = extra_data
         _attach_passport_images(
@@ -711,7 +713,15 @@ def extract_passport_profile_image(input_path, output_path):
     cascade_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
     if cascade_path.exists():
         detector = cv2.CascadeClassifier(str(cascade_path))
-        faces = detector.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(32, 32))
+        equalized = cv2.equalizeHist(gray)
+        faces = detector.detectMultiScale(equalized, scaleFactor=1.05, minNeighbors=3, minSize=(28, 28))
+        if not len(faces):
+            resized_gray = cv2.resize(equalized, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+            resized_faces = detector.detectMultiScale(resized_gray, scaleFactor=1.05, minNeighbors=3, minSize=(42, 42))
+            faces = [
+                (int(x / 1.5), int(y / 1.5), int(width / 1.5), int(height / 1.5))
+                for x, y, width, height in resized_faces
+            ]
         if len(faces):
             left_side_faces = [
                 face
@@ -723,15 +733,21 @@ def extract_passport_profile_image(input_path, output_path):
 
     if face_box is not None:
         x, y, width, height = face_box
-        crop_width = max(width * 2.2, height * 1.35)
-        crop_height = max(height * 2.7, crop_width * 1.22)
+        crop_width = max(width * 1.75, height * 1.18)
+        crop_height = max(height * 2.35, crop_width * 1.28)
         crop_x = x + width / 2 - crop_width / 2
-        crop_y = y + height / 2 - crop_height * 0.42
+        crop_y = y + height / 2 - crop_height * 0.38
     else:
-        crop_x = image_width * 0.07
-        crop_y = image_height * 0.20
-        crop_width = image_width * 0.27
-        crop_height = image_height * 0.54
+        if image_width >= image_height:
+            crop_x = image_width * 0.105
+            crop_y = image_height * 0.30
+            crop_width = image_width * 0.23
+            crop_height = image_height * 0.48
+        else:
+            crop_x = image_width * 0.20
+            crop_y = image_height * 0.22
+            crop_width = image_width * 0.40
+            crop_height = image_height * 0.45
 
     x, y, width, height = _clamp_crop_box(crop_x, crop_y, crop_width, crop_height, image_width, image_height)
     crop = image[y:y + height, x:x + width]
@@ -744,8 +760,11 @@ def extract_passport_profile_image(input_path, output_path):
 
 
 def ensure_passport_profile_image(visitor):
-    if not visitor or visitor.profile_image or not visitor.image:
+    if not visitor or not visitor.image:
         return ""
+    extra_data = dict(visitor.extra_data or {})
+    if visitor.profile_image and extra_data.get("profile_extractor_version") == PROFILE_EXTRACTOR_VERSION:
+        return visitor.profile_image.name
     try:
         image_path = Path(visitor.image.path)
     except (NotImplementedError, ValueError):
@@ -754,13 +773,15 @@ def ensure_passport_profile_image(visitor):
         return ""
 
     profile_dir = Path(settings.MEDIA_ROOT) / "passport_profiles"
-    profile_name = f"profile_{uuid.uuid4().hex}.jpg"
+    profile_name = f"profile_{PROFILE_EXTRACTOR_VERSION}_{uuid.uuid4().hex}.jpg"
     profile_path = profile_dir / profile_name
     if not extract_passport_profile_image(image_path, profile_path):
         return ""
 
     visitor.profile_image.name = f"passport_profiles/{profile_name}"
-    visitor.save(update_fields=["profile_image"])
+    extra_data["profile_extractor_version"] = PROFILE_EXTRACTOR_VERSION
+    visitor.extra_data = extra_data
+    visitor.save(update_fields=["profile_image", "extra_data"])
     return visitor.profile_image.name
 
 
@@ -776,7 +797,7 @@ def process_passport_upload(uploaded_file):
     unique_id = uuid.uuid4().hex
     original_name = f"passport_{unique_id}{suffix}"
     processed_name = f"processed_{unique_id}.jpg"
-    profile_name = f"profile_{unique_id}.jpg"
+    profile_name = f"profile_{PROFILE_EXTRACTOR_VERSION}_{unique_id}.jpg"
     original_path = original_dir / original_name
     processed_path = processed_dir / processed_name
     profile_path = profile_dir / profile_name
