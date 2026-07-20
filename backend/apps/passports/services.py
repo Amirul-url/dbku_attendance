@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -16,7 +16,9 @@ from .country_codes import COUNTRY_CODE_MAP, COUNTRY_NAME_CODE_MAP
 from .models import PassportAttendance, PassportVisitor
 
 REQUIRED_ADDITIONAL_FIELD_LABELS = ("Phone Number", "Email")
-PROFILE_EXTRACTOR_VERSION = "v3"
+PROFILE_EXTRACTOR_VERSION = "v4"
+PASSPORT_PROFILE_SIZE = (413, 531)
+PASSPORT_PROFILE_ASPECT = PASSPORT_PROFILE_SIZE[0] / PASSPORT_PROFILE_SIZE[1]
 MTCNN_DETECTOR = None
 
 TESSERACT_CANDIDATE_PATHS = (
@@ -209,66 +211,69 @@ def submit_passport_attendance(data, request):
 
     ipv4_address, ipv6_address = split_client_ips(request)
 
-    with transaction.atomic():
-        visitor, _created = PassportVisitor.objects.get_or_create(
-            passport_number=passport_number,
-            defaults={
-                "full_name": full_name,
-                "country": nationality or country_code,
-                "date_of_birth": date_of_birth,
-                "expiry_date": date_of_expiry,
-                "gender": sex,
-                "ocr_raw_text": raw_text,
-                "image_quality_note": image_quality_note,
-                "status": status,
-            },
-        )
+    try:
+        with transaction.atomic():
+            visitor, _created = PassportVisitor.objects.get_or_create(
+                passport_number=passport_number,
+                defaults={
+                    "full_name": full_name,
+                    "country": nationality or country_code,
+                    "date_of_birth": date_of_birth,
+                    "expiry_date": date_of_expiry,
+                    "gender": sex,
+                    "ocr_raw_text": raw_text,
+                    "image_quality_note": image_quality_note,
+                    "status": status,
+                },
+            )
 
-        visitor.full_name = full_name or visitor.full_name
-        visitor.country = nationality or country_code or visitor.country
-        visitor.date_of_birth = date_of_birth or visitor.date_of_birth
-        visitor.expiry_date = date_of_expiry or visitor.expiry_date
-        visitor.gender = sex or visitor.gender
-        visitor.ocr_raw_text = raw_text or visitor.ocr_raw_text
-        visitor.image_quality_note = image_quality_note or visitor.image_quality_note
-        visitor.status = status or visitor.status
+            visitor.full_name = full_name or visitor.full_name
+            visitor.country = nationality or country_code or visitor.country
+            visitor.date_of_birth = date_of_birth or visitor.date_of_birth
+            visitor.expiry_date = date_of_expiry or visitor.expiry_date
+            visitor.gender = sex or visitor.gender
+            visitor.ocr_raw_text = raw_text or visitor.ocr_raw_text
+            visitor.image_quality_note = image_quality_note or visitor.image_quality_note
+            visitor.status = status or visitor.status
 
-        extra_data = dict(visitor.extra_data or {})
-        extra_data.update({
-            "type": passport_type,
-            "passport_type": passport_type,
-            "country_code": country_code,
-            "nationality": nationality,
-            "first_name": first_name,
-            "last_name": last_name,
-            "date_of_issue": date_of_issue,
-            "additional_fields_text": additional_fields_text,
-            "additional_fields": additional_fields,
-            "profile_extractor_version": PROFILE_EXTRACTOR_VERSION if data.get("profile_image_name") else extra_data.get("profile_extractor_version", ""),
-        })
-        visitor.extra_data = extra_data
-        _attach_passport_images(
-            visitor,
-            data.get("original_image_name"),
-            data.get("processed_image_name"),
-            data.get("profile_image_name"),
-        )
-        visitor.save()
+            extra_data = dict(visitor.extra_data or {})
+            extra_data.update({
+                "type": passport_type,
+                "passport_type": passport_type,
+                "country_code": country_code,
+                "nationality": nationality,
+                "first_name": first_name,
+                "last_name": last_name,
+                "date_of_issue": date_of_issue,
+                "additional_fields_text": additional_fields_text,
+                "additional_fields": additional_fields,
+                "profile_extractor_version": PROFILE_EXTRACTOR_VERSION if data.get("profile_image_name") else extra_data.get("profile_extractor_version", ""),
+            })
+            visitor.extra_data = extra_data
+            _attach_passport_images(
+                visitor,
+                data.get("original_image_name"),
+                data.get("processed_image_name"),
+                data.get("profile_image_name"),
+            )
+            visitor.save()
 
-        attendance, attendance_created = PassportAttendance.objects.get_or_create(
-            passport_visitor=visitor,
-            event=event,
-            defaults={
-                "latitude": data.get("latitude"),
-                "longitude": data.get("longitude"),
-                "ipv4_address": ipv4_address,
-                "ipv6_address": ipv6_address,
-            },
-        )
-        if not attendance_created:
-            raise serializers.ValidationError("Attendance already recorded.")
-        attendance.distance_meter = distance_meter
-        return attendance
+            attendance, attendance_created = PassportAttendance.objects.get_or_create(
+                passport_visitor=visitor,
+                event=event,
+                defaults={
+                    "latitude": data.get("latitude"),
+                    "longitude": data.get("longitude"),
+                    "ipv4_address": ipv4_address,
+                    "ipv6_address": ipv6_address,
+                },
+            )
+            if not attendance_created:
+                raise serializers.ValidationError("Attendance already recorded.")
+            attendance.distance_meter = distance_meter
+            return attendance
+    except IntegrityError as exc:
+        raise serializers.ValidationError("Attendance already recorded.") from exc
 
 
 def _clean_mrz_line(line):
@@ -792,27 +797,29 @@ def extract_passport_profile_image(input_path, output_path):
 
     if face_box is not None:
         x, y, width, height = face_box
-        crop_width = max(width * 1.65, height * 1.05)
-        crop_height = max(height * 1.55, crop_width * 1.28)
+        crop_height = max(height * 1.9, width * 1.6 / PASSPORT_PROFILE_ASPECT)
+        crop_width = crop_height * PASSPORT_PROFILE_ASPECT
         crop_x = x + width / 2 - crop_width / 2
-        crop_y = y - height * 0.42
+        crop_y = y - height * 0.45
     else:
         if image_width >= image_height:
             crop_x = image_width * 0.105
-            crop_y = image_height * 0.30
-            crop_width = image_width * 0.23
-            crop_height = image_height * 0.48
+            crop_y = image_height * 0.20
+            crop_width = image_width * 0.22
+            crop_height = crop_width / PASSPORT_PROFILE_ASPECT
         else:
             crop_x = image_width * 0.20
             crop_y = image_height * 0.22
             crop_width = image_width * 0.40
-            crop_height = image_height * 0.45
+            crop_height = crop_width / PASSPORT_PROFILE_ASPECT
 
     x, y, width, height = _clamp_crop_box(crop_x, crop_y, crop_width, crop_height, image_width, image_height)
     crop = image[y:y + height, x:x + width]
     if crop.size == 0:
         return ""
 
+    interpolation = cv2.INTER_CUBIC if crop.shape[1] < PASSPORT_PROFILE_SIZE[0] else cv2.INTER_AREA
+    crop = cv2.resize(crop, PASSPORT_PROFILE_SIZE, interpolation=interpolation)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(output_path), crop)
     return output_path.name

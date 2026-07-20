@@ -1,6 +1,8 @@
+from django.db import IntegrityError
 from rest_framework import serializers
 
 from apps.core.geo import validate_event_geofence
+from apps.events.models import EventAssignment
 from apps.staff.selectors import staff_member_by_staff_id
 
 from .models import AssignmentAttendance, StaffAttendance, Visitor, VisitorAttendance
@@ -55,6 +57,7 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = StaffAttendance
         fields = "__all__"
+        validators = []
 
     def get_distance_meter(self, obj):
         return getattr(obj, "distance_meter", None)
@@ -76,6 +79,8 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
         if staff.email.lower() != email:
             raise serializers.ValidationError({"email": "Email does not match registered employee."})
         if event:
+            if StaffAttendance.objects.filter(staff_id=staff.staff_id, event=event).exclude(pk=getattr(self.instance, "pk", None)).exists():
+                raise serializers.ValidationError("Attendance already registered for this staff and event.")
             latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))
             longitude = attrs.get("longitude", getattr(self.instance, "longitude", None))
             attrs["distance_meter"] = validate_event_geofence(event, latitude, longitude)
@@ -88,7 +93,10 @@ class StaffAttendanceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         distance_meter = validated_data.pop("distance_meter", None)
-        instance = super().create(validated_data)
+        try:
+            instance = super().create(validated_data)
+        except IntegrityError as exc:
+            raise serializers.ValidationError("Attendance already registered for this staff and event.") from exc
         instance.distance_meter = distance_meter
         return instance
 
@@ -126,7 +134,10 @@ class VisitorAttendanceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         distance_meter = validated_data.pop("distance_meter", None)
-        instance = super().create(validated_data)
+        try:
+            instance = super().create(validated_data)
+        except IntegrityError as exc:
+            raise serializers.ValidationError("Attendance already registered for this visitor and event.") from exc
         instance.distance_meter = distance_meter
         return instance
 
@@ -146,6 +157,7 @@ class VisitorAttendanceSerializer(serializers.ModelSerializer):
 
 
 class AssignmentAttendanceSerializer(serializers.ModelSerializer):
+    assignment = serializers.PrimaryKeyRelatedField(queryset=EventAssignment.objects.all(), validators=[])
     assignment_title = serializers.CharField(source="assignment.task_title", read_only=True)
     distance_meter = serializers.SerializerMethodField()
     full_name = serializers.CharField(write_only=True, required=False)
@@ -154,6 +166,7 @@ class AssignmentAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentAttendance
         fields = "__all__"
+        validators = []
 
     def get_distance_meter(self, obj):
         return getattr(obj, "distance_meter", None)
@@ -171,6 +184,8 @@ class AssignmentAttendanceSerializer(serializers.ModelSerializer):
         if not phone.isdigit() or len(phone) < 9:
             raise serializers.ValidationError({"phone_number": "Invalid phone number."})
         if assignment:
+            if AssignmentAttendance.objects.filter(assignment=assignment).exclude(pk=getattr(self.instance, "pk", None)).exists():
+                raise serializers.ValidationError("Assignment attendance already recorded.")
             assigned_staff = assignment.staff_member
             if assigned_staff.staff_id.upper() != staff_id:
                 raise serializers.ValidationError({"staff_id": "This QR is only valid for the assigned staff."})
@@ -184,6 +199,9 @@ class AssignmentAttendanceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         distance_meter = validated_data.pop("distance_meter", None)
-        instance = super().create(validated_data)
+        try:
+            instance = super().create(validated_data)
+        except IntegrityError as exc:
+            raise serializers.ValidationError("Assignment attendance already recorded.") from exc
         instance.distance_meter = distance_meter
         return instance

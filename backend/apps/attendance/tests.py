@@ -145,6 +145,31 @@ class StaffAttendanceApiTests(APITestCase):
         assignment.refresh_from_db()
         self.assertEqual(assignment.assignment_status, EventAssignment.STATUS_IN_PROGRESS)
 
+    def test_duplicate_assignment_attendance_is_rejected_cleanly(self):
+        staff = self.create_staff_member()
+        event = self.create_event()
+        assignment = EventAssignment.objects.create(
+            event=event,
+            staff_member=staff,
+            task_title="Registration Counter",
+        )
+        payload = {
+            "assignment": assignment.id,
+            "full_name": staff.full_name,
+            "staff_id": staff.staff_id,
+            "phone_number": staff.phone_number,
+            "email": staff.email,
+            "latitude": "1.000000",
+            "longitude": "110.000000",
+        }
+
+        first_response = self.client.post("/api/assignment-attendance/", payload, format="json")
+        second_response = self.client.post("/api/assignment-attendance/", payload, format="json")
+
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(second_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already recorded", str(second_response.data))
+
     def test_assignment_attendance_rejects_expired_event(self):
         staff = self.create_staff_member()
         event = self.create_event()

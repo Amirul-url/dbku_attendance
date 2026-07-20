@@ -110,8 +110,7 @@ class PassportAttendanceSubmitApiTests(APITestCase):
             self.assertEqual(profile_name, "profile.jpg")
             self.assertTrue(output_path.exists())
             with Image.open(output_path) as profile_image:
-                self.assertGreater(profile_image.width, 0)
-                self.assertGreater(profile_image.height, 0)
+                self.assertEqual(profile_image.size, (413, 531))
 
     @patch("apps.passports.services._detect_face_with_mtcnn")
     def test_extract_passport_profile_image_uses_mtcnn_face_box(self, mocked_detect):
@@ -132,8 +131,7 @@ class PassportAttendanceSubmitApiTests(APITestCase):
             self.assertEqual(profile_name, "profile.jpg")
             self.assertTrue(output_path.exists())
             with Image.open(output_path) as profile_image:
-                self.assertLess(profile_image.width, 220)
-                self.assertLess(profile_image.height, 260)
+                self.assertEqual(profile_image.size, (413, 531))
 
     def test_dash_is_allowed_for_required_passport_contact_fields(self):
         payload = self.payload(self.event)
