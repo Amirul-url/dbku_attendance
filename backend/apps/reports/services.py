@@ -120,7 +120,8 @@ def build_dashboard_report(today=None):
             "type": "Staff",
             "event_name": item.event.name,
             "date": item.date,
-            "time": item.time,
+            "time": _time(item.time),
+            "sort_time": item.time,
         }
         for item in recent_staff_attendance(limit=recent_activity_limit)
     ]
@@ -130,7 +131,8 @@ def build_dashboard_report(today=None):
             "type": "Visitor (Malaysian)",
             "event_name": item.event.name,
             "date": item.date,
-            "time": item.time,
+            "time": _time(item.time),
+            "sort_time": item.time,
         }
         for item in recent_visitor_attendance(limit=recent_activity_limit)
     ]
@@ -140,15 +142,18 @@ def build_dashboard_report(today=None):
             "type": "Visitor (Non-Malaysian)",
             "event_name": item.event.name,
             "date": item.date,
-            "time": item.time,
+            "time": _time(item.time),
+            "sort_time": item.time,
         }
         for item in recent_passport_attendance(limit=recent_activity_limit)
     ]
     recent_activities = sorted(
         recent_staff + recent_visitors + recent_passports,
-        key=lambda row: (row["date"], row["time"]),
+        key=lambda row: (row["date"], row["sort_time"]),
         reverse=True,
     )[:dashboard_list_limit]
+    for activity in recent_activities:
+        activity.pop("sort_time", None)
 
     return {
         "today_date": today,

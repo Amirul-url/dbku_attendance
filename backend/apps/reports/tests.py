@@ -1,3 +1,5 @@
+from datetime import time
+
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -24,6 +26,37 @@ class ReportExportTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["total_staff"], 0)
+
+    def test_dashboard_recent_activity_time_hides_microseconds(self):
+        report_user = User.objects.create_user(username="REPORT002", email="report2@example.com")
+        staff_user = User.objects.create_user(username="EMP021", email="recent-staff@example.com")
+        staff = StaffMember.objects.create(
+            user=staff_user,
+            full_name="Recent Staff",
+            staff_id="EMP021",
+            email="recent-staff@example.com",
+            phone_number="0123888888",
+            department="Reports",
+            role=StaffMember.ROLE_VIEWER,
+        )
+        event = Event.objects.create(name="Recent Event", location="DBKU")
+        attendance = StaffAttendance.objects.create(
+            event=event,
+            staff_member=staff,
+            full_name=staff.full_name,
+            staff_id=staff.staff_id,
+            phone_number=staff.phone_number,
+            email=staff.email,
+            department=staff.department,
+        )
+        attendance.time = time(15, 9, 49, 64969)
+        attendance.save(update_fields=["time"])
+
+        self.client.force_authenticate(report_user)
+        response = self.client.get("/api/reports/dashboard/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["recent_activities"][0]["time"], "15:09:49")
 
     def test_authenticated_user_can_export_staff_attendance_csv(self):
         report_user = User.objects.create_user(username="REPORT001", email="report@example.com")
