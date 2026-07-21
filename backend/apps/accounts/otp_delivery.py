@@ -7,6 +7,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from smtplib import SMTPException
 
+from apps.core.notification_messages import build_password_reset_otp_message
+
 
 class OTPDeliveryError(Exception):
     pass
@@ -25,6 +27,7 @@ def send_password_reset_email(email, otp):
     if not getattr(settings, "NOTIFICATION_EMAIL_ENABLED", True):
         raise OTPDeliveryError("Email notifications are disabled.")
 
+    message = build_password_reset_otp_message(otp)
     provider = getattr(settings, "NOTIFICATION_EMAIL_PROVIDER", "brevo")
     if provider == "brevo":
         send_password_reset_email_brevo(email, otp)
@@ -35,8 +38,8 @@ def send_password_reset_email(email, otp):
 
     try:
         send_mail(
-            "DBKU Attendance Password Reset OTP",
-            f"Your DBKU Attendance password reset OTP is {otp}. It expires in 10 minutes.",
+            message["subject"],
+            message["text"],
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
@@ -54,15 +57,16 @@ def send_password_reset_email_brevo(email, otp):
     if not api_key or not from_email:
         raise OTPDeliveryError("Brevo email is not configured.")
 
+    message = build_password_reset_otp_message(otp)
     recipient = redirect_to or email
-    text = f"Your DBKU Attendance password reset OTP is {otp}. It expires in 10 minutes."
+    text = message["text"]
     if redirect_to:
         text = f"Original recipient: {email}\n\n{text}"
 
     payload = json.dumps({
         "sender": {"name": from_name, "email": from_email},
         "to": [{"email": recipient}],
-        "subject": "DBKU Attendance Password Reset OTP",
+        "subject": message["subject"],
         "textContent": text,
     }).encode("utf-8")
 
@@ -99,7 +103,7 @@ def send_password_reset_whatsapp(phone_number, otp):
 
     payload = json.dumps({
         "number": normalize_phone_number(phone_number),
-        "text": f"Your DBKU Attendance password reset OTP is {otp}. It expires in 10 minutes.",
+        "text": build_password_reset_otp_message(otp)["text"],
     }).encode("utf-8")
 
     api_request = request.Request(
